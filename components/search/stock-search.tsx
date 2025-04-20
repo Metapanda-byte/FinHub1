@@ -1,0 +1,192 @@
+"use client";
+
+import * as React from "react";
+import { Check, ChevronDown, Search, Star, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useSearchStore } from "@/lib/store/search-store";
+import { format } from "date-fns";
+import useSWR from 'swr';
+
+interface SearchResult {
+  symbol: string;
+  name: string;
+  currency: string;
+  stockExchange: string;
+  exchangeShortName: string;
+}
+
+const API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
+const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+
+export function StockSearch() {
+  const [open, setOpen] = React.useState(false);
+  const [value, setValue] = React.useState("");
+  const [search, setSearch] = React.useState("");
+
+  const {
+    recentSearches,
+    favorites,
+    addToRecent,
+    toggleFavorite,
+    isFavorite,
+    setCurrentSymbol,
+  } = useSearchStore();
+
+  const { data: searchResults, error } = useSWR<SearchResult[]>(
+    search.length >= 2 
+      ? `${BASE_URL}/search?query=${encodeURIComponent(search)}&limit=10&exchange=NASDAQ,NYSE,AMEX&apikey=${API_KEY}`
+      : null,
+    async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch');
+      return response.json();
+    }
+  );
+
+  const onSelect = React.useCallback(
+    (symbol: string) => {
+      const company = searchResults?.find((c) => c.symbol === symbol) || 
+                     recentSearches.find((c) => c.symbol === symbol) ||
+                     favorites.find((c) => c.symbol === symbol);
+      
+      if (company) {
+        setValue(symbol);
+        setOpen(false);
+        setSearch("");
+        addToRecent(company.symbol, company.name);
+        setCurrentSymbol(company.symbol);
+      }
+    },
+    [searchResults, recentSearches, favorites, addToRecent, setCurrentSymbol]
+  );
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-[300px] justify-between bg-muted/30 hover:bg-muted"
+        >
+          <Search className="mr-2 h-4 w-4" />
+          {value ? (
+            <span>{value}</span>
+          ) : (
+            "Search symbol or company..."
+          )}
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Search symbol or company..."
+            value={search}
+            onValueChange={setSearch}
+            className="h-9"
+          />
+          <CommandList>
+            <CommandEmpty>
+              {error ? "Error fetching results." : "No results found."}
+            </CommandEmpty>
+            {searchResults && searchResults.length > 0 && (
+              <CommandGroup heading="Search Results">
+                {searchResults.map((company) => (
+                  <CommandItem
+                    key={company.symbol}
+                    value={company.symbol}
+                    onSelect={onSelect}
+                    className="flex items-center justify-between"
+                  >
+                    <div>
+                      <span className="font-medium">{company.symbol}</span>
+                      <span className="ml-2 text-muted-foreground">
+                        {company.name}
+                      </span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {company.exchangeShortName}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(company.symbol, company.name);
+                      }}
+                    >
+                      <Star
+                        className={cn(
+                          "h-3 w-3",
+                          isFavorite(company.symbol)
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-muted-foreground"
+                        )}
+                      />
+                    </Button>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {search.length === 0 && (
+              <>
+                {favorites.length > 0 && (
+                  <CommandGroup heading="Favorites">
+                    {favorites.map((item) => (
+                      <CommandItem
+                        key={item.symbol}
+                        value={item.symbol}
+                        onSelect={onSelect}
+                      >
+                        <Star className="mr-2 h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="font-medium">{item.symbol}</span>
+                        <span className="ml-2 text-muted-foreground">
+                          {item.name}
+                        </span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+                {recentSearches.length > 0 && (
+                  <CommandGroup heading="Recent Searches">
+                    {recentSearches.map((item) => (
+                      <CommandItem
+                        key={item.symbol}
+                        value={item.symbol}
+                        onSelect={onSelect}
+                      >
+                        <span className="font-medium">{item.symbol}</span>
+                        <span className="ml-2 text-muted-foreground">
+                          {item.name}
+                        </span>
+                        <span className="ml-auto flex h-4 w-4 items-center justify-center text-xs text-muted-foreground">
+                          {format(item.timestamp, "MMM d")}
+                        </span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
