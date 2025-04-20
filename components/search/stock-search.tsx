@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown, Search, Star, XCircle } from "lucide-react";
+import { Check, ChevronDown, Search, Star, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +34,6 @@ const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 export function StockSearch() {
   const [open, setOpen] = React.useState(false);
-  const [value, setValue] = React.useState("");
   const [search, setSearch] = React.useState("");
 
   const {
@@ -44,6 +43,7 @@ export function StockSearch() {
     toggleFavorite,
     isFavorite,
     setCurrentSymbol,
+    currentSymbol
   } = useSearchStore();
 
   const { data: searchResults, error } = useSWR<SearchResult[]>(
@@ -64,7 +64,6 @@ export function StockSearch() {
                      favorites.find((c) => c.symbol === symbol);
       
       if (company) {
-        setValue(symbol);
         setOpen(false);
         setSearch("");
         addToRecent(company.symbol, company.name);
@@ -84,8 +83,8 @@ export function StockSearch() {
           className="w-[300px] justify-between bg-muted/30 hover:bg-muted"
         >
           <Search className="mr-2 h-4 w-4" />
-          {value ? (
-            <span>{value}</span>
+          {currentSymbol ? (
+            <span>{currentSymbol}</span>
           ) : (
             "Search symbol or company..."
           )}

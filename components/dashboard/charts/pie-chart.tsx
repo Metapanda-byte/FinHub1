@@ -19,24 +19,7 @@ interface PieChartProps {
   formatter: (value: number) => string;
 }
 
-interface ActiveShapeProps {
-  cx: number;
-  cy: number;
-  innerRadius: number;
-  outerRadius: number;
-  startAngle: number;
-  endAngle: number;
-  fill: string;
-  payload: {
-    name: string;
-    value: number;
-  };
-  percent: number;
-  value: number;
-  formatter?: (value: number) => string;
-}
-
-const renderActiveShape = (props: ActiveShapeProps) => {
+const renderActiveShape = (props: any) => {
   const {
     cx,
     cy,
@@ -124,7 +107,7 @@ export function PieChart({
       <RechartsPieChart>
         <Pie
           activeIndex={activeIndex}
-          activeShape={(props: ActiveShapeProps) =>
+          activeShape={(props) =>
             renderActiveShape({ ...props, formatter })
           }
           data={data}
