@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Check, BarChartBig } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Home() {
   return (
@@ -28,10 +29,13 @@ export default function Home() {
           </div>
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent h-40 -bottom-1"></div>
-            <img
+            <Image
               src="https://images.pexels.com/photos/7567434/pexels-photo-7567434.jpeg"
               alt="Dashboard Preview"
               className="rounded-lg shadow-2xl border"
+              width={1200}
+              height={800}
+              priority
             />
           </div>
         </div>
