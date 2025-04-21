@@ -41,9 +41,10 @@ export function IncomeStatementLine({
           )}
         >
           {formatFinancialNumber(value, {
-            parenthesesForNegative: isExpense || value < 0,
+            useParentheses: isExpense || value < 0,
             unit: 'millions',
-            decimals: 1
+            decimals: 1,
+            showZeroDecimals: true
           })}
         </td>
       ))}

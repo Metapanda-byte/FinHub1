@@ -22,11 +22,11 @@ interface FinancialStatementsProps {
 export function FinancialStatements({ symbol }: FinancialStatementsProps) {
   const { viewMode, period } = useFinancialPeriodStore();
   
-  const { statements: incomeStatements, isLoading: incomeLoading } = useIncomeStatements(symbol, period);
-  const { statements: balanceSheets, isLoading: balanceLoading } = useBalanceSheets(symbol, period);
-  const { statements: cashFlows, isLoading: cashFlowLoading } = useCashFlowStatements(symbol, period);
-  const { segments, isLoading: segmentsLoading } = useRevenueSegments(symbol, period);
-  const { regions, isLoading: regionsLoading } = useGeographicRevenue(symbol, period);
+  const { statements: incomeStatements, isLoading: incomeLoading } = useIncomeStatements(symbol);
+  const { statements: balanceSheets, isLoading: balanceLoading } = useBalanceSheets(symbol);
+  const { statements: cashFlows, isLoading: cashFlowLoading } = useCashFlowStatements(symbol);
+  const { segments, isLoading: segmentsLoading } = useRevenueSegments(symbol);
+  const { regions, isLoading: regionsLoading } = useGeographicRevenue(symbol);
 
   if (incomeLoading || balanceLoading || cashFlowLoading || segmentsLoading || regionsLoading) {
     return (
@@ -98,7 +98,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
                   <IncomeStatementLine
                     key={segment.name}
                     label={segment.name}
-                    values={[segment.value * 1e9]}
+                    values={incomeStatements.map(() => segment.value * 1e9)}
                     indentLevel={1}
                     showGrowth={false}
                   />

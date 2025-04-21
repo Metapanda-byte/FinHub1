@@ -47,7 +47,7 @@ const formatMetric = (value: number | null | undefined, label?: string) => {
   return formatFinancialNumber(value, {
     decimals: isEPS ? 2 : 0,
     useParentheses: true,
-    showZeroDecimals: isEPS,
+    showZeroDecimals: isEPS
   });
 };
 
