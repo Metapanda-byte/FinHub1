@@ -1,16 +1,27 @@
-export type Period = 'annual' | 'quarterly' | 'ttm';
+export type FinancialPeriod = 'annual' | 'quarterly';
+export type ViewMode = 'summary' | 'detailed';
 
-export interface FinancialStatement {
-  date: string;
-  calendarYear: number;
-  period: string;
+export interface FinancialLineItem {
+  label: string;
+  values: number[];
+  isExpense?: boolean;
+  isSubtotal?: boolean;
+  indentLevel?: number;
+  showGrowth?: boolean;
 }
 
-export interface IncomeStatement extends FinancialStatement {
+export interface IncomeStatementItem {
+  date: string;
+  symbol: string;
+  reportedCurrency: string;
+  cik: string;
+  fillingDate: string;
+  acceptedDate: string;
+  calendarYear: string;
+  period: string;
   revenue: number;
   costOfRevenue: number;
   grossProfit: number;
-  grossProfitRatio: number;
   researchAndDevelopmentExpenses: number;
   generalAndAdministrativeExpenses: number;
   sellingAndMarketingExpenses: number;
@@ -18,113 +29,90 @@ export interface IncomeStatement extends FinancialStatement {
   otherExpenses: number;
   operatingExpenses: number;
   costAndExpenses: number;
+  operatingIncome: number;
   interestIncome: number;
   interestExpense: number;
   depreciationAndAmortization: number;
   ebitda: number;
   ebitdaratio: number;
-  operatingIncome: number;
-  operatingIncomeRatio: number;
-  totalOtherIncomeExpensesNet: number;
+  otherIncome: number;
   incomeBeforeTax: number;
-  incomeBeforeTaxRatio: number;
   incomeTaxExpense: number;
   netIncome: number;
-  netIncomeRatio: number;
   eps: number;
-  epsdiluted: number;
+  epsDiluted: number;
   weightedAverageShsOut: number;
   weightedAverageShsOutDil: number;
+  [key: string]: any;
 }
 
-export interface BalanceSheet extends FinancialStatement {
+export interface BalanceSheetItem {
+  date: string;
+  symbol: string;
+  reportedCurrency: string;
+  cik: string;
+  fillingDate: string;
+  acceptedDate: string;
+  calendarYear: string;
+  period: string;
+  totalAssets: number;
+  currentAssets: number;
   cashAndCashEquivalents: number;
   shortTermInvestments: number;
-  cashAndShortTermInvestments: number;
   netReceivables: number;
   inventory: number;
   otherCurrentAssets: number;
-  totalCurrentAssets: number;
   propertyPlantEquipmentNet: number;
   goodwill: number;
   intangibleAssets: number;
-  goodwillAndIntangibleAssets: number;
   longTermInvestments: number;
-  taxAssets: number;
   otherNonCurrentAssets: number;
-  totalNonCurrentAssets: number;
-  otherAssets: number;
-  totalAssets: number;
+  totalLiabilities: number;
+  currentLiabilities: number;
   accountPayables: number;
   shortTermDebt: number;
-  taxPayables: number;
   deferredRevenue: number;
   otherCurrentLiabilities: number;
-  totalCurrentLiabilities: number;
   longTermDebt: number;
   deferredRevenueNonCurrent: number;
-  deferredTaxLiabilitiesNonCurrent: number;
   otherNonCurrentLiabilities: number;
-  totalNonCurrentLiabilities: number;
-  otherLiabilities: number;
-  capitalLeaseObligations: number;
-  totalLiabilities: number;
-  preferredStock: number;
-  commonStock: number;
-  retainedEarnings: number;
-  accumulatedOtherComprehensiveIncomeLoss: number;
-  othertotalStockholdersEquity: number;
   totalStockholdersEquity: number;
-  totalEquity: number;
-  totalLiabilitiesAndStockholdersEquity: number;
-  minorityInterest: number;
-  totalLiabilitiesAndTotalEquity: number;
-  totalInvestments: number;
-  totalDebt: number;
-  netDebt: number;
+  retainedEarnings: number;
+  commonStock: number;
+  [key: string]: any;
 }
 
-export interface CashFlowStatement extends FinancialStatement {
+export interface CashFlowItem {
+  date: string;
+  symbol: string;
+  reportedCurrency: string;
+  cik: string;
+  fillingDate: string;
+  acceptedDate: string;
+  calendarYear: string;
+  period: string;
   netIncome: number;
   depreciationAndAmortization: number;
-  deferredIncomeTax: number;
   stockBasedCompensation: number;
   changeInWorkingCapital: number;
   accountsReceivables: number;
   inventory: number;
   accountsPayables: number;
   otherWorkingCapital: number;
-  otherNonCashItems: number;
-  netCashProvidedByOperatingActivities: number;
-  investmentsInPropertyPlantAndEquipment: number;
+  operatingCashFlow: number;
+  capitalExpenditure: number;
   acquisitionsNet: number;
   purchasesOfInvestments: number;
   salesMaturitiesOfInvestments: number;
   otherInvestingActivites: number;
-  netCashUsedForInvestingActivites: number;
+  investingCashFlow: number;
   debtRepayment: number;
   commonStockIssued: number;
   commonStockRepurchased: number;
   dividendsPaid: number;
   otherFinancingActivites: number;
-  netCashUsedProvidedByFinancingActivities: number;
-  effectOfForexChangesOnCash: number;
-  netChangeInCash: number;
-  cashAtEndOfPeriod: number;
-  cashAtBeginningOfPeriod: number;
-  operatingCashFlow: number;
-  capitalExpenditure: number;
+  financingCashFlow: number;
   freeCashFlow: number;
-}
-
-export interface RevenueSegment {
-  segment: string;
-  revenue: number;
-  growth: number;
-}
-
-export interface GeographicRevenue {
-  region: string;
-  revenue: number;
-  growth: number;
+  netCashFlow: number;
+  [key: string]: any;
 }
