@@ -16,7 +16,7 @@ export default function Home() {
               Professional Financial Analytics for Modern Investors
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
-              Comprehensive financial analysis, real-time market data, and advanced visualization tools to make informed investment decisions.
+             Seamless tools to make informed investment decisions.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild>
