@@ -3,6 +3,16 @@
 import React from 'react';
 import useSWR from 'swr';
 import { supabase } from '@/lib/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { fetchWithCache } from './fetch';
+import type { 
+  IncomeStatement, 
+  BalanceSheet, 
+  CashFlowStatement,
+  Period,
+  RevenueSegment,
+  GeographicRevenue
+} from '../types/financial';
 
 const API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
@@ -137,64 +147,28 @@ export function useCompanyProfile(symbol: string) {
   };
 }
 
-export function useIncomeStatements(symbol: string) {
-  const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `income-statement/${symbol}` : null,
-    () => fetchWithCache<any[]>('income-statement', symbol),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: CACHE_DURATION,
-      shouldRetryOnError: false
-    }
-  );
-
-  return {
-    statements: Array.isArray(data) ? data : [],
-    isLoading,
-    error,
-    mutate
-  };
+export function useIncomeStatements(symbol: string, period: Period = 'annual') {
+  return useQuery({
+    queryKey: ['income-statements', symbol, period],
+    queryFn: () => fetchWithCache(`income-statement/${symbol}?period=${period}`) as Promise<IncomeStatement[]>,
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
 }
 
-export function useCashFlowStatements(symbol: string) {
-  const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `cash-flow-statement/${symbol}` : null,
-    () => fetchWithCache<any[]>('cash-flow-statement', symbol),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: CACHE_DURATION,
-      shouldRetryOnError: false
-    }
-  );
-
-  return {
-    statements: Array.isArray(data) ? data : [],
-    isLoading,
-    error,
-    mutate
-  };
+export function useCashFlowStatements(symbol: string, period: Period = 'annual') {
+  return useQuery({
+    queryKey: ['cash-flow-statements', symbol, period],
+    queryFn: () => fetchWithCache(`cash-flow-statement/${symbol}?period=${period}`) as Promise<CashFlowStatement[]>,
+    staleTime: 1000 * 60 * 60,
+  });
 }
 
-export function useBalanceSheets(symbol: string) {
-  const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `balance-sheet-statement/${symbol}` : null,
-    () => fetchWithCache<any[]>('balance-sheet-statement', symbol),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: CACHE_DURATION,
-      shouldRetryOnError: false
-    }
-  );
-
-  return {
-    statements: Array.isArray(data) ? data : [],
-    isLoading,
-    error,
-    mutate
-  };
+export function useBalanceSheets(symbol: string, period: Period = 'annual') {
+  return useQuery({
+    queryKey: ['balance-sheets', symbol, period],
+    queryFn: () => fetchWithCache(`balance-sheet-statement/${symbol}?period=${period}`) as Promise<BalanceSheet[]>,
+    staleTime: 1000 * 60 * 60,
+  });
 }
 
 export function useStockPrice(symbol: string) {
@@ -218,113 +192,19 @@ export function useStockPrice(symbol: string) {
 }
 
 export function useRevenueSegments(symbol: string) {
-  console.log(`[useRevenueSegments] Hook called for symbol: ${symbol}`);
-  
-  const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `revenue-product-segmentation/${symbol}` : null,
-    () => fetchWithCache<any[]>('revenue-product-segmentation', symbol, 'v4'),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: CACHE_DURATION,
-      shouldRetryOnError: false
-    }
-  );
-
-  const segments = React.useMemo(() => {
-    console.log('[useRevenueSegments] Raw data structure:', data);
-
-    if (!Array.isArray(data) || data.length === 0) {
-      console.log('[useRevenueSegments] Returning [] due to invalid/empty data.');
-      return [];
-    }
-
-    // Get the most recent period's data
-    const mostRecentEntry = data[0]; // First entry is the most recent
-    const dateKey = Object.keys(mostRecentEntry)[0]; // Get the date key
-    const segmentData = mostRecentEntry[dateKey]; // Get the segment data
-
-    console.log('[useRevenueSegments] Most recent data:', { date: dateKey, data: segmentData });
-
-    if (!segmentData || typeof segmentData !== 'object') return [];
-
-    // Calculate total revenue
-    const totalRevenue = Object.values(segmentData).reduce((sum, value) => sum + (value as number), 0);
-
-    const processed = Object.entries(segmentData)
-      .map(([name, revenue]) => ({
-        name,
-        value: (revenue as number) / 1e9, // Convert to billions
-        percentage: ((revenue as number) / totalRevenue) * 100
-      }))
-      .filter(segment => segment.value > 0)
-      .sort((a, b) => b.value - a.value);
-
-    console.log('[useRevenueSegments] Processed segments:', processed);
-    return processed;
-  }, [data]);
-
-  return {
-    segments,
-    isLoading,
-    error,
-    mutate
-  };
+  return useQuery({
+    queryKey: ['revenue-segments', symbol],
+    queryFn: () => fetchWithCache(`revenue-segments/${symbol}`) as Promise<RevenueSegment[]>,
+    staleTime: 1000 * 60 * 60,
+  });
 }
 
 export function useGeographicRevenue(symbol: string) {
-  console.log(`[useGeographicRevenue] Hook called for symbol: ${symbol}`);
-  
-  const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `revenue-geographic-segmentation/${symbol}` : null,
-    () => fetchWithCache<any[]>('revenue-geographic-segmentation', symbol, 'v4'),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: CACHE_DURATION,
-      shouldRetryOnError: false
-    }
-  );
-
-  const regions = React.useMemo(() => {
-    console.log('[useGeographicRevenue] Raw data structure:', data);
-
-    if (!Array.isArray(data) || data.length === 0) {
-      console.log('[useGeographicRevenue] Returning [] due to invalid/empty data.');
-      return [];
-    }
-
-    // Get the most recent period's data
-    const mostRecentEntry = data[0]; // First entry is the most recent
-    const dateKey = Object.keys(mostRecentEntry)[0]; // Get the date key
-    const regionData = mostRecentEntry[dateKey]; // Get the region data
-
-    console.log('[useGeographicRevenue] Most recent data:', { date: dateKey, data: regionData });
-
-    if (!regionData || typeof regionData !== 'object') return [];
-
-    // Calculate total revenue
-    const totalRevenue = Object.values(regionData).reduce((sum, value) => sum + (value as number), 0);
-
-    const processed = Object.entries(regionData)
-      .map(([name, revenue]) => ({
-        name: name.replace(' Segment', ''), // Clean up the segment suffix
-        value: (revenue as number) / 1e9, // Convert to billions
-        percentage: ((revenue as number) / totalRevenue) * 100
-      }))
-      .filter(region => region.value > 0)
-      .sort((a, b) => b.value - a.value);
-
-    console.log('[useGeographicRevenue] Processed regions:', processed);
-    return processed;
-  }, [data]);
-
-  return {
-    regions,
-    isLoading,
-    error,
-    mutate
-  };
+  return useQuery({
+    queryKey: ['geographic-revenue', symbol],
+    queryFn: () => fetchWithCache(`geographic-revenue/${symbol}`) as Promise<GeographicRevenue[]>,
+    staleTime: 1000 * 60 * 60,
+  });
 }
 
 export function useCompetitorAnalysis(symbol: string) {
