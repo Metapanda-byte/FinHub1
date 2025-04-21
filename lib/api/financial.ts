@@ -29,7 +29,7 @@ function trackRequest(endpoint: string) {
   RATE_LIMIT.requests.set(endpoint, requests);
 }
 
-async function fetchWithCache<T>(endpoint: string, ticker?: string, version: string = 'v3'): Promise<T | null> {
+async function fetchWithCache<T>(endpoint: string, ticker?: string, version: string = 'v3', period: 'annual' | 'quarterly' = 'annual'): Promise<T | null> {
   if (!ticker) return null;
   if (!API_KEY) throw new Error('API key is not configured');
 
@@ -39,19 +39,19 @@ async function fetchWithCache<T>(endpoint: string, ticker?: string, version: str
       .from('api_cache')
       .select('data')
       .eq('ticker', ticker)
-      .eq('endpoint', `${version}/${endpoint}`)
+      .eq('endpoint', `${version}/${endpoint}/${period}`)
       .gt('expires_at', new Date().toISOString())
       .maybeSingle();
 
     if (!cacheError && cachedData) {
-      console.log(`[Cache Hit] ${version}/${endpoint}/${ticker}`);
+      console.log(`[Cache Hit] ${version}/${endpoint}/${ticker}/${period}`);
       return cachedData.data as T;
     }
 
     if (!canMakeRequest(endpoint)) {
-      console.warn(`[Rate Limit] ${version}/${endpoint}/${ticker} - Too many requests`);
+      console.warn(`[Rate Limit] ${version}/${endpoint}/${ticker}/${period} - Too many requests`);
       if (cachedData) {
-        console.log(`[Cache Fallback] ${version}/${endpoint}/${ticker} - Using expired cache`);
+        console.log(`[Cache Fallback] ${version}/${endpoint}/${ticker}/${period} - Using expired cache`);
         return cachedData.data as T;
       }
       return null;
@@ -61,23 +61,23 @@ async function fetchWithCache<T>(endpoint: string, ticker?: string, version: str
 
     const baseUrl = `https://financialmodelingprep.com/api/${version}`;
     const url = version === 'v4'
-      ? `${baseUrl}/${endpoint}?symbol=${ticker}&apikey=${API_KEY}&structure=default&period=annual`
-      : `${baseUrl}/${endpoint}/${ticker}?apikey=${API_KEY}`;
+      ? `${baseUrl}/${endpoint}?symbol=${ticker}&apikey=${API_KEY}&structure=default&period=${period}`
+      : `${baseUrl}/${endpoint}/${ticker}?apikey=${API_KEY}&period=${period}`;
     
-    console.log(`[API Request] ${version}/${endpoint}/${ticker} (${url})`);
+    console.log(`[API Request] ${version}/${endpoint}/${ticker}/${period} (${url})`);
     const response = await fetch(url);
     
     if (response.status === 429) {
-      console.warn(`[Rate Limit] ${version}/${endpoint}/${ticker} - API rate limit exceeded`);
+      console.warn(`[Rate Limit] ${version}/${endpoint}/${ticker}/${period} - API rate limit exceeded`);
       if (cachedData) {
-        console.log(`[Cache Fallback] ${version}/${endpoint}/${ticker} - Using expired cache`);
+        console.log(`[Cache Fallback] ${version}/${endpoint}/${ticker}/${period} - Using expired cache`);
         return cachedData.data as T;
       }
       return null;
     }
     
     if (response.status === 404) {
-      console.warn(`[Not Found] ${version}/${endpoint}/${ticker}`);
+      console.warn(`[Not Found] ${version}/${endpoint}/${ticker}/${period}`);
       return null;
     }
     
@@ -86,15 +86,15 @@ async function fetchWithCache<T>(endpoint: string, ticker?: string, version: str
     }
 
     const data = await response.json();
-    console.log(`[API Response Raw Data] ${version}/${endpoint}/${ticker}:`, JSON.stringify(data, null, 2));
+    console.log(`[API Response Raw Data] ${version}/${endpoint}/${ticker}/${period}:`, JSON.stringify(data, null, 2));
 
     if (!data || (Array.isArray(data) && data.length === 0)) {
-      console.warn(`[Empty Response] ${version}/${endpoint}/${ticker}`);
+      console.warn(`[Empty Response] ${version}/${endpoint}/${ticker}/${period}`);
       return null;
     }
 
     if (data.error) {
-      console.warn(`[API Error] ${version}/${endpoint}/${ticker}:`, data.error);
+      console.warn(`[API Error] ${version}/${endpoint}/${ticker}/${period}:`, data.error);
       return null;
     }
 
@@ -103,7 +103,7 @@ async function fetchWithCache<T>(endpoint: string, ticker?: string, version: str
       .from('api_cache')
       .upsert({
         ticker,
-        endpoint: `${version}/${endpoint}`,
+        endpoint: `${version}/${endpoint}/${period}`,
         data,
         expires_at: expiresAt.toISOString()
       }, {
@@ -112,7 +112,7 @@ async function fetchWithCache<T>(endpoint: string, ticker?: string, version: str
 
     return data;
   } catch (error) {
-    console.error(`[Error] ${version}/${endpoint}/${ticker}:`, error);
+    console.error(`[Error] ${version}/${endpoint}/${ticker}/${period}:`, error);
     return null;
   }
 }
@@ -137,10 +137,10 @@ export function useCompanyProfile(symbol: string) {
   };
 }
 
-export function useIncomeStatements(symbol: string) {
+export function useIncomeStatements(symbol: string, period: 'annual' | 'quarterly' = 'annual') {
   const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `income-statement/${symbol}` : null,
-    () => fetchWithCache<any[]>('income-statement', symbol),
+    symbol ? `income-statement/${symbol}/${period}` : null,
+    () => fetchWithCache<any[]>('income-statement', symbol, 'v3', period),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
@@ -157,10 +157,10 @@ export function useIncomeStatements(symbol: string) {
   };
 }
 
-export function useCashFlowStatements(symbol: string) {
+export function useCashFlowStatements(symbol: string, period: 'annual' | 'quarterly' = 'annual') {
   const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `cash-flow-statement/${symbol}` : null,
-    () => fetchWithCache<any[]>('cash-flow-statement', symbol),
+    symbol ? `cash-flow-statement/${symbol}/${period}` : null,
+    () => fetchWithCache<any[]>('cash-flow-statement', symbol, 'v3', period),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
@@ -177,10 +177,10 @@ export function useCashFlowStatements(symbol: string) {
   };
 }
 
-export function useBalanceSheets(symbol: string) {
+export function useBalanceSheets(symbol: string, period: 'annual' | 'quarterly' = 'annual') {
   const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `balance-sheet-statement/${symbol}` : null,
-    () => fetchWithCache<any[]>('balance-sheet-statement', symbol),
+    symbol ? `balance-sheet-statement/${symbol}/${period}` : null,
+    () => fetchWithCache<any[]>('balance-sheet-statement', symbol, 'v3', period),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
@@ -217,12 +217,12 @@ export function useStockPrice(symbol: string) {
   };
 }
 
-export function useRevenueSegments(symbol: string) {
-  console.log(`[useRevenueSegments] Hook called for symbol: ${symbol}`);
+export function useRevenueSegments(symbol: string, period: 'annual' | 'quarterly' = 'annual') {
+  console.log(`[useRevenueSegments] Hook called for symbol: ${symbol}, period: ${period}`);
   
   const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `revenue-product-segmentation/${symbol}` : null,
-    () => fetchWithCache<any[]>('revenue-product-segmentation', symbol, 'v4'),
+    symbol ? `revenue-product-segmentation/${symbol}/${period}` : null,
+    () => fetchWithCache<any[]>('revenue-product-segmentation', symbol, 'v4', period),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
@@ -272,12 +272,12 @@ export function useRevenueSegments(symbol: string) {
   };
 }
 
-export function useGeographicRevenue(symbol: string) {
-  console.log(`[useGeographicRevenue] Hook called for symbol: ${symbol}`);
+export function useGeographicRevenue(symbol: string, period: 'annual' | 'quarterly' = 'annual') {
+  console.log(`[useGeographicRevenue] Hook called for symbol: ${symbol}, period: ${period}`);
   
   const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `revenue-geographic-segmentation/${symbol}` : null,
-    () => fetchWithCache<any[]>('revenue-geographic-segmentation', symbol, 'v4'),
+    symbol ? `revenue-geographic-segmentation/${symbol}/${period}` : null,
+    () => fetchWithCache<any[]>('revenue-geographic-segmentation', symbol, 'v4', period),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
