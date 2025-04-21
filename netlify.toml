@@ -10,11 +10,3 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-[functions]
-  included_files = ["node_modules/.pnpm/**/*"]
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
