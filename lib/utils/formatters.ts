@@ -7,6 +7,7 @@ export interface FinancialFormatOptions {
   suffix?: string;
   includeCurrency?: boolean;
   showZeroDecimals?: boolean;
+  useParentheses?: boolean;
 }
 
 const defaultOptions: FinancialFormatOptions = {
@@ -16,6 +17,7 @@ const defaultOptions: FinancialFormatOptions = {
   suffix: '',
   includeCurrency: true,
   showZeroDecimals: false,
+  useParentheses: false,
 };
 
 export function formatFinancialNumber(
@@ -23,34 +25,29 @@ export function formatFinancialNumber(
   options: Partial<FinancialFormatOptions> = {}
 ): string {
   const opts = { ...defaultOptions, ...options };
-  const { unit, decimals, prefix, suffix, includeCurrency, showZeroDecimals } = opts;
+  const { decimals, prefix, suffix, includeCurrency, showZeroDecimals, useParentheses } = opts;
 
-  let divisor = 1;
-  let unitSuffix = '';
-
-  switch (unit) {
-    case 'billions':
-      divisor = 1_000_000_000;
-      unitSuffix = 'B';
-      break;
-    case 'millions':
-      divisor = 1_000_000;
-      unitSuffix = 'M';
-      break;
-    case 'trillions':
-      divisor = 1_000_000_000_000;
-      unitSuffix = 'T';
-      break;
-  }
-
-  const scaledValue = value / divisor;
+  const scaledValue = value / 1_000_000; // Scale to millions
   const formattedNumber = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: showZeroDecimals ? decimals : 0,
     maximumFractionDigits: decimals,
     useGrouping: true,
-  }).format(scaledValue);
+  }).format(Math.abs(scaledValue));
 
-  return `${includeCurrency ? prefix : ''}${formattedNumber}${unitSuffix}${suffix}`;
+  let result = formattedNumber;
+
+  if (suffix) {
+    result += suffix;
+  }
+
+  if (scaledValue < 0) {
+    result = useParentheses ? `(${result})` : `-${result}`;
+  } else {
+    // Add spaces to align the last digit with negative numbers
+    result = '  ' + result;
+  }
+
+  return result;
 }
 
 export function formatPercentage(value: number, decimals = 1): string {
