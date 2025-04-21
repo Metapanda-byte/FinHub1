@@ -59,15 +59,41 @@ export function StockSearch() {
 
   const onSelect = React.useCallback(
     (symbol: string) => {
-      const company = searchResults?.find((c) => c.symbol === symbol) || 
-                     recentSearches.find((c) => c.symbol === symbol) ||
-                     favorites.find((c) => c.symbol === symbol);
+      console.log('onSelect triggered with symbol:', symbol);
+      
+      // Convert the input symbol to uppercase for comparison
+      const upperSymbol = symbol.toUpperCase();
+
+      // Find company details from all possible sources using case-insensitive comparison
+      const companyFromSearch = searchResults?.find(
+        (c) => c.symbol.toUpperCase() === upperSymbol
+      );
+      const companyFromRecent = recentSearches.find(
+        (c) => c.symbol.toUpperCase() === upperSymbol
+      );
+      const companyFromFavorites = favorites.find(
+        (c) => c.symbol.toUpperCase() === upperSymbol
+      );
+      
+      console.log('Search results:', searchResults);
+      console.log('Company from search:', companyFromSearch);
+      console.log('Company from recent:', companyFromRecent);
+      console.log('Company from favorites:', companyFromFavorites);
+
+      const company = companyFromSearch || companyFromRecent || companyFromFavorites;
       
       if (company) {
+        console.log('Company found:', company);
+        console.log('Updating state with symbol:', company.symbol);
+        
         setOpen(false);
         setSearch("");
         addToRecent(company.symbol, company.name);
         setCurrentSymbol(company.symbol);
+        
+        console.log('State updates completed');
+      } else {
+        console.warn('No company found for symbol:', symbol);
       }
     },
     [searchResults, recentSearches, favorites, addToRecent, setCurrentSymbol]

@@ -5,15 +5,9 @@ const API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-async function fetchWithCache<T>(endpoint: string, ticker?: string): Promise<T> {
-  if (!ticker) return Promise.reject('No ticker provided');
-  if (!API_KEY) return Promise.reject('API key is not configured');
-
-  // Validate ticker format (basic check)
-  if (!/^[A-Z0-9.]{1,10}$/.test(ticker)) {
-    console.error(`Invalid ticker format: ${ticker}`);
-    return Promise.reject('Invalid ticker format');
-  }
+async function fetchWithCache<T>(endpoint: string, ticker?: string): Promise<T | null> {
+  if (!ticker) return null;
+  if (!API_KEY) throw new Error('API key is not configured');
 
   try {
     // Check cache first
@@ -26,51 +20,42 @@ async function fetchWithCache<T>(endpoint: string, ticker?: string): Promise<T> 
       .maybeSingle();
 
     if (cacheError) {
-      console.error(`Cache error for ticker ${ticker}:`, cacheError);
-      throw new Error(`Cache error: ${cacheError.message}`);
-    }
-
-    if (cachedData) {
+      console.warn(`Cache error for ticker ${ticker}:`, cacheError);
+      // Continue with API call if cache fails
+    } else if (cachedData) {
       return cachedData.data as T;
     }
 
     // If not in cache, fetch from API
-    const url = `${BASE_URL}/${endpoint}/${ticker}?apikey=${API_KEY}`;
+    const url = `${BASE_URL}/${endpoint}/${ticker}?apikey=${API_KEY}&limit=120`;
     const response = await fetch(url);
     
-    // Check for specific HTTP status codes
-    if (response.status === 401 || response.status === 403) {
-      throw new Error('Invalid API key or unauthorized access');
+    if (response.status === 404) {
+      console.warn(`No data available for ticker ${ticker} at endpoint ${endpoint}`);
+      return null;
     }
-    if (response.status === 429) {
-      throw new Error('API rate limit exceeded');
-    }
+    
     if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+      throw new Error(`API request failed with status ${response.status}`);
     }
 
     const data = await response.json();
 
-    // Handle empty data more gracefully
-    if (!data) {
-      console.warn(`No data returned from API for ticker ${ticker} on endpoint ${endpoint}`);
-      return Array.isArray([] as unknown as T) ? [] as unknown as T : {} as T;
+    // Handle empty responses
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      console.warn(`No data returned for ticker ${ticker} at endpoint ${endpoint}`);
+      return null;
     }
 
-    // For array responses, return empty array if no data
-    if (Array.isArray(data) && data.length === 0) {
-      console.warn(`Empty array returned from API for ticker ${ticker} on endpoint ${endpoint}`);
-      return [] as unknown as T;
-    }
-
+    // Handle API error responses
     if (data.error) {
-      console.error(`API Error for ticker ${ticker}:`, data.error);
-      throw new Error(`API Error: ${data.error}`);
+      console.warn(`API error for ticker ${ticker}:`, data.error);
+      return null;
     }
 
-    // Cache the result
+    // Cache successful results
     const expiresAt = new Date(Date.now() + CACHE_DURATION);
-    const { error: upsertError } = await supabase
+    await supabase
       .from('api_cache')
       .upsert({
         ticker,
@@ -81,27 +66,22 @@ async function fetchWithCache<T>(endpoint: string, ticker?: string): Promise<T> 
         onConflict: 'ticker,endpoint'
       });
 
-    if (upsertError) {
-      console.error(`Cache update error for ticker ${ticker}:`, upsertError);
-      // Don't throw here, just log the error as the API data is still valid
-    }
-
     return data;
   } catch (error) {
-    console.error(`fetchWithCache error for ticker ${ticker}:`, error);
-    throw error instanceof Error ? error : new Error('An unexpected error occurred');
+    console.warn(`fetchWithCache error for ticker ${ticker}:`, error);
+    return null;
   }
 }
 
 export function useCompanyProfile(symbol: string) {
-  const { data, error, isLoading } = useSWR(
-    symbol ? [`profile`, symbol] : null,
-    ([endpoint]) => fetchWithCache<any[]>(endpoint, symbol),
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `profile/${symbol}` : null,
+    () => fetchWithCache<any[]>('profile', symbol),
     {
-      revalidateIfStale: false,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       dedupingInterval: CACHE_DURATION,
+      shouldRetryOnError: false
     }
   );
 
@@ -109,75 +89,82 @@ export function useCompanyProfile(symbol: string) {
     profile: data?.[0] || null,
     isLoading,
     error,
+    mutate
   };
 }
 
 export function useIncomeStatements(symbol: string) {
-  const { data, error, isLoading } = useSWR(
-    symbol ? [`income-statement`, symbol] : null,
-    ([endpoint]) => fetchWithCache<any[]>(endpoint, symbol),
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `income-statement/${symbol}` : null,
+    () => fetchWithCache<any[]>('income-statement', symbol),
     {
-      revalidateIfStale: false,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       dedupingInterval: CACHE_DURATION,
+      shouldRetryOnError: false
     }
   );
 
+  // Ensure we always return an array, even if empty
+  const statements = Array.isArray(data) ? data : [];
+  
   return {
-    statements: data || [],
+    statements,
     isLoading,
     error,
+    mutate
   };
 }
 
 export function useCashFlowStatements(symbol: string) {
-  const { data, error, isLoading } = useSWR(
-    symbol ? [`cash-flow-statement`, symbol] : null,
-    ([endpoint]) => fetchWithCache<any[]>(endpoint, symbol),
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `cash-flow-statement/${symbol}` : null,
+    () => fetchWithCache<any[]>('cash-flow-statement', symbol),
     {
-      revalidateIfStale: false,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       dedupingInterval: CACHE_DURATION,
+      shouldRetryOnError: false
     }
   );
 
   return {
-    statements: data || [],
+    statements: Array.isArray(data) ? data : [],
     isLoading,
     error,
+    mutate
   };
 }
 
 export function useBalanceSheets(symbol: string) {
-  const { data, error, isLoading } = useSWR(
-    symbol ? [`balance-sheet-statement`, symbol] : null,
-    ([endpoint]) => fetchWithCache<any[]>(endpoint, symbol),
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `balance-sheet-statement/${symbol}` : null,
+    () => fetchWithCache<any[]>('balance-sheet-statement', symbol),
     {
-      revalidateIfStale: false,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       dedupingInterval: CACHE_DURATION,
+      shouldRetryOnError: false
     }
   );
 
   return {
-    statements: data || [],
+    statements: Array.isArray(data) ? data : [],
     isLoading,
     error,
+    mutate
   };
 }
 
 export function useStockPrice(symbol: string) {
-  const { data, error, isLoading } = useSWR(
-    symbol ? [`historical-price-full`, symbol] : null,
-    ([endpoint]) => fetchWithCache<any>(endpoint, symbol),
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `historical-price/${symbol}` : null,
+    () => fetchWithCache<any>('historical-price', symbol),
     {
-      revalidateIfStale: false,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       dedupingInterval: 5 * 60 * 1000, // 5 minutes for stock prices
+      shouldRetryOnError: false
     }
   );
 
@@ -185,70 +172,84 @@ export function useStockPrice(symbol: string) {
     prices: data?.historical || [],
     isLoading,
     error,
+    mutate
   };
 }
 
 export function useRevenueSegments(symbol: string) {
-  const { data, error, isLoading } = useSWR(
-    symbol ? [`revenue-segment`, symbol] : null,
-    ([endpoint]) => fetchWithCache<any[]>(endpoint, symbol),
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `segment-revenue/${symbol}` : null,
+    () => fetchWithCache<any[]>('segment-revenue', symbol),
     {
-      revalidateIfStale: false,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       dedupingInterval: CACHE_DURATION,
+      shouldRetryOnError: false
     }
   );
 
+  const segments = Array.isArray(data) ? data : [];
+  
   return {
-    segments: data?.map((s: any) => ({
-      name: s.segment,
-      value: s.revenue / 1e9,
-      percentage: (s.revenue / s.totalRevenue) * 100
-    })).filter((s: any) => s.value > 0).sort((a: any, b: any) => b.value - a.value) || [],
+    segments: segments
+      .map((s: any) => ({
+        name: s.segment,
+        value: s.revenue / 1e9,
+        percentage: (s.revenue / s.totalRevenue) * 100
+      }))
+      .filter((s: any) => s?.value > 0)
+      .sort((a: any, b: any) => b.value - a.value),
     isLoading,
     error,
+    mutate
   };
 }
 
 export function useGeographicRevenue(symbol: string) {
-  const { data, error, isLoading } = useSWR(
-    symbol ? [`revenue-geographic`, symbol] : null,
-    ([endpoint]) => fetchWithCache<any[]>(endpoint, symbol),
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `geographic-revenue/${symbol}` : null,
+    () => fetchWithCache<any[]>('geographic-revenue', symbol),
     {
-      revalidateIfStale: false,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       dedupingInterval: CACHE_DURATION,
+      shouldRetryOnError: false
     }
   );
 
+  const regions = Array.isArray(data) ? data : [];
+  
   return {
-    regions: data?.map((r: any) => ({
-      name: r.country,
-      value: r.revenue / 1e9,
-      percentage: (r.revenue / r.totalRevenue) * 100
-    })).filter((r: any) => r.value > 0).sort((a: any, b: any) => b.value - a.value) || [],
+    regions: regions
+      .map((r: any) => ({
+        name: r.country,
+        value: r.revenue / 1e9,
+        percentage: (r.revenue / r.totalRevenue) * 100
+      }))
+      .filter((r: any) => r?.value > 0)
+      .sort((a: any, b: any) => b.value - a.value),
     isLoading,
     error,
+    mutate
   };
 }
 
 export function useCompetitorAnalysis(symbol: string) {
-  const { data, error, isLoading } = useSWR(
-    symbol ? [`stock-peers`, symbol] : null,
-    ([endpoint]) => fetchWithCache<string[]>(endpoint, symbol),
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `stock-peers/${symbol}` : null,
+    () => fetchWithCache<string[]>('stock-peers', symbol),
     {
-      revalidateIfStale: false,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       dedupingInterval: CACHE_DURATION,
+      shouldRetryOnError: false
     }
   );
 
   return {
-    peers: data || [],
+    peers: Array.isArray(data) ? data : [],
     isLoading,
     error,
+    mutate
   };
 }
