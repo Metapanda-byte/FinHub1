@@ -217,6 +217,16 @@ export function useStockPrice(symbol: string) {
   };
 }
 
+interface RevenueSegment {
+  [key: string]: number;
+}
+
+interface ProcessedSegment {
+  name: string;
+  value: number;
+  percentage: number;
+}
+
 export function useRevenueSegments(symbol: string) {
   console.log(`[useRevenueSegments] Hook called for symbol: ${symbol}`);
   
@@ -239,24 +249,29 @@ export function useRevenueSegments(symbol: string) {
       return [];
     }
 
-    // Get the most recent period's data
-    const mostRecentEntry = data[0]; // First entry is the most recent
-    const dateKey = Object.keys(mostRecentEntry)[0]; // Get the date key
-    const segmentData = mostRecentEntry[dateKey]; // Get the segment data
+    const mostRecentEntry = data[0];
+    const dateKey = Object.keys(mostRecentEntry)[0];
+    const segmentData = mostRecentEntry[dateKey] as RevenueSegment;
 
     console.log('[useRevenueSegments] Most recent data:', { date: dateKey, data: segmentData });
 
     if (!segmentData || typeof segmentData !== 'object') return [];
 
-    // Calculate total revenue
-    const totalRevenue = Object.values(segmentData).reduce((sum, value) => sum + (value as number), 0);
+    const segmentValues = Object.values(segmentData);
+    const totalRevenue = segmentValues.reduce<number>((sum, value) => {
+      const numValue = typeof value === 'number' ? value : 0;
+      return sum + numValue;
+    }, 0);
 
     const processed = Object.entries(segmentData)
-      .map(([name, revenue]) => ({
-        name,
-        value: (revenue as number) / 1e9, // Convert to billions
-        percentage: ((revenue as number) / totalRevenue) * 100
-      }))
+      .map(([name, revenue]): ProcessedSegment => {
+        const numRevenue = typeof revenue === 'number' ? revenue : 0;
+        return {
+          name,
+          value: numRevenue / 1e9,
+          percentage: totalRevenue > 0 ? (numRevenue / totalRevenue) * 100 : 0
+        };
+      })
       .filter(segment => segment.value > 0)
       .sort((a, b) => b.value - a.value);
 
@@ -297,21 +312,28 @@ export function useGeographicRevenue(symbol: string) {
     // Get the most recent period's data
     const mostRecentEntry = data[0]; // First entry is the most recent
     const dateKey = Object.keys(mostRecentEntry)[0]; // Get the date key
-    const regionData = mostRecentEntry[dateKey]; // Get the region data
+    const regionData = mostRecentEntry[dateKey] as RevenueSegment; // Type assertion
 
     console.log('[useGeographicRevenue] Most recent data:', { date: dateKey, data: regionData });
 
     if (!regionData || typeof regionData !== 'object') return [];
 
-    // Calculate total revenue
-    const totalRevenue = Object.values(regionData).reduce((sum, value) => sum + (value as number), 0);
+    // Calculate total revenue with type safety
+    const regionValues = Object.values(regionData) as number[];
+    const totalRevenue = regionValues.reduce<number>((sum, value) => {
+      const numValue = typeof value === 'number' ? value : 0;
+      return sum + numValue;
+    }, 0);
 
     const processed = Object.entries(regionData)
-      .map(([name, revenue]) => ({
-        name: name.replace(' Segment', ''), // Clean up the segment suffix
-        value: (revenue as number) / 1e9, // Convert to billions
-        percentage: ((revenue as number) / totalRevenue) * 100
-      }))
+      .map(([name, revenue]): ProcessedSegment => {
+        const numRevenue = typeof revenue === 'number' ? revenue : 0;
+        return {
+          name: name.replace(' Segment', ''),
+          value: numRevenue / 1e9,
+          percentage: totalRevenue > 0 ? (numRevenue / totalRevenue) * 100 : 0
+        };
+      })
       .filter(region => region.value > 0)
       .sort((a, b) => b.value - a.value);
 
