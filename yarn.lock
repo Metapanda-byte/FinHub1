@@ -889,6 +889,13 @@
     aria-hidden "^1.1.1"
     react-remove-scroll "2.6.0"
 
+"@radix-ui/react-separator@^1.0.3":
+  version "1.1.4"
+  resolved "https://registry.npmjs.org/@radix-ui/react-separator/-/react-separator-1.1.4.tgz"
+  integrity sha512-2fTm6PSiUm8YPq9W0E4reYuv01EE3aFSzt8edBiXqPHshF8N9+Kymt/k0/R+F3dkY5lQyB/zPtrP82phskLi7w==
+  dependencies:
+    "@radix-ui/react-primitive" "2.1.0"
+
 "@radix-ui/react-slider@^1.1.2":
   version "1.3.2"
   resolved "https://registry.npmjs.org/@radix-ui/react-slider/-/react-slider-1.3.2.tgz"
@@ -4342,7 +4349,7 @@ use-sync-external-store@^1.2.2, use-sync-external-store@^1.4.0:
   resolved "https://registry.npmjs.org/use-sync-external-store/-/use-sync-external-store-1.5.0.tgz"
   integrity sha512-Rb46I4cGGVBmjamjphe8L/UnvJD+uPPtTkNvX5mZgqdbavhI4EbgIWJiIHXJ8bc/i9EQGPRh4DwEURJ552Do0A==
 
-utf-8-validate@>=5.0.2:
+utf-8-validate@^6.0.3, utf-8-validate@>=5.0.2:
   version "6.0.5"
   resolved "https://registry.npmjs.org/utf-8-validate/-/utf-8-validate-6.0.5.tgz"
   integrity sha512-EYZR+OpIXp9Y1eG1iueg8KRsY8TuT8VNgnanZ0uA3STqhHQTLwbl+WX76/9X5OY12yQubymBpaBSmMPkSTQcKA==
