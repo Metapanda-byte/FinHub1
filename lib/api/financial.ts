@@ -178,8 +178,8 @@ export function useStockPrice(symbol: string) {
 
 export function useRevenueSegments(symbol: string) {
   const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `segment-revenue/${symbol}` : null,
-    () => fetchWithCache<any[]>('segment-revenue', symbol),
+    symbol ? `revenue-segments/${symbol}` : null,
+    () => fetchWithCache<any[]>('revenue-segments', symbol),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
@@ -207,8 +207,8 @@ export function useRevenueSegments(symbol: string) {
 
 export function useGeographicRevenue(symbol: string) {
   const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `geographic-revenue/${symbol}` : null,
-    () => fetchWithCache<any[]>('geographic-revenue', symbol),
+    symbol ? `revenue-geographical/${symbol}` : null,
+    () => fetchWithCache<any[]>('revenue-geographical', symbol),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
