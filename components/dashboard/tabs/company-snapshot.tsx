@@ -26,6 +26,9 @@ export function CompanySnapshot() {
   const { segments, isLoading: segmentsLoading } = useRevenueSegments(currentSymbol || '');
   const { regions, isLoading: regionsLoading } = useGeographicRevenue(currentSymbol || '');
 
+  console.log('Raw segments data:', segments);
+  console.log('Raw regions data:', regions);
+
   if (!currentSymbol || profileLoading || statementsLoading || pricesLoading || segmentsLoading || regionsLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -93,12 +96,16 @@ export function CompanySnapshot() {
     percentage: segment.percentage
   })).sort((a, b) => b.value - a.value);
 
+  console.log('Processed segment data:', segmentData);
+
   // Process geographic data
   const geographyData = regions.map(region => ({
     name: region.name,
     value: region.value,
     percentage: region.percentage
   })).sort((a, b) => b.value - a.value);
+
+  console.log('Processed geography data:', geographyData);
 
   return (
     <div className="grid gap-4">
@@ -194,6 +201,7 @@ export function CompanySnapshot() {
             <div className="grid md:grid-cols-2 gap-6">
               {segmentData.length > 0 && (
                 <div>
+                  {console.log("Rendering Segment Pie Chart...")}
                   <h3 className="text-sm font-medium mb-2 text-center">By Segment</h3>
                   <PieChart 
                     data={segmentData} 
@@ -211,6 +219,7 @@ export function CompanySnapshot() {
               )}
               {geographyData.length > 0 && (
                 <div>
+                  {console.log("Rendering Geography Pie Chart...")}
                   <h3 className="text-sm font-medium mb-2 text-center">By Geography</h3>
                   <PieChart 
                     data={geographyData} 

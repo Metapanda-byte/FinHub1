@@ -1,3 +1,6 @@
+"use client";
+
+import React from 'react';
 import useSWR from 'swr';
 import { supabase } from '@/lib/supabase/client';
 
@@ -5,7 +8,7 @@ const API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-async function fetchWithCache<T>(endpoint: string, ticker?: string): Promise<T | null> {
+async function fetchWithCache<T>(endpoint: string, ticker?: string, params?: Record<string, string>): Promise<T | null> {
   if (!ticker) return null;
   if (!API_KEY) throw new Error('API key is not configured');
 
@@ -26,8 +29,15 @@ async function fetchWithCache<T>(endpoint: string, ticker?: string): Promise<T |
       return cachedData.data as T;
     }
 
+    // Construct query parameters
+    const queryParams = new URLSearchParams({
+      apikey: API_KEY,
+      limit: '120',
+      ...(params || {})
+    });
+
     // If not in cache, fetch from API
-    const url = `${BASE_URL}/${endpoint}/${ticker}?apikey=${API_KEY}&limit=120`;
+    const url = `${BASE_URL}/${endpoint}/${ticker}?${queryParams}`;
     const response = await fetch(url);
     
     if (response.status === 404) {
@@ -177,9 +187,11 @@ export function useStockPrice(symbol: string) {
 }
 
 export function useRevenueSegments(symbol: string) {
+  console.log(`[useRevenueSegments] Hook called for symbol: ${symbol}`);
+  
   const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `revenue-segments/${symbol}` : null,
-    () => fetchWithCache<any[]>('revenue-segments', symbol),
+    symbol ? ['revenue-product-segmentation', symbol] : null,
+    () => fetchWithCache<any[]>('revenue-product-segmentation', symbol),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
@@ -188,17 +200,48 @@ export function useRevenueSegments(symbol: string) {
     }
   );
 
-  const segments = Array.isArray(data) ? data : [];
-  
-  return {
-    segments: segments
-      .map((s: any) => ({
-        name: s.segment,
-        value: s.revenue / 1e9,
-        percentage: (s.revenue / s.totalRevenue) * 100
+  const segments = React.useMemo(() => {
+    console.log('[useRevenueSegments] useMemo executing. Raw SWR data:', data);
+
+    if (!Array.isArray(data) || data.length === 0) {
+      console.log('[useRevenueSegments] Returning [] due to invalid/empty raw data.');
+      return [];
+    }
+
+    const latestYearEntry = data[0];
+    console.log('[useRevenueSegments] Latest year entry:', latestYearEntry);
+
+    if (!latestYearEntry?.data || typeof latestYearEntry.data !== 'object') {
+      console.log('[useRevenueSegments] Returning [] due to invalid latestYearEntry.data.');
+      return [];
+    }
+
+    const segmentsObject = latestYearEntry.data;
+    console.log('[useRevenueSegments] Segments object:', segmentsObject);
+
+    const totalRevenue = Object.values(segmentsObject).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
+    console.log('[useRevenueSegments] Calculated totalRevenue:', totalRevenue);
+
+    if (totalRevenue <= 0) {
+      console.log('[useRevenueSegments] Returning [] due to zero totalRevenue.');
+      return [];
+    }
+
+    const processed = Object.entries(segmentsObject)
+      .map(([name, value]) => ({
+        name,
+        value: Number(value) / 1e9, // Convert to billions
+        percentage: (Number(value) / totalRevenue) * 100
       }))
-      .filter((s: any) => s?.value > 0)
-      .sort((a: any, b: any) => b.value - a.value),
+      .filter(segment => segment.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    console.log('[useRevenueSegments] Processed segments:', processed);
+    return processed;
+  }, [data]);
+
+  return {
+    segments,
     isLoading,
     error,
     mutate
@@ -206,9 +249,11 @@ export function useRevenueSegments(symbol: string) {
 }
 
 export function useGeographicRevenue(symbol: string) {
+  console.log(`[useGeographicRevenue] Hook called for symbol: ${symbol}`);
+  
   const { data, error, isLoading, mutate } = useSWR(
-    symbol ? `revenue-geographical/${symbol}` : null,
-    () => fetchWithCache<any[]>('revenue-geographical', symbol),
+    symbol ? ['revenue-geographic-segmentation', symbol] : null,
+    () => fetchWithCache<any[]>('revenue-geographic-segmentation', symbol),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
@@ -217,17 +262,48 @@ export function useGeographicRevenue(symbol: string) {
     }
   );
 
-  const regions = Array.isArray(data) ? data : [];
-  
-  return {
-    regions: regions
-      .map((r: any) => ({
-        name: r.country,
-        value: r.revenue / 1e9,
-        percentage: (r.revenue / r.totalRevenue) * 100
+  const regions = React.useMemo(() => {
+    console.log('[useGeographicRevenue] useMemo executing. Raw SWR data:', data);
+
+    if (!Array.isArray(data) || data.length === 0) {
+      console.log('[useGeographicRevenue] Returning [] due to invalid/empty raw data.');
+      return [];
+    }
+
+    const latestYearEntry = data[0];
+    console.log('[useGeographicRevenue] Latest year entry:', latestYearEntry);
+
+    if (!latestYearEntry?.data || typeof latestYearEntry.data !== 'object') {
+      console.log('[useGeographicRevenue] Returning [] due to invalid latestYearEntry.data.');
+      return [];
+    }
+
+    const regionsObject = latestYearEntry.data;
+    console.log('[useGeographicRevenue] Regions object:', regionsObject);
+
+    const totalRevenue = Object.values(regionsObject).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
+    console.log('[useGeographicRevenue] Calculated totalRevenue:', totalRevenue);
+
+    if (totalRevenue <= 0) {
+      console.log('[useGeographicRevenue] Returning [] due to zero totalRevenue.');
+      return [];
+    }
+
+    const processed = Object.entries(regionsObject)
+      .map(([name, value]) => ({
+        name,
+        value: Number(value) / 1e9, // Convert to billions
+        percentage: (Number(value) / totalRevenue) * 100
       }))
-      .filter((r: any) => r?.value > 0)
-      .sort((a: any, b: any) => b.value - a.value),
+      .filter(region => region.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    console.log('[useGeographicRevenue] Processed regions:', processed);
+    return processed;
+  }, [data]);
+
+  return {
+    regions,
     isLoading,
     error,
     mutate
