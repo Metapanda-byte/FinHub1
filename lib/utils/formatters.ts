@@ -7,17 +7,15 @@ export interface FinancialFormatOptions {
   suffix?: string;
   includeCurrency?: boolean;
   showZeroDecimals?: boolean;
-  parenthesesForNegative?: boolean;
 }
 
 const defaultOptions: FinancialFormatOptions = {
   unit: 'millions',
-  decimals: 1,
+  decimals: 2,
   prefix: '$',
   suffix: '',
   includeCurrency: true,
   showZeroDecimals: false,
-  parenthesesForNegative: true,
 };
 
 export function formatFinancialNumber(
@@ -25,15 +23,7 @@ export function formatFinancialNumber(
   options: Partial<FinancialFormatOptions> = {}
 ): string {
   const opts = { ...defaultOptions, ...options };
-  const {
-    unit,
-    decimals,
-    prefix,
-    suffix,
-    includeCurrency,
-    showZeroDecimals,
-    parenthesesForNegative
-  } = opts;
+  const { unit, decimals, prefix, suffix, includeCurrency, showZeroDecimals } = opts;
 
   let divisor = 1;
   let unitSuffix = '';
@@ -53,23 +43,14 @@ export function formatFinancialNumber(
       break;
   }
 
-  const isNegative = value < 0;
-  const absoluteValue = Math.abs(value);
-  const scaledValue = absoluteValue / divisor;
-  
+  const scaledValue = value / divisor;
   const formattedNumber = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: showZeroDecimals ? decimals : 0,
     maximumFractionDigits: decimals,
     useGrouping: true,
   }).format(scaledValue);
 
-  const formattedValue = `${includeCurrency ? prefix : ''}${formattedNumber}${unitSuffix}${suffix}`;
-
-  return parenthesesForNegative && isNegative
-    ? `(${formattedValue})`
-    : isNegative
-    ? `-${formattedValue}`
-    : formattedValue;
+  return `${includeCurrency ? prefix : ''}${formattedNumber}${unitSuffix}${suffix}`;
 }
 
 export function formatPercentage(value: number, decimals = 1): string {
@@ -129,6 +110,25 @@ export function formatPriceChange(current: number, previous: number): string {
   return `${sign}${formatFinancialNumber(change, {
     decimals: 2,
   })} (${sign}${percentChange.toFixed(2)}%)`;
+}
+
+export interface OHLCData {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  change: number;
+  changePercent: number;
+}
+
+export function formatOHLCData(data: OHLCData): string {
+  return `O: ${formatFinancialNumber(data.open, { decimals: 2 })}
+H: ${formatFinancialNumber(data.high, { decimals: 2 })}
+L: ${formatFinancialNumber(data.low, { decimals: 2 })}
+C: ${formatFinancialNumber(data.close, { decimals: 2 })}
+Vol: ${formatNumber(data.volume)}
+Chg: ${formatPriceChange(data.close, data.open)}`;
 }
 
 export function getGrowthIndicator(current: number, previous: number): 'positive' | 'negative' | 'neutral' {
