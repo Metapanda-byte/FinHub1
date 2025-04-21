@@ -5,10 +5,31 @@ import useSWR from 'swr';
 import { supabase } from '@/lib/supabase/client';
 
 const API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
-const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-async function fetchWithCache<T>(endpoint: string, ticker?: string, params?: Record<string, string>): Promise<T | null> {
+// Rate limiting configuration
+const RATE_LIMIT = {
+  maxRequests: 10,
+  windowMs: 60 * 1000,
+  requests: new Map<string, number[]>()
+};
+
+function canMakeRequest(endpoint: string): boolean {
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT.windowMs;
+  let requests = RATE_LIMIT.requests.get(endpoint) || [];
+  requests = requests.filter(timestamp => timestamp > windowStart);
+  RATE_LIMIT.requests.set(endpoint, requests);
+  return requests.length < RATE_LIMIT.maxRequests;
+}
+
+function trackRequest(endpoint: string) {
+  const requests = RATE_LIMIT.requests.get(endpoint) || [];
+  requests.push(Date.now());
+  RATE_LIMIT.requests.set(endpoint, requests);
+}
+
+async function fetchWithCache<T>(endpoint: string, ticker?: string, version: string = 'v3'): Promise<T | null> {
   if (!ticker) return null;
   if (!API_KEY) throw new Error('API key is not configured');
 
@@ -18,30 +39,45 @@ async function fetchWithCache<T>(endpoint: string, ticker?: string, params?: Rec
       .from('api_cache')
       .select('data')
       .eq('ticker', ticker)
-      .eq('endpoint', endpoint)
+      .eq('endpoint', `${version}/${endpoint}`)
       .gt('expires_at', new Date().toISOString())
       .maybeSingle();
 
-    if (cacheError) {
-      console.warn(`Cache error for ticker ${ticker}:`, cacheError);
-      // Continue with API call if cache fails
-    } else if (cachedData) {
+    if (!cacheError && cachedData) {
+      console.log(`[Cache Hit] ${version}/${endpoint}/${ticker}`);
       return cachedData.data as T;
     }
 
-    // Construct query parameters
-    const queryParams = new URLSearchParams({
-      apikey: API_KEY,
-      limit: '120',
-      ...(params || {})
-    });
+    if (!canMakeRequest(endpoint)) {
+      console.warn(`[Rate Limit] ${version}/${endpoint}/${ticker} - Too many requests`);
+      if (cachedData) {
+        console.log(`[Cache Fallback] ${version}/${endpoint}/${ticker} - Using expired cache`);
+        return cachedData.data as T;
+      }
+      return null;
+    }
 
-    // If not in cache, fetch from API
-    const url = `${BASE_URL}/${endpoint}/${ticker}?${queryParams}`;
+    trackRequest(endpoint);
+
+    const baseUrl = `https://financialmodelingprep.com/api/${version}`;
+    const url = version === 'v4'
+      ? `${baseUrl}/${endpoint}?symbol=${ticker}&apikey=${API_KEY}&structure=default&period=annual`
+      : `${baseUrl}/${endpoint}/${ticker}?apikey=${API_KEY}`;
+    
+    console.log(`[API Request] ${version}/${endpoint}/${ticker} (${url})`);
     const response = await fetch(url);
     
+    if (response.status === 429) {
+      console.warn(`[Rate Limit] ${version}/${endpoint}/${ticker} - API rate limit exceeded`);
+      if (cachedData) {
+        console.log(`[Cache Fallback] ${version}/${endpoint}/${ticker} - Using expired cache`);
+        return cachedData.data as T;
+      }
+      return null;
+    }
+    
     if (response.status === 404) {
-      console.warn(`No data available for ticker ${ticker} at endpoint ${endpoint}`);
+      console.warn(`[Not Found] ${version}/${endpoint}/${ticker}`);
       return null;
     }
     
@@ -50,26 +86,24 @@ async function fetchWithCache<T>(endpoint: string, ticker?: string, params?: Rec
     }
 
     const data = await response.json();
+    console.log(`[API Response Raw Data] ${version}/${endpoint}/${ticker}:`, JSON.stringify(data, null, 2));
 
-    // Handle empty responses
     if (!data || (Array.isArray(data) && data.length === 0)) {
-      console.warn(`No data returned for ticker ${ticker} at endpoint ${endpoint}`);
+      console.warn(`[Empty Response] ${version}/${endpoint}/${ticker}`);
       return null;
     }
 
-    // Handle API error responses
     if (data.error) {
-      console.warn(`API error for ticker ${ticker}:`, data.error);
+      console.warn(`[API Error] ${version}/${endpoint}/${ticker}:`, data.error);
       return null;
     }
 
-    // Cache successful results
     const expiresAt = new Date(Date.now() + CACHE_DURATION);
     await supabase
       .from('api_cache')
       .upsert({
         ticker,
-        endpoint,
+        endpoint: `${version}/${endpoint}`,
         data,
         expires_at: expiresAt.toISOString()
       }, {
@@ -78,7 +112,7 @@ async function fetchWithCache<T>(endpoint: string, ticker?: string, params?: Rec
 
     return data;
   } catch (error) {
-    console.warn(`fetchWithCache error for ticker ${ticker}:`, error);
+    console.error(`[Error] ${version}/${endpoint}/${ticker}:`, error);
     return null;
   }
 }
@@ -115,11 +149,8 @@ export function useIncomeStatements(symbol: string) {
     }
   );
 
-  // Ensure we always return an array, even if empty
-  const statements = Array.isArray(data) ? data : [];
-  
   return {
-    statements,
+    statements: Array.isArray(data) ? data : [],
     isLoading,
     error,
     mutate
@@ -173,7 +204,7 @@ export function useStockPrice(symbol: string) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      dedupingInterval: 5 * 60 * 1000, // 5 minutes for stock prices
+      dedupingInterval: 5 * 60 * 1000,
       shouldRetryOnError: false
     }
   );
@@ -190,8 +221,8 @@ export function useRevenueSegments(symbol: string) {
   console.log(`[useRevenueSegments] Hook called for symbol: ${symbol}`);
   
   const { data, error, isLoading, mutate } = useSWR(
-    symbol ? ['revenue-product-segmentation', symbol] : null,
-    () => fetchWithCache<any[]>('revenue-product-segmentation', symbol),
+    symbol ? `revenue-product-segmentation/${symbol}` : null,
+    () => fetchWithCache<any[]>('revenue-product-segmentation', symbol, 'v4'),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
@@ -201,37 +232,30 @@ export function useRevenueSegments(symbol: string) {
   );
 
   const segments = React.useMemo(() => {
-    console.log('[useRevenueSegments] useMemo executing. Raw SWR data:', data);
+    console.log('[useRevenueSegments] Raw data structure:', data);
 
     if (!Array.isArray(data) || data.length === 0) {
-      console.log('[useRevenueSegments] Returning [] due to invalid/empty raw data.');
+      console.log('[useRevenueSegments] Returning [] due to invalid/empty data.');
       return [];
     }
 
-    const latestYearEntry = data[0];
-    console.log('[useRevenueSegments] Latest year entry:', latestYearEntry);
+    // Get the most recent period's data
+    const mostRecentEntry = data[0]; // First entry is the most recent
+    const dateKey = Object.keys(mostRecentEntry)[0]; // Get the date key
+    const segmentData = mostRecentEntry[dateKey]; // Get the segment data
 
-    if (!latestYearEntry?.data || typeof latestYearEntry.data !== 'object') {
-      console.log('[useRevenueSegments] Returning [] due to invalid latestYearEntry.data.');
-      return [];
-    }
+    console.log('[useRevenueSegments] Most recent data:', { date: dateKey, data: segmentData });
 
-    const segmentsObject = latestYearEntry.data;
-    console.log('[useRevenueSegments] Segments object:', segmentsObject);
+    if (!segmentData || typeof segmentData !== 'object') return [];
 
-    const totalRevenue = Object.values(segmentsObject).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
-    console.log('[useRevenueSegments] Calculated totalRevenue:', totalRevenue);
+    // Calculate total revenue
+    const totalRevenue = Object.values(segmentData).reduce((sum, value) => sum + (value as number), 0);
 
-    if (totalRevenue <= 0) {
-      console.log('[useRevenueSegments] Returning [] due to zero totalRevenue.');
-      return [];
-    }
-
-    const processed = Object.entries(segmentsObject)
-      .map(([name, value]) => ({
+    const processed = Object.entries(segmentData)
+      .map(([name, revenue]) => ({
         name,
-        value: Number(value) / 1e9, // Convert to billions
-        percentage: (Number(value) / totalRevenue) * 100
+        value: (revenue as number) / 1e9, // Convert to billions
+        percentage: ((revenue as number) / totalRevenue) * 100
       }))
       .filter(segment => segment.value > 0)
       .sort((a, b) => b.value - a.value);
@@ -252,8 +276,8 @@ export function useGeographicRevenue(symbol: string) {
   console.log(`[useGeographicRevenue] Hook called for symbol: ${symbol}`);
   
   const { data, error, isLoading, mutate } = useSWR(
-    symbol ? ['revenue-geographic-segmentation', symbol] : null,
-    () => fetchWithCache<any[]>('revenue-geographic-segmentation', symbol),
+    symbol ? `revenue-geographic-segmentation/${symbol}` : null,
+    () => fetchWithCache<any[]>('revenue-geographic-segmentation', symbol, 'v4'),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
@@ -263,37 +287,30 @@ export function useGeographicRevenue(symbol: string) {
   );
 
   const regions = React.useMemo(() => {
-    console.log('[useGeographicRevenue] useMemo executing. Raw SWR data:', data);
+    console.log('[useGeographicRevenue] Raw data structure:', data);
 
     if (!Array.isArray(data) || data.length === 0) {
-      console.log('[useGeographicRevenue] Returning [] due to invalid/empty raw data.');
+      console.log('[useGeographicRevenue] Returning [] due to invalid/empty data.');
       return [];
     }
 
-    const latestYearEntry = data[0];
-    console.log('[useGeographicRevenue] Latest year entry:', latestYearEntry);
+    // Get the most recent period's data
+    const mostRecentEntry = data[0]; // First entry is the most recent
+    const dateKey = Object.keys(mostRecentEntry)[0]; // Get the date key
+    const regionData = mostRecentEntry[dateKey]; // Get the region data
 
-    if (!latestYearEntry?.data || typeof latestYearEntry.data !== 'object') {
-      console.log('[useGeographicRevenue] Returning [] due to invalid latestYearEntry.data.');
-      return [];
-    }
+    console.log('[useGeographicRevenue] Most recent data:', { date: dateKey, data: regionData });
 
-    const regionsObject = latestYearEntry.data;
-    console.log('[useGeographicRevenue] Regions object:', regionsObject);
+    if (!regionData || typeof regionData !== 'object') return [];
 
-    const totalRevenue = Object.values(regionsObject).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
-    console.log('[useGeographicRevenue] Calculated totalRevenue:', totalRevenue);
+    // Calculate total revenue
+    const totalRevenue = Object.values(regionData).reduce((sum, value) => sum + (value as number), 0);
 
-    if (totalRevenue <= 0) {
-      console.log('[useGeographicRevenue] Returning [] due to zero totalRevenue.');
-      return [];
-    }
-
-    const processed = Object.entries(regionsObject)
-      .map(([name, value]) => ({
-        name,
-        value: Number(value) / 1e9, // Convert to billions
-        percentage: (Number(value) / totalRevenue) * 100
+    const processed = Object.entries(regionData)
+      .map(([name, revenue]) => ({
+        name: name.replace(' Segment', ''), // Clean up the segment suffix
+        value: (revenue as number) / 1e9, // Convert to billions
+        percentage: ((revenue as number) / totalRevenue) * 100
       }))
       .filter(region => region.value > 0)
       .sort((a, b) => b.value - a.value);
