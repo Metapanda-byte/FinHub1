@@ -201,7 +201,6 @@ export function CompanySnapshot() {
             <div className="grid md:grid-cols-2 gap-6">
               {segmentData.length > 0 && (
                 <div>
-                  {console.log("Rendering Segment Pie Chart...")}
                   <h3 className="text-sm font-medium mb-2 text-center">By Segment</h3>
                   <PieChart 
                     data={segmentData} 
@@ -219,7 +218,6 @@ export function CompanySnapshot() {
               )}
               {geographyData.length > 0 && (
                 <div>
-                  {console.log("Rendering Geography Pie Chart...")}
                   <h3 className="text-sm font-medium mb-2 text-center">By Geography</h3>
                   <PieChart 
                     data={geographyData} 
