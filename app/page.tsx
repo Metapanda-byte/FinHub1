@@ -4,18 +4,12 @@ import { Card } from "@/components/ui/card";
 import { Check, BarChartBig } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { supabase } from "@/lib/supabase/client";
 
-export default async function Home() {
-  // Get the public URLs for both dashboard images
-  const { data: { publicUrl: dashboard1Url } } = supabase.storage
-    .from('landingpage')
-    .getPublicUrl('DashboardEx1.png');
+// Direct URLs for the dashboard images
+const DASHBOARD_IMAGE_1 = "https://yfffmefesimgmrcxdtag.supabase.co/storage/v1/object/public/landingpage//DashboardEx1.png";
+const DASHBOARD_IMAGE_2 = "https://yfffmefesimgmrcxdtag.supabase.co/storage/v1/object/public/landingpage//DashboardEx2.png";
 
-  const { data: { publicUrl: dashboard2Url } } = supabase.storage
-    .from('landingpage')
-    .getPublicUrl('DashboardEx2.png');
-
+export default function Home() {
   return (
     <div>
       {/* Hero Section */}
@@ -42,22 +36,24 @@ export default async function Home() {
             <div className="grid md:grid-cols-2 gap-6">
               <div className="relative aspect-[4/3]">
                 <Image
-                  src={dashboard1Url}
+                  src={DASHBOARD_IMAGE_1}
                   alt="Financial Metrics Dashboard"
                   className="rounded-lg shadow-2xl border border-border/10"
                   fill
                   style={{ objectFit: 'cover' }}
                   priority
+                  unoptimized={true}
                 />
               </div>
               <div className="relative aspect-[4/3]">
                 <Image
-                  src={dashboard2Url}
+                  src={DASHBOARD_IMAGE_2}
                   alt="Revenue Distribution Dashboard"
                   className="rounded-lg shadow-2xl border border-border/10"
                   fill
                   style={{ objectFit: 'cover' }}
                   priority
+                  unoptimized={true}
                 />
               </div>
             </div>
