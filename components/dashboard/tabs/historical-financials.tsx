@@ -12,6 +12,7 @@ import { formatFinancialNumber, getGrowthIndicator } from "@/lib/utils/formatter
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import * as XLSX from 'xlsx';
 
 const financialMetricTooltips = {
   revenue: "Total income generated from sales of goods and services",
@@ -557,6 +558,29 @@ export function HistoricalFinancials() {
     ];
   };
 
+  const exportToExcel = () => {
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Process and export each statement type
+    const incomeData = processIncomeStatements();
+    const cashFlowData = processCashFlowStatements();
+    const balanceSheetData = processBalanceSheets();
+    
+    // Convert data to Excel format
+    const incomeSheet = XLSX.utils.json_to_sheet(incomeData);
+    const cashFlowSheet = XLSX.utils.json_to_sheet(cashFlowData);
+    const balanceSheet = XLSX.utils.json_to_sheet(balanceSheetData);
+    
+    // Add sheets to workbook
+    XLSX.utils.book_append_sheet(wb, incomeSheet, "Income Statement");
+    XLSX.utils.book_append_sheet(wb, cashFlowSheet, "Cash Flow");
+    XLSX.utils.book_append_sheet(wb, balanceSheet, "Balance Sheet");
+    
+    // Generate Excel file
+    XLSX.writeFile(wb, `${currentSymbol}_Financial_Statements.xlsx`);
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -578,7 +602,7 @@ export function HistoricalFinancials() {
                 <SelectItem value="ttm">TTM</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={exportToExcel}>
               <Download className="h-4 w-4 mr-2" />
               Export to Excel
             </Button>

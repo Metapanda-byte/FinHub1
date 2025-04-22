@@ -4,8 +4,18 @@ import { Card } from "@/components/ui/card";
 import { Check, BarChartBig } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { supabase } from "@/lib/supabase/client";
 
-export default function Home() {
+export default async function Home() {
+  // Get the public URLs for both dashboard images
+  const { data: { publicUrl: dashboard1Url } } = supabase.storage
+    .from('landingpage')
+    .getPublicUrl('DashboardEx1.png');
+
+  const { data: { publicUrl: dashboard2Url } } = supabase.storage
+    .from('landingpage')
+    .getPublicUrl('DashboardEx2.png');
+
   return (
     <div>
       {/* Hero Section */}
@@ -13,10 +23,10 @@ export default function Home() {
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
-              Professional Financial Analytics for Modern Investors
+              Financial Analytics Platform for Investors
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
-             Seamless tools to make informed investment decisions.
+             Seamless tools. Informed decisions.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild>
@@ -29,14 +39,28 @@ export default function Home() {
           </div>
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent h-40 -bottom-1"></div>
-            <Image
-              src="https://images.pexels.com/photos/7567434/pexels-photo-7567434.jpeg"
-              alt="Dashboard Preview"
-              className="rounded-lg shadow-2xl border"
-              width={1200}
-              height={800}
-              priority
-            />
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="relative aspect-[4/3]">
+                <Image
+                  src={dashboard1Url}
+                  alt="Financial Metrics Dashboard"
+                  className="rounded-lg shadow-2xl border border-border/10"
+                  fill
+                  style={{ objectFit: 'cover' }}
+                  priority
+                />
+              </div>
+              <div className="relative aspect-[4/3]">
+                <Image
+                  src={dashboard2Url}
+                  alt="Revenue Distribution Dashboard"
+                  className="rounded-lg shadow-2xl border border-border/10"
+                  fill
+                  style={{ objectFit: 'cover' }}
+                  priority
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>

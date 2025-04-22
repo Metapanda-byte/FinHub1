@@ -19,6 +19,22 @@ interface PieChartProps {
   formatter: (value: number) => string;
 }
 
+// Calculate text color based on background color brightness
+const getTextColor = (backgroundColor: string) => {
+  const rgb = backgroundColor.match(/\d+/g);
+  const brightness = rgb ? (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000 : 128;
+  return brightness > 128 ? "#000000" : "#ffffff";
+};
+
+// Fallback colors in case CSS variables are not loaded
+const fallbackColors = [
+  "#2563eb", // Blue
+  "#10b981", // Green
+  "#f59e0b", // Yellow
+  "#ef4444", // Red
+  "#8b5cf6", // Purple
+];
+
 const renderActiveShape = (props: any) => {
   const {
     cx,
@@ -33,6 +49,8 @@ const renderActiveShape = (props: any) => {
     value,
     formatter,
   } = props;
+
+  const textColor = getTextColor(fill);
 
   return (
     <g>
@@ -59,7 +77,7 @@ const renderActiveShape = (props: any) => {
         y={cy - 10}
         dy={8}
         textAnchor="middle"
-        fill={payload.name === "Services" ? "#000" : "#fff"}
+        fill={textColor}
         fontSize={12}
         fontWeight="bold"
       >
@@ -70,7 +88,7 @@ const renderActiveShape = (props: any) => {
         y={cy + 10}
         dy={8}
         textAnchor="middle"
-        fill={payload.name === "Services" ? "#000" : "#fff"}
+        fill={textColor}
         fontSize={12}
       >
         {formatter ? formatter(value) : value}
@@ -80,7 +98,7 @@ const renderActiveShape = (props: any) => {
         y={cy + 30}
         dy={8}
         textAnchor="middle"
-        fill={payload.name === "Services" ? "#000" : "#fff"}
+        fill={textColor}
         fontSize={10}
       >
         {`(${(percent * 100).toFixed(1)}%)`}
@@ -102,6 +120,21 @@ export function PieChart({
     setActiveIndex(index);
   };
 
+  const getColor = (index: number) => {
+    try {
+      const color = colors[index % colors.length];
+      // Test if the CSS variable is properly loaded
+      const style = getComputedStyle(document.documentElement);
+      const cssVar = color.match(/var\((.*?)\)/)?.[1];
+      if (cssVar && !style.getPropertyValue(cssVar.trim())) {
+        return fallbackColors[index % fallbackColors.length];
+      }
+      return color;
+    } catch {
+      return fallbackColors[index % fallbackColors.length];
+    }
+  };
+
   return (
     <ResponsiveContainer width="100%" height={240}>
       <RechartsPieChart>
@@ -121,7 +154,7 @@ export function PieChart({
           animationDuration={1500}
         >
           {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+            <Cell key={`cell-${index}`} fill={getColor(index)} />
           ))}
         </Pie>
         <Tooltip
@@ -129,8 +162,10 @@ export function PieChart({
           contentStyle={{
             borderRadius: "6px",
             padding: "8px 12px",
-            border: "1px solid var(--border)",
+            border: "1px solid var(--border, #e5e7eb)",
             boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+            backgroundColor: "var(--background, #ffffff)",
+            color: "var(--foreground, #000000)",
           }}
         />
         <Legend
