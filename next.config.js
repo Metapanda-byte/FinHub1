@@ -8,6 +8,10 @@ const nextConfig = {
     // Disable webpack cache
     config.cache = false;
     return config;
+  },
+  // Enable static optimization where possible
+  experimental: {
+    serverActions: true
   }
 }
 
