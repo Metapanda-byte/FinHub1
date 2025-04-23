@@ -1,16 +1,72 @@
 "use client";
 
-import { useBalanceSheets } from "@/lib/api/financial";
-import { useIncomeStatements } from "@/lib/api/financial";
-import { useCashFlows } from "@/lib/api/financial";
+import { useBalanceSheets, useIncomeStatements, useCashFlows } from "@/lib/api/financial";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
+import { useSearchStore } from "@/lib/store/search-store";
+
+const balanceSheetColumns = [
+  { header: "Date", accessorKey: "date" },
+  { header: "Total Assets", accessorKey: "totalAssets" },
+  { header: "Total Liabilities", accessorKey: "totalLiabilities" },
+  { header: "Total Equity", accessorKey: "totalStockholdersEquity" },
+];
+
+const incomeStatementColumns = [
+  { header: "Date", accessorKey: "date" },
+  { header: "Revenue", accessorKey: "revenue" },
+  { header: "Net Income", accessorKey: "netIncome" },
+  { header: "EBITDA", accessorKey: "ebitda" },
+];
+
+const cashFlowColumns = [
+  { header: "Date", accessorKey: "date" },
+  { header: "Operating Cash Flow", accessorKey: "operatingCashFlow" },
+  { header: "Free Cash Flow", accessorKey: "freeCashFlow" },
+  { header: "Capital Expenditure", accessorKey: "capitalExpenditure" },
+];
 
 export function FinancialStatements() {
-  const { statements: balanceSheets, loading: balanceSheetsLoading } = useBalanceSheets();
-  const { statements: incomeStatements, loading: incomeStatementsLoading } = useIncomeStatements();
-  const { statements: cashFlows, loading: cashFlowsLoading } = useCashFlows();
+  const currentSymbol = useSearchStore((state) => state.currentSymbol);
+  const symbol = currentSymbol || '';
+  
+  const { statements: balanceSheets, isLoading: balanceSheetsLoading } = useBalanceSheets(symbol);
+  const { statements: incomeStatements, isLoading: incomeStatementsLoading } = useIncomeStatements(symbol);
+  const { statements: cashFlows, isLoading: cashFlowsLoading } = useCashFlows(symbol);
+
+  if (!currentSymbol || balanceSheetsLoading || incomeStatementsLoading || cashFlowsLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Loading Financial Data...</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[200px] flex items-center justify-center">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 w-48 bg-muted rounded"></div>
+              <div className="h-4 w-36 bg-muted rounded"></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!balanceSheets?.length || !incomeStatements?.length || !cashFlows?.length) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>No Financial Data Available</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            Unable to fetch financial statements for this company.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -25,25 +81,13 @@ export function FinancialStatements() {
             <TabsTrigger value="cash-flow">Cash Flow</TabsTrigger>
           </TabsList>
           <TabsContent value="balance-sheet">
-            {balanceSheetsLoading ? (
-              <div>Loading balance sheet data...</div>
-            ) : (
-              <DataTable data={balanceSheets} />
-            )}
+            <DataTable data={balanceSheets} columns={balanceSheetColumns} />
           </TabsContent>
           <TabsContent value="income-statement">
-            {incomeStatementsLoading ? (
-              <div>Loading income statement data...</div>
-            ) : (
-              <DataTable data={incomeStatements} />
-            )}
+            <DataTable data={incomeStatements} columns={incomeStatementColumns} />
           </TabsContent>
           <TabsContent value="cash-flow">
-            {cashFlowsLoading ? (
-              <div>Loading cash flow data...</div>
-            ) : (
-              <DataTable data={cashFlows} />
-            )}
+            <DataTable data={cashFlows} columns={cashFlowColumns} />
           </TabsContent>
         </Tabs>
       </CardContent>

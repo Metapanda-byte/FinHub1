@@ -7,7 +7,7 @@ import { useFinancialPeriodStore } from "@/lib/store/financial-period";
 import { 
   useIncomeStatements, 
   useBalanceSheets, 
-  useCashFlowStatements,
+  useCashFlows,
   useRevenueSegments,
   useGeographicRevenue
 } from "@/lib/api/financial";
@@ -24,7 +24,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
   
   const { statements: incomeStatements, isLoading: incomeLoading } = useIncomeStatements(symbol);
   const { statements: balanceSheets, isLoading: balanceLoading } = useBalanceSheets(symbol);
-  const { statements: cashFlows, isLoading: cashFlowLoading } = useCashFlowStatements(symbol);
+  const { statements: cashFlows, isLoading: cashFlowLoading } = useCashFlows(symbol);
   const { segments, isLoading: segmentsLoading } = useRevenueSegments(symbol);
   const { regions, isLoading: regionsLoading } = useGeographicRevenue(symbol);
 

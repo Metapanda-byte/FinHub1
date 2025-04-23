@@ -148,15 +148,19 @@ export function CompanySnapshot() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Employees</p>
-                    <p className="text-sm font-medium">{parseInt(profile.fullTimeEmployees).toLocaleString()}</p>
+                    <p className="text-sm font-medium">
+                      {profile?.fullTimeEmployees ? profile.fullTimeEmployees.toLocaleString() : 'N/A'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">CEO</p>
-                    <p className="text-sm font-medium">{profile.ceo}</p>
+                    <p className="text-sm font-medium">{profile?.ceo || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Location</p>
-                    <p className="text-sm font-medium">{profile.city}, {profile.state}</p>
+                    <p className="text-sm font-medium">
+                      {profile?.city && profile?.state ? `${profile.city}, ${profile.state}` : 'N/A'}
+                    </p>
                   </div>
                 </div>
               </div>

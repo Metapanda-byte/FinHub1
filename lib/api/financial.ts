@@ -235,7 +235,16 @@ export function useCompanyProfile(symbol: string) {
       return null;
     }
 
-    return profileData;
+    // Ensure all required fields have default values
+    return {
+      ...profileData,
+      description: profileData.description || 'No description available',
+      ceo: profileData.ceo || 'N/A',
+      city: profileData.city || 'N/A',
+      state: profileData.state || 'N/A',
+      mktCap: profileData.mktCap || 0,
+      fullTimeEmployees: profileData.fullTimeEmployees || null
+    };
   }, [data, symbol]);
 
   return {
@@ -450,11 +459,11 @@ export function useStockPriceData(symbol: string, timeframe: '1D' | '1W' | '1M' 
   };
 }
 
-interface RevenueSegment {
+export interface RevenueSegment {
   [key: string]: number | RevenueSegment;
 }
 
-interface ProcessedSegment {
+export interface ProcessedSegment {
   name: string;
   value: number;
   percentage: number;

@@ -10,13 +10,11 @@ interface ValuationMetricsProps {
 }
 
 export function ValuationMetrics({ symbol }: ValuationMetricsProps) {
-  const { statements: balanceSheets, loading: balanceSheetsLoading } = useBalanceSheets(symbol)
-  const { statements: incomeStatements, loading: incomeStatementsLoading } = useIncomeStatements(symbol)
+  const { statements: balanceSheets, isLoading: balanceSheetsLoading } = useBalanceSheets(symbol)
+  const { statements: incomeStatements, isLoading: incomeStatementsLoading } = useIncomeStatements(symbol)
   const { quote, loading: quoteLoading } = useStockQuote(symbol)
 
-  const loading = balanceSheetsLoading || incomeStatementsLoading || quoteLoading
-
-  if (loading) {
+  if (!symbol || balanceSheetsLoading || incomeStatementsLoading || quoteLoading) {
     return (
       <Card>
         <CardHeader>
@@ -29,6 +27,21 @@ export function ValuationMetrics({ symbol }: ValuationMetricsProps) {
               <Skeleton className="h-8 w-32" />
             </div>
           ))}
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (!balanceSheets?.length || !incomeStatements?.length || !quote) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Valuation Metrics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            Unable to fetch valuation metrics for this company.
+          </p>
         </CardContent>
       </Card>
     )
