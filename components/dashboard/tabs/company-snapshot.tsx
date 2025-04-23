@@ -11,23 +11,56 @@ import { EbitdaChart } from "@/components/dashboard/charts/ebitda-chart";
 import { PieChart } from "@/components/dashboard/charts/pie-chart";
 import { StockChart } from "@/components/dashboard/charts/stock-chart";
 import { ShareholdersTable } from "@/components/dashboard/tables/shareholders-table";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSearchStore } from "@/lib/store/search-store";
-import { useCompanyProfile, useIncomeStatements, useStockPrice, useRevenueSegments, useGeographicRevenue } from "@/lib/api/financial";
+import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegments, useGeographicRevenue } from "@/lib/api/financial";
 import { formatFinancialNumber, formatLargeNumber } from "@/lib/utils/formatters";
 
 export function CompanySnapshot() {
   const [showMovingAverage, setShowMovingAverage] = useState(false);
+  const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M' | '1Y' | '5Y'>('1M');
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
   
-  const { profile, isLoading: profileLoading } = useCompanyProfile(currentSymbol || '');
-  const { statements, isLoading: statementsLoading } = useIncomeStatements(currentSymbol || '');
-  const { prices, isLoading: pricesLoading } = useStockPrice(currentSymbol || '');
-  const { segments, isLoading: segmentsLoading } = useRevenueSegments(currentSymbol || '');
-  const { regions, isLoading: regionsLoading } = useGeographicRevenue(currentSymbol || '');
+  const symbol = currentSymbol || '';
+  
+  const { profile, isLoading: profileLoading } = useCompanyProfile(symbol);
+  const { statements, isLoading: statementsLoading } = useIncomeStatements(symbol);
+  const { prices, isLoading: pricesLoading } = useStockPriceData(symbol, timeframe);
+  const { segments, isLoading: segmentsLoading } = useRevenueSegments(symbol);
+  const { regions, isLoading: regionsLoading } = useGeographicRevenue(symbol);
 
-  console.log('Raw segments data:', segments);
-  console.log('Raw regions data:', regions);
+  const processedData = useMemo(() => {
+    if (!profile || !statements || !prices || !segments || !regions) {
+      return null;
+    }
+
+    return {
+      revenueData: statements.slice(0, 5).reverse().map(statement => ({
+        year: parseInt(statement.calendarYear),
+        value: statement.revenue / 1e9
+      })),
+      ebitdaData: statements.slice(0, 5).reverse().map(statement => ({
+        year: parseInt(statement.calendarYear),
+        value: statement.ebitda / 1e9,
+        margin: (statement.ebitdaratio * 100)
+      })),
+      stockData: prices.map(price => ({
+        date: price.date,
+        price: price.close,
+        volume: price.volume
+      })),
+      segmentData: segments.map(segment => ({
+        name: segment.name,
+        value: segment.value,
+        percentage: segment.percentage
+      })).sort((a, b) => b.value - a.value),
+      geographyData: regions.map(region => ({
+        name: region.name,
+        value: region.value,
+        percentage: region.percentage
+      })).sort((a, b) => b.value - a.value)
+    };
+  }, [profile, statements, prices, segments, regions]);
 
   if (!currentSymbol || profileLoading || statementsLoading || pricesLoading || segmentsLoading || regionsLoading) {
     return (
@@ -52,7 +85,7 @@ export function CompanySnapshot() {
     );
   }
 
-  if (!profile || !statements || !prices || !segments || !regions) {
+  if (!processedData) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="col-span-full">
@@ -70,42 +103,7 @@ export function CompanySnapshot() {
     );
   }
 
-  // Process income statements for revenue and EBITDA charts
-  const revenueData = statements.slice(0, 5).reverse().map(statement => ({
-    year: parseInt(statement.calendarYear),
-    value: statement.revenue / 1e9 // Convert to billions
-  }));
-
-  const ebitdaData = statements.slice(0, 5).reverse().map(statement => ({
-    year: parseInt(statement.calendarYear),
-    value: statement.ebitda / 1e9, // Convert to billions
-    margin: (statement.ebitdaratio * 100)
-  }));
-
-  // Process stock price data
-  const stockData = prices.map(price => ({
-    date: price.date,
-    price: price.close,
-    volume: price.volume
-  }));
-
-  // Process segment data
-  const segmentData = segments.map(segment => ({
-    name: segment.name,
-    value: segment.value,
-    percentage: segment.percentage
-  })).sort((a, b) => b.value - a.value);
-
-  console.log('Processed segment data:', segmentData);
-
-  // Process geographic data
-  const geographyData = regions.map(region => ({
-    name: region.name,
-    value: region.value,
-    percentage: region.percentage
-  })).sort((a, b) => b.value - a.value);
-
-  console.log('Processed geography data:', geographyData);
+  const { revenueData, ebitdaData, stockData, segmentData, geographyData } = processedData;
 
   return (
     <div className="grid gap-4">
@@ -252,35 +250,40 @@ export function CompanySnapshot() {
                 checked={showMovingAverage}
                 onCheckedChange={setShowMovingAverage}
               />
-              <Label htmlFor="moving-average">Moving Avg</Label>
+              <Label htmlFor="moving-average">Show Moving Average</Label>
             </div>
           </div>
+          <CardDescription>
+            Historical stock price and volume data
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="1M" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 mb-4">
-              <TabsTrigger value="1D">1D</TabsTrigger>
-              <TabsTrigger value="1W">1W</TabsTrigger>
-              <TabsTrigger value="1M">1M</TabsTrigger>
-              <TabsTrigger value="1Y">1Y</TabsTrigger>
-              <TabsTrigger value="5Y">5Y</TabsTrigger>
-            </TabsList>
-            <TabsContent value="1D">
-              <StockChart data={stockData.slice(-1)} showMovingAverage={showMovingAverage} />
-            </TabsContent>
-            <TabsContent value="1W">
-              <StockChart data={stockData.slice(-7)} showMovingAverage={showMovingAverage} />
-            </TabsContent>
-            <TabsContent value="1M">
-              <StockChart data={stockData.slice(-30)} showMovingAverage={showMovingAverage} />
-            </TabsContent>
-            <TabsContent value="1Y">
-              <StockChart data={stockData.slice(-365)} showMovingAverage={showMovingAverage} />
-            </TabsContent>
-            <TabsContent value="5Y">
-              <StockChart data={stockData} showMovingAverage={showMovingAverage} />
-            </TabsContent>
-          </Tabs>
+          <div className="space-y-4">
+            <Tabs defaultValue="1M" onValueChange={(value) => setTimeframe(value as '1D' | '1W' | '1M' | '1Y' | '5Y')}>
+              <TabsList>
+                <TabsTrigger value="1D">1D</TabsTrigger>
+                <TabsTrigger value="1W">1W</TabsTrigger>
+                <TabsTrigger value="1M">1M</TabsTrigger>
+                <TabsTrigger value="1Y">1Y</TabsTrigger>
+                <TabsTrigger value="5Y">5Y</TabsTrigger>
+              </TabsList>
+              <TabsContent value="1D">
+                <StockChart symbol={currentSymbol} timeframe="1D" showMovingAverage={showMovingAverage} />
+              </TabsContent>
+              <TabsContent value="1W">
+                <StockChart symbol={currentSymbol} timeframe="1W" showMovingAverage={showMovingAverage} />
+              </TabsContent>
+              <TabsContent value="1M">
+                <StockChart symbol={currentSymbol} timeframe="1M" showMovingAverage={showMovingAverage} />
+              </TabsContent>
+              <TabsContent value="1Y">
+                <StockChart symbol={currentSymbol} timeframe="1Y" showMovingAverage={showMovingAverage} />
+              </TabsContent>
+              <TabsContent value="5Y">
+                <StockChart symbol={currentSymbol} timeframe="5Y" showMovingAverage={showMovingAverage} />
+              </TabsContent>
+            </Tabs>
+          </div>
         </CardContent>
       </Card>
     </div>

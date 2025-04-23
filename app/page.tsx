@@ -5,10 +5,6 @@ import { Check, BarChartBig } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
-// Direct URLs for the dashboard images
-const DASHBOARD_IMAGE_1 = "https://yfffmefesimgmrcxdtag.supabase.co/storage/v1/object/public/landingpage//DashboardEx1.png";
-const DASHBOARD_IMAGE_2 = "https://yfffmefesimgmrcxdtag.supabase.co/storage/v1/object/public/landingpage//DashboardEx2.png";
-
 export default function Home() {
   return (
     <div>
@@ -33,30 +29,14 @@ export default function Home() {
           </div>
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent h-40 -bottom-1"></div>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="relative aspect-[4/3]">
-                <Image
-                  src={DASHBOARD_IMAGE_1}
-                  alt="Financial Metrics Dashboard"
-                  className="rounded-lg shadow-2xl border border-border/10"
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  priority
-                  unoptimized={true}
-                />
-              </div>
-              <div className="relative aspect-[4/3]">
-                <Image
-                  src={DASHBOARD_IMAGE_2}
-                  alt="Revenue Distribution Dashboard"
-                  className="rounded-lg shadow-2xl border border-border/10"
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  priority
-                  unoptimized={true}
-                />
-              </div>
-            </div>
+            <Image
+              src="https://images.pexels.com/photos/7567434/pexels-photo-7567434.jpeg"
+              alt="Dashboard Preview"
+              className="rounded-lg shadow-2xl border"
+              width={1200}
+              height={800}
+              priority
+            />
           </div>
         </div>
       </section>

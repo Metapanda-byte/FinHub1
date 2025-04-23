@@ -12,26 +12,32 @@ import {
   ComposedChart,
 } from "recharts";
 import { format } from "date-fns";
-
-interface StockData {
-  date: string;
-  price: number;
-  volume: number;
-}
+import { useStockPriceData } from "@/lib/api/financial";
 
 interface StockChartProps {
-  data: StockData[];
+  symbol: string;
   showMovingAverage?: boolean;
   timeframe?: '1D' | '1W' | '1M' | '1Y' | '5Y';
 }
 
-export function StockChart({ data, showMovingAverage = false, timeframe = '1M' }: StockChartProps) {
+export function StockChart({ symbol, showMovingAverage = false, timeframe = '1M' }: StockChartProps) {
+  const { prices: stockPrices, isLoading } = useStockPriceData(symbol, timeframe);
+
+  if (isLoading) {
+    return <div className="h-[280px] flex items-center justify-center">Loading...</div>;
+  }
+
+  if (!stockPrices || stockPrices.length === 0) {
+    return <div className="h-[280px] flex items-center justify-center">No data available</div>;
+  }
+
   // Process and sort data chronologically
-  const processedData = data
+  const processedData = stockPrices
+    .filter(item => new Date(item.date) <= new Date()) // Filter out future dates
     .map(item => ({
       ...item,
       date: new Date(item.date),
-      price: item.price,
+      price: item.close,
       volume: item.volume
     }))
     .sort((a, b) => a.date.getTime() - b.date.getTime()) // Sort ascending by date
@@ -54,37 +60,91 @@ export function StockChart({ data, showMovingAverage = false, timeframe = '1M' }
       };
     });
 
-  // Determine date format based on timeframe
+  // Calculate price range for y-axis
+  const priceValues = processedData.map(d => d.price);
+  const minPrice = Math.min(0, ...priceValues); // Allow negative prices for some stocks
+  const maxPrice = Math.max(...priceValues);
+  const priceRange = maxPrice - minPrice;
+  const priceMargin = priceRange * 0.1; // Add 10% margin
+  const yDomain = [minPrice - priceMargin, maxPrice + priceMargin];
+
+  // Determine date format and interval based on timeframe
   const getDateFormatter = (date: string) => {
     const dateObj = new Date(date);
-    switch (timeframe) {
+    
+    switch(timeframe) {
       case '1D':
         return format(dateObj, 'HH:mm');
       case '1W':
-        return format(dateObj, 'EEE');
+        return format(dateObj, 'EEE, MMM d');
       case '1M':
         return format(dateObj, 'MMM d');
       case '1Y':
-        return format(dateObj, 'MMM yyyy');
       case '5Y':
-        return format(dateObj, 'yyyy');
+        return format(dateObj, 'MMM yyyy');
       default:
-        return format(dateObj, 'MMM d');
+        return format(dateObj, 'MMM d, yyyy');
     }
   };
 
-  // Calculate price range for y-axis
-  const prices = processedData.map(d => d.price);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
-  const priceMargin = (maxPrice - minPrice) * 0.1;
-  const yDomain = [minPrice - priceMargin, maxPrice + priceMargin];
+  // Calculate appropriate interval for X-axis based on timeframe
+  const getXAxisInterval = () => {
+    const dataLength = processedData.length;
+    
+    switch(timeframe) {
+      case '5Y':
+        return Math.max(1, Math.floor(dataLength / 6)); // Show 6 points
+      case '1Y':
+        return Math.max(1, Math.floor(dataLength / 6)); // Show 6 points
+      case '1M':
+        return Math.max(1, Math.floor(dataLength / 8)); // Show 8 points
+      case '1W':
+        return Math.max(1, Math.floor(dataLength / 7)); // Show daily points
+      case '1D':
+        return Math.max(1, Math.floor(dataLength / 8)); // Show 8 points
+      default:
+        return Math.max(1, Math.floor(dataLength / 8));
+    }
+  };
+
+  // Calculate appropriate number of Y-axis ticks and format
+  const getYTickConfig = () => {
+    const range = maxPrice - minPrice;
+    
+    // Determine the appropriate number of decimal places
+    let decimalPlaces = 2;
+    if (range < 0.1) decimalPlaces = 4;
+    else if (range < 1) decimalPlaces = 3;
+    else if (range < 10) decimalPlaces = 2;
+    else if (range < 100) decimalPlaces = 1;
+    else decimalPlaces = 0;
+
+    // Determine the appropriate number of ticks
+    let tickCount = 5;
+    if (range < 1) tickCount = 6;
+    else if (range < 10) tickCount = 5;
+    else if (range < 100) tickCount = 5;
+    else tickCount = 4;
+
+    // Format function for Y-axis labels
+    const formatValue = (value: number) => {
+      const absValue = Math.abs(value);
+      if (absValue >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
+      if (absValue >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
+      if (absValue >= 1e3) return `$${(value / 1e3).toFixed(1)}K`;
+      return `$${value.toFixed(decimalPlaces)}`;
+    };
+
+    return { tickCount, formatValue };
+  };
+
+  const { tickCount, formatValue } = getYTickConfig();
 
   return (
     <ResponsiveContainer width="100%" height={280}>
       <ComposedChart
         data={processedData}
-        margin={{ top: 10, right: 0, left: 0, bottom: 30 }}
+        margin={{ top: 10, right: 0, left: 10, bottom: 40 }}
       >
         <defs>
           <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
@@ -99,10 +159,11 @@ export function StockChart({ data, showMovingAverage = false, timeframe = '1M' }
           tickLine={false}
           axisLine={false}
           tick={{ fontSize: 12 }}
-          dy={10}
-          angle={-45}
-          textAnchor="end"
-          height={60}
+          dy={12}
+          angle={0}
+          textAnchor="middle"
+          height={50}
+          interval={getXAxisInterval()}
           minTickGap={20}
         />
         <YAxis
@@ -112,35 +173,42 @@ export function StockChart({ data, showMovingAverage = false, timeframe = '1M' }
           tickLine={false}
           axisLine={false}
           tick={{ fontSize: 12 }}
-          width={60}
-          tickFormatter={(value) => `$${value.toFixed(2)}`}
+          width={75}
+          tickCount={tickCount}
+          tickFormatter={formatValue}
+          dx={-10}
         />
         <YAxis
           yAxisId="right"
           orientation="right"
           tickFormatter={(value) => {
-            if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-            if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-            return value.toString();
+            const absValue = Math.abs(value);
+            if (absValue >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
+            if (absValue >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
+            if (absValue >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
+            return value.toFixed(0);
           }}
-          domain={['auto', 'auto']}
+          domain={[0, 'auto']}
           tickLine={false}
           axisLine={false}
           tick={{ fontSize: 12 }}
-          width={60}
+          width={75}
+          dx={-10}
         />
         <Tooltip
           formatter={(value: number, name: string) => {
-            if (name === "price") return [`$${value.toFixed(2)}`, "Price"];
-            if (name === "ma") return [`$${value.toFixed(2)}`, "MA (7-day)"];
+            if (name === "price") return [formatValue(value), "Price"];
+            if (name === "ma") return [formatValue(value), "MA (7-day)"];
             if (name === "volume") {
-              if (value >= 1e6) return [`${(value / 1e6).toFixed(1)}M`, "Volume"];
-              if (value >= 1e3) return [`${(value / 1e3).toFixed(1)}K`, "Volume"];
-              return [value.toString(), "Volume"];
+              const absValue = Math.abs(value);
+              if (absValue >= 1e9) return [`${(value / 1e9).toFixed(1)}B`, "Volume"];
+              if (absValue >= 1e6) return [`${(value / 1e6).toFixed(1)}M`, "Volume"];
+              if (absValue >= 1e3) return [`${(value / 1e3).toFixed(1)}K`, "Volume"];
+              return [value.toFixed(0), "Volume"];
             }
             return [value, name];
           }}
-          labelFormatter={(label) => getDateFormatter(label)}
+          labelFormatter={(label) => format(new Date(label), 'MMM d, yyyy HH:mm')}
           contentStyle={{
             borderRadius: "6px",
             padding: "8px 12px",

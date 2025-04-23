@@ -29,6 +29,8 @@ interface SearchResult {
   exchangeShortName: string;
 }
 
+type Exchange = 'NASDAQ' | 'NYSE' | 'AMEX' | 'TSX' | 'LSE' | 'FRA' | 'XETRA' | 'ASX' | 'NSE' | 'BSE' | 'SSE' | 'SZSE' | 'HKEX' | 'TSE';
+
 const API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
@@ -46,9 +48,19 @@ export function StockSearch() {
     currentSymbol
   } = useSearchStore();
 
+  const exchanges: Exchange[] = [
+    'NASDAQ', 'NYSE', 'AMEX',  // US exchanges
+    'TSX', 'LSE', 'FRA', 'XETRA',  // European exchanges
+    'ASX',  // Australian exchange
+    'NSE', 'BSE',  // Indian exchanges
+    'SSE', 'SZSE',  // Chinese exchanges
+    'HKEX',  // Hong Kong exchange
+    'TSE'  // Tokyo exchange
+  ];
+
   const { data: searchResults, error } = useSWR<SearchResult[]>(
     search.length >= 2 
-      ? `${BASE_URL}/search?query=${encodeURIComponent(search)}&limit=10&exchange=NASDAQ,NYSE,AMEX&apikey=${API_KEY}`
+      ? `${BASE_URL}/search?query=${encodeURIComponent(search)}&limit=10&exchange=${exchanges.join(',')}&apikey=${API_KEY}`
       : null,
     async (url) => {
       const response = await fetch(url);

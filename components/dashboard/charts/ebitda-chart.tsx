@@ -19,15 +19,16 @@ interface EbitdaChartProps {
 
 export function EbitdaChart({ data }: EbitdaChartProps) {
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <ComposedChart data={data} margin={{ top: 0, right: 25, left: 0, bottom: 0 }}>
+    <ResponsiveContainer width="100%" height={280}>
+      <ComposedChart data={data} margin={{ top: 10, right: 15, left: 10, bottom: 40 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis
           dataKey="year"
           tickLine={false}
           axisLine={false}
           tick={{ fontSize: 12 }}
-          dy={10}
+          dy={12}
+          height={50}
         />
         <YAxis
           yAxisId="left"
@@ -35,7 +36,8 @@ export function EbitdaChart({ data }: EbitdaChartProps) {
           tickLine={false}
           axisLine={false}
           tick={{ fontSize: 12 }}
-          width={45}
+          width={75}
+          dx={-10}
         />
         <YAxis
           yAxisId="right"
@@ -44,7 +46,7 @@ export function EbitdaChart({ data }: EbitdaChartProps) {
           tickLine={false}
           axisLine={false}
           tick={{ fontSize: 12 }}
-          width={45}
+          width={75}
         />
         <Tooltip
           formatter={(value: number, name: string) => {

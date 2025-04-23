@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, ChevronUp, Download, InfoIcon } from "lucide-react";
 import { useSearchStore } from "@/lib/store/search-store";
-import { useIncomeStatements, useCashFlowStatements, useBalanceSheets } from "@/lib/api/financial";
+import { useIncomeStatements, useBalanceSheets, useCashFlows } from "@/lib/api/financial";
 import { formatFinancialNumber, getGrowthIndicator } from "@/lib/utils/formatters";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -78,7 +78,7 @@ export function HistoricalFinancials() {
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
 
   const { statements: incomeStatements, isLoading: incomeLoading } = useIncomeStatements(currentSymbol || '');
-  const { statements: cashFlowStatements, isLoading: cashFlowLoading } = useCashFlowStatements(currentSymbol || '');
+  const { statements: cashFlowStatements, isLoading: cashFlowLoading } = useCashFlows(currentSymbol || '');
   const { statements: balanceSheets, isLoading: balanceSheetLoading } = useBalanceSheets(currentSymbol || '');
 
   if (!currentSymbol || incomeLoading || cashFlowLoading || balanceSheetLoading) {
