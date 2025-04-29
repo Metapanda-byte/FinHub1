@@ -15,19 +15,34 @@ import { useState, useMemo } from "react";
 import { useSearchStore } from "@/lib/store/search-store";
 import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegments, useGeographicRevenue } from "@/lib/api/financial";
 import { formatFinancialNumber, formatLargeNumber } from "@/lib/utils/formatters";
+import { Star, StarOff } from "lucide-react";
+import { useWatchlistStore } from "@/lib/store/watchlist-store";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { useStockQuote } from "@/lib/api/stock";
 
 export function CompanySnapshot() {
   const [showMovingAverage, setShowMovingAverage] = useState(false);
   const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M' | '1Y' | '5Y'>('1M');
+  const { hasStock, addStock, removeStock } = useWatchlistStore();
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
-  
-  const symbol = currentSymbol || '';
-  
-  const { profile, isLoading: profileLoading } = useCompanyProfile(symbol);
-  const { statements, isLoading: statementsLoading } = useIncomeStatements(symbol);
-  const { prices, isLoading: pricesLoading } = useStockPriceData(symbol, timeframe);
-  const { segments, isLoading: segmentsLoading } = useRevenueSegments(symbol);
-  const { regions, isLoading: regionsLoading } = useGeographicRevenue(symbol);
+  const { profile, isLoading: profileLoading } = useCompanyProfile(currentSymbol);
+  const { quote, loading: quoteLoading } = useStockQuote(currentSymbol);
+  const { statements, isLoading: statementsLoading } = useIncomeStatements(currentSymbol);
+  const { prices, isLoading: pricesLoading } = useStockPriceData(currentSymbol, timeframe);
+  const { segments, isLoading: segmentsLoading } = useRevenueSegments(currentSymbol);
+  const { regions, isLoading: regionsLoading } = useGeographicRevenue(currentSymbol);
+
+  console.log('Debug:', {
+    currentSymbol,
+    profileLoading,
+    quoteLoading,
+    hasProfile: !!profile,
+    hasQuote: !!quote,
+    profile,
+    quote
+  });
 
   const processedData = useMemo(() => {
     if (!profile || !statements || !prices || !segments || !regions) {
@@ -61,6 +76,40 @@ export function CompanySnapshot() {
       })).sort((a, b) => b.value - a.value)
     };
   }, [profile, statements, prices, segments, regions]);
+
+  const isWatchlisted = hasStock(currentSymbol);
+
+  const handleWatchlistToggle = () => {
+    console.log('Watchlist toggle clicked:', {
+      currentSymbol,
+      hasStock: hasStock(currentSymbol),
+      profile,
+      quote
+    });
+    
+    if (!currentSymbol || !profile || !quote) {
+      console.log('Cannot toggle watchlist:', {
+        missingSymbol: !currentSymbol,
+        missingProfile: !profile,
+        missingQuote: !quote
+      });
+      return;
+    }
+    
+    if (hasStock(currentSymbol)) {
+      removeStock(currentSymbol);
+    } else {
+      addStock({
+        symbol: currentSymbol,
+        name: profile.companyName,
+        lastPrice: quote.price,
+        change: quote.change,
+        changePercent: quote.changesPercentage,
+        marketCap: quote.marketCap,
+        peRatio: quote.pe
+      });
+    }
+  };
 
   if (!currentSymbol || profileLoading || statementsLoading || pricesLoading || segmentsLoading || regionsLoading) {
     return (
@@ -115,6 +164,31 @@ export function CompanySnapshot() {
               Key information about {profile.companyName}
             </CardDescription>
           </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleWatchlistToggle}
+                  className={cn(
+                    "transition-colors hover:bg-yellow-100 dark:hover:bg-yellow-900",
+                    hasStock(currentSymbol) && "text-yellow-500"
+                  )}
+                  disabled={!currentSymbol || profileLoading || quoteLoading}
+                >
+                  {hasStock(currentSymbol) ? (
+                    <Star className="h-5 w-5 fill-current" />
+                  ) : (
+                    <StarOff className="h-5 w-5" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {hasStock(currentSymbol) ? "Remove from watchlist" : "Add to watchlist"}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </CardHeader>
         <CardContent>
           <div className="grid gap-6">

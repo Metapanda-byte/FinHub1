@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { fetchStockQuote } from "@/lib/financial-modeling-prep";
 
 export interface StockQuote {
   symbol: string;
@@ -28,38 +29,19 @@ export async function GET(
   request: Request,
   { params }: { params: { symbol: string } }
 ) {
-  const symbol = params.symbol;
+  const { symbol } = params;
 
   if (!symbol) {
     return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
   }
 
-  const apiKey = process.env.FMP_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "API key not configured" }, { status: 500 });
-  }
-
   try {
-    const response = await fetch(
-      `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch stock quote");
-    }
-
-    const data = await response.json();
-
-    if (!Array.isArray(data) || data.length === 0) {
-      return NextResponse.json({ error: "No data found" }, { status: 404 });
-    }
-
-    const quote: StockQuote = data[0];
+    const quote = await fetchStockQuote(symbol);
     return NextResponse.json(quote);
   } catch (error) {
     console.error("Error fetching stock quote:", error);
     return NextResponse.json(
-      { error: "Failed to fetch stock quote" },
+      { error: "Failed to fetch stock quote", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     );
   }

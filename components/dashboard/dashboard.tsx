@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompanySnapshot } from "@/components/dashboard/tabs/company-snapshot";
 import { HistoricalFinancials } from "@/components/dashboard/tabs/historical-financials";
@@ -9,16 +9,12 @@ import { ValuationConsiderations } from "@/components/dashboard/tabs/valuation-c
 import { RecentNews } from "@/components/dashboard/tabs/recent-news";
 import { SentimentAnalysis } from "@/components/dashboard/tabs/sentiment-analysis";
 import { ScreeningTool } from "@/components/dashboard/tabs/screening-tool";
+import { WatchlistTable } from "@/components/dashboard/tabs/watchlist-table";
 import { useSearchStore } from "@/lib/store/search-store";
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState("company-snapshot");
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
-
-  // Reset to company snapshot when switching symbols
-  useEffect(() => {
-    setActiveTab("company-snapshot");
-  }, [currentSymbol]);
 
   if (!currentSymbol) {
     return (
@@ -76,6 +72,12 @@ export function Dashboard() {
         >
           Screening Tool
         </TabsTrigger>
+        <TabsTrigger 
+          value="watchlist"
+          className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 border-b-2 border-transparent rounded-none transition-all"
+        >
+          Watchlist
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="company-snapshot" className="space-y-4 mt-4">
         <CompanySnapshot />
@@ -97,6 +99,9 @@ export function Dashboard() {
       </TabsContent>
       <TabsContent value="screening-tool" className="space-y-4 mt-4">
         <ScreeningTool />
+      </TabsContent>
+      <TabsContent value="watchlist" className="space-y-4 mt-4">
+        <WatchlistTable />
       </TabsContent>
     </Tabs>
   );

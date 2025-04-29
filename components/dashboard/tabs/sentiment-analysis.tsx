@@ -17,11 +17,42 @@ interface SentimentData {
   marketComparison: number;
 }
 
+const fetcher = async (url: string) => {
+  console.log("Fetching sentiment from:", url);
+  const response = await fetch(url);
+  if (!response.ok) {
+    const error = new Error(`Failed to fetch sentiment: ${response.status}`);
+    console.error("Sentiment fetch error:", error);
+    throw error;
+  }
+  const data = await response.json();
+  console.log("Sentiment API response:", data);
+  return data;
+};
+
 export function SentimentAnalysis() {
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
+  console.log("SentimentAnalysis component rendered with symbol:", currentSymbol);
+  
   const { data: sentiment, error, isLoading } = useSWR<SentimentData>(
-    currentSymbol ? `/api/sentiment?symbol=${currentSymbol}` : null
+    currentSymbol ? `/api/sentiment?symbol=${currentSymbol}` : null,
+    fetcher,
+    {
+      onError: (err) => {
+        console.error("Error fetching sentiment:", err);
+      },
+      onSuccess: (data) => {
+        console.log("Sentiment data received:", data);
+      },
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      errorRetryCount: 3,
+      shouldRetryOnError: true,
+      dedupingInterval: 0,
+    }
   );
+
+  console.log("Sentiment component state:", { currentSymbol, sentiment, error, isLoading });
 
   if (isLoading) {
     return (
@@ -30,18 +61,48 @@ export function SentimentAnalysis() {
           <CardHeader>
             <CardTitle>Loading Sentiment Analysis...</CardTitle>
           </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="h-4 w-3/4 bg-muted animate-pulse rounded" />
+              <div className="h-4 w-1/2 bg-muted animate-pulse rounded" />
+              <div className="h-4 w-2/3 bg-muted animate-pulse rounded" />
+            </div>
+          </CardContent>
         </Card>
       </div>
     );
   }
 
-  if (error || !sentiment) {
+  if (error) {
     return (
       <div className="space-y-4">
         <Card>
           <CardHeader>
             <CardTitle>Error Loading Sentiment Analysis</CardTitle>
           </CardHeader>
+          <CardContent>
+            <p className="text-red-500">Error: {error.message}</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Please try again later or check if the symbol is correct.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!sentiment) {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>No Sentiment Data Available</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              No sentiment analysis data is available for {currentSymbol} at this time.
+            </p>
+          </CardContent>
         </Card>
       </div>
     );

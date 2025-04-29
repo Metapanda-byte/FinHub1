@@ -4,29 +4,62 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const symbol = searchParams.get("symbol");
 
+  console.log("Sentiment API called with symbol:", symbol);
+
   if (!symbol) {
+    console.error("No symbol provided");
     return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
   }
 
-  const apiKey = process.env.FMP_API_KEY;
+  const apiKey = process.env.NEXT_PUBLIC_FMP_API_KEY;
   if (!apiKey) {
+    console.error("API key not configured");
     return NextResponse.json({ error: "API key not configured" }, { status: 500 });
   }
 
   try {
     // Fetch recent news articles
-    const response = await fetch(
-      `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&limit=20&apikey=${apiKey}`
-    );
+    const newsUrl = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&limit=20&apikey=${apiKey}`;
+    console.log("Fetching news from:", newsUrl);
+    
+    const response = await fetch(newsUrl, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    console.log("News API response status:", response.status);
+    console.log("News API response headers:", Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
-      throw new Error("Failed to fetch news");
+      const errorText = await response.text();
+      console.error("News API error response:", errorText);
+      throw new Error(`Failed to fetch news: ${response.status} ${response.statusText}`);
     }
 
     const newsData = await response.json();
+    console.log("News API response data:", newsData);
+
+    if (!Array.isArray(newsData)) {
+      console.error("Invalid news data format:", newsData);
+      throw new Error("Invalid news data format");
+    }
+
+    if (newsData.length === 0) {
+      console.log("No news articles found for symbol:", symbol);
+      return NextResponse.json({
+        overallScore: 0,
+        positiveCount: 0,
+        negativeCount: 0,
+        neutralCount: 0,
+        recentTrend: 0,
+        marketComparison: 0,
+      });
+    }
 
     // Analyze sentiment for each article
     const sentiments = newsData.map((article: any) => analyzeSentiment(article.text));
+    console.log("Analyzed sentiments:", sentiments);
     
     // Calculate overall sentiment metrics
     const positiveCount = sentiments.filter((s: number) => s > 0.3).length;
@@ -45,32 +78,49 @@ export async function GET(request: Request) {
       (olderSentiments.reduce((sum: number, score: number) => sum + score, 0) / olderSentiments.length);
 
     // Fetch market news for comparison
-    const marketResponse = await fetch(
-      `https://financialmodelingprep.com/api/v3/stock_market_news?limit=20&apikey=${apiKey}`
-    );
+    const marketUrl = `https://financialmodelingprep.com/api/v3/stock_market_news?limit=20&apikey=${apiKey}`;
+    console.log("Fetching market news from:", marketUrl);
+    
+    const marketResponse = await fetch(marketUrl, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    console.log("Market news API response status:", marketResponse.status);
 
     if (!marketResponse.ok) {
-      throw new Error("Failed to fetch market news");
+      const errorText = await marketResponse.text();
+      console.error("Market news API error response:", errorText);
+      throw new Error(`Failed to fetch market news: ${marketResponse.status} ${marketResponse.statusText}`);
     }
 
     const marketNews = await marketResponse.json();
+    console.log("Market news API response data:", marketNews);
+
     const marketSentiments = marketNews.map((article: any) => analyzeSentiment(article.text));
     const marketAverage = marketSentiments.reduce((sum: number, score: number) => sum + score, 0) / marketSentiments.length;
     
     // Calculate market comparison
     const marketComparison = overallScore - marketAverage;
 
-    return NextResponse.json({
+    const result = {
       overallScore,
       positiveCount,
       negativeCount,
       neutralCount,
       recentTrend,
       marketComparison,
-    });
+    };
+
+    console.log("Final sentiment result:", result);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Error analyzing sentiment:", error);
-    return NextResponse.json({ error: "Failed to analyze sentiment" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to analyze sentiment",
+      details: error instanceof Error ? error.message : "Unknown error"
+    }, { status: 500 });
   }
 }
 
