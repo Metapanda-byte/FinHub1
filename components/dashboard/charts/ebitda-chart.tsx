@@ -15,9 +15,12 @@ import { formatBillions, formatPercentage } from "@/lib/formatters";
 
 interface EbitdaChartProps {
   data: { year: number; value: number; margin: number }[];
+  palette?: string[];
 }
 
-export function EbitdaChart({ data }: EbitdaChartProps) {
+export function EbitdaChart({ data, palette }: EbitdaChartProps) {
+  const barColor = palette && palette.length > 0 ? palette[0] : '#2563eb';
+  const lineColor = palette && palette.length > 1 ? palette[1] : '#3b82f6';
   return (
     <ResponsiveContainer width="100%" height={280}>
       <ComposedChart data={data} margin={{ top: 10, right: 15, left: 10, bottom: 40 }}>
@@ -65,7 +68,7 @@ export function EbitdaChart({ data }: EbitdaChartProps) {
         <Bar
           yAxisId="left"
           dataKey="value"
-          fill="hsl(var(--chart-2))"
+          fill={barColor}
           radius={[4, 4, 0, 0]}
           animationDuration={1500}
         />
@@ -73,9 +76,9 @@ export function EbitdaChart({ data }: EbitdaChartProps) {
           yAxisId="right"
           type="monotone"
           dataKey="margin"
-          stroke="hsl(var(--chart-3))"
+          stroke={lineColor}
           strokeWidth={2}
-          dot={{ r: 4, fill: "hsl(var(--chart-3))" }}
+          dot={{ r: 4, fill: lineColor }}
           activeDot={{ r: 6 }}
           animationDuration={1500}
         />

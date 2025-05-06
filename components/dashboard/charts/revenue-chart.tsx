@@ -14,9 +14,11 @@ import { format } from "date-fns";
 
 interface RevenueChartProps {
   data: { year: number; value: number }[];
+  palette?: string[];
 }
 
-export function RevenueChart({ data }: RevenueChartProps) {
+export function RevenueChart({ data, palette }: RevenueChartProps) {
+  const barColor = palette && palette.length > 0 ? palette[0] : '#2563eb';
   return (
     <ResponsiveContainer width="100%" height={280}>
       <BarChart data={data} margin={{ top: 10, right: 0, left: 10, bottom: 40 }}>
@@ -53,7 +55,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
         />
         <Bar
           dataKey="value"
-          fill="hsl(var(--chart-1))"
+          fill={barColor}
           radius={[4, 4, 0, 0]}
           animationDuration={1500}
         />

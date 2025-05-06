@@ -21,6 +21,20 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useStockQuote } from "@/lib/api/stock";
+import { format } from "date-fns";
+import { useTheme } from 'next-themes';
+
+// Define a consistent FinHub blue palette (dark to light)
+const finhubBluePalette = [
+  '#1e3a8a', // Dark blue
+  '#2563eb',
+  '#3b82f6',
+  '#60a5fa',
+  '#93c5fd',
+  '#bfdbfe',
+  '#dbeafe',
+  '#e0e7ff', // Lightest blue
+];
 
 export function CompanySnapshot() {
   const [showMovingAverage, setShowMovingAverage] = useState(false);
@@ -33,6 +47,8 @@ export function CompanySnapshot() {
   const { prices, isLoading: pricesLoading } = useStockPriceData(currentSymbol, timeframe);
   const { segments: ttmSegmentData, referenceDate: ttmSegmentRefDate, isLoading: segmentsLoading } = useRevenueSegmentsTTM(currentSymbol);
   const { regions: ttmGeographyData, referenceDate: ttmGeoRefDate, isLoading: regionsLoading } = useGeographicRevenueTTM(currentSymbol);
+  const { resolvedTheme } = useTheme();
+  const pieLabelColor = resolvedTheme === 'dark' ? '#fff' : '#111';
 
   console.log('Debug:', {
     currentSymbol,
@@ -43,6 +59,25 @@ export function CompanySnapshot() {
     profile,
     quote
   });
+
+  const TOP_N = 6; // Show top 6, rest as 'Other'
+
+  function groupTopNPlusOther(data: any[], nameKey = 'name', valueKey = 'value') {
+    if (!Array.isArray(data) || data.length <= TOP_N) return data;
+    const sorted = [...data].sort((a, b) => b[valueKey] - a[valueKey]);
+    const top = sorted.slice(0, TOP_N);
+    const other = sorted.slice(TOP_N);
+    const otherValue = other.reduce((sum, item) => sum + item[valueKey], 0);
+    const otherPercentage = other.reduce((sum, item) => sum + (item.percentage || 0), 0);
+    if (otherValue > 0) {
+      top.push({
+        [nameKey]: 'Other',
+        [valueKey]: otherValue,
+        percentage: otherPercentage,
+      });
+    }
+    return top;
+  }
 
   const processedData = useMemo(() => {
     if (!profile || !statements || !prices) {
@@ -64,8 +99,8 @@ export function CompanySnapshot() {
         price: price.close,
         volume: price.volume
       })),
-      segmentData: ttmSegmentData.sort((a, b) => b.value - a.value),
-      geographyData: ttmGeographyData.sort((a, b) => b.value - a.value)
+      segmentData: groupTopNPlusOther(ttmSegmentData.sort((a, b) => b.value - a.value)),
+      geographyData: groupTopNPlusOther(ttmGeographyData.sort((a, b) => b.value - a.value)),
     };
   }, [profile, statements, prices, ttmSegmentData, ttmGeographyData]);
 
@@ -151,7 +186,7 @@ export function CompanySnapshot() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div className="space-y-1">
-            <CardTitle className="text-xl font-bold">Company Overview</CardTitle>
+            <CardTitle className="text-2xl font-bold" style={{ color: 'var(--finhub-title)' }}>Company Overview</CardTitle>
             <CardDescription>
               Key information about {profile.companyName}
             </CardDescription>
@@ -234,18 +269,18 @@ export function CompanySnapshot() {
             <div className="grid md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Revenue (5 Years)</CardTitle>
+                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Revenue (5 Years)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <RevenueChart data={revenueData} />
+                  <RevenueChart data={revenueData} palette={finhubBluePalette} />
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">EBITDA & Margin</CardTitle>
+                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>EBITDA & Margin</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <EbitdaChart data={ebitdaData} />
+                  <EbitdaChart data={ebitdaData} palette={finhubBluePalette} />
                 </CardContent>
               </Card>
             </div>
@@ -253,73 +288,61 @@ export function CompanySnapshot() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-medium">Revenue Distribution (TTM)</CardTitle>
-          <CardDescription>
-            {segmentData.length > 0 && geographyData.length > 0 ? (
-              "Breakdown by segment and geography (Trailing Twelve Months)"
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Revenue by Segment (TTM)</CardTitle>
+            <span className="text-xs" style={{ color: 'var(--finhub-title)' }}>
+              {ttmSegmentRefDate ? `As at: ${format(new Date(ttmSegmentRefDate), 'dd-MMM-yy')}` : ''}
+            </span>
+          </CardHeader>
+          <CardContent>
+            {segmentData.length > 0 ? (
+              <PieChart 
+                data={segmentData} 
+                nameKey="name" 
+                dataKey="value" 
+                colors={finhubBluePalette}
+                formatter={(value) => `$${value.toFixed(1)}B`}
+                labelColor={pieLabelColor}
+              />
             ) : (
-              "Revenue segmentation data not available"
+              <div className="text-center py-8 text-muted-foreground">
+                No revenue segmentation data available for this company
+              </div>
             )}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {segmentData.length > 0 || geographyData.length > 0 ? (
-            <div className="grid md:grid-cols-2 gap-6">
-              {segmentData.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-medium mb-2 text-center">By Segment (TTM)</h3>
-                  <PieChart 
-                    data={segmentData} 
-                    nameKey="name" 
-                    dataKey="value" 
-                    colors={["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"]} 
-                    formatter={(value) => `$${value.toFixed(1)}B`}
-                  />
-                  <div className="mt-4">
-                    <p className="text-sm text-muted-foreground">
-                      Largest segment: {segmentData[0].name} ({segmentData[0].percentage.toFixed(1)}% of revenue)
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      TTM as at: {ttmSegmentRefDate ? ttmSegmentRefDate : "N/A"}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {geographyData.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-medium mb-2 text-center">By Geography (TTM)</h3>
-                  <PieChart 
-                    data={geographyData} 
-                    nameKey="name" 
-                    dataKey="value" 
-                    colors={["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"]} 
-                    formatter={(value) => `$${value.toFixed(1)}B`}
-                  />
-                  <div className="mt-4">
-                    <p className="text-sm text-muted-foreground">
-                      Largest region: {geographyData[0].name} ({geographyData[0].percentage.toFixed(1)}% of revenue)
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      TTM as at: {ttmGeoRefDate ? ttmGeoRefDate : "N/A"}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No revenue segmentation data available for this company
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Revenue by Geography (TTM)</CardTitle>
+            <span className="text-xs" style={{ color: 'var(--finhub-title)' }}>
+              {ttmGeoRefDate ? `As at: ${format(new Date(ttmGeoRefDate), 'dd-MMM-yy')}` : ''}
+            </span>
+          </CardHeader>
+          <CardContent>
+            {geographyData.length > 0 ? (
+              <PieChart 
+                data={geographyData} 
+                nameKey="name" 
+                dataKey="value" 
+                colors={finhubBluePalette}
+                formatter={(value) => `$${value.toFixed(1)}B`}
+                labelColor={pieLabelColor}
+              />
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No geographic revenue data available for this company
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
       
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-medium">Stock Performance</CardTitle>
+            <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Stock Performance</CardTitle>
             <div className="flex items-center space-x-2">
               <Switch
                 id="moving-average"
