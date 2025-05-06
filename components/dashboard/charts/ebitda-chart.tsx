@@ -10,26 +10,29 @@ import {
   CartesianGrid,
   Line,
   ComposedChart,
+  Cell,
 } from "recharts";
 import { formatBillions, formatPercentage } from "@/lib/formatters";
 
 interface EbitdaChartProps {
   data: { year: number; value: number; margin: number }[];
   palette?: string[];
+  tickFontSize?: number;
+  ltmBarGradient?: boolean;
 }
 
-export function EbitdaChart({ data, palette }: EbitdaChartProps) {
+export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient = false }: EbitdaChartProps) {
   const barColor = palette && palette.length > 0 ? palette[0] : '#2563eb';
   const lineColor = palette && palette.length > 1 ? palette[1] : '#3b82f6';
   return (
     <ResponsiveContainer width="100%" height={280}>
-      <ComposedChart data={data} margin={{ top: 10, right: 15, left: 10, bottom: 10 }}>
+      <ComposedChart data={data} margin={{ top: 10, right: 2, left: 2, bottom: 10 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis
           dataKey="year"
           tickLine={false}
           axisLine={false}
-          tick={{ fontSize: 12 }}
+          tick={{ fontSize: tickFontSize }}
           dy={12}
           height={50}
         />
@@ -38,7 +41,7 @@ export function EbitdaChart({ data, palette }: EbitdaChartProps) {
           tickFormatter={(value) => formatBillions(value)}
           tickLine={false}
           axisLine={false}
-          tick={{ fontSize: 12 }}
+          tick={{ fontSize: tickFontSize }}
           width={75}
           dx={-10}
         />
@@ -48,7 +51,7 @@ export function EbitdaChart({ data, palette }: EbitdaChartProps) {
           tickFormatter={(value) => formatPercentage(value)}
           tickLine={false}
           axisLine={false}
-          tick={{ fontSize: 12 }}
+          tick={{ fontSize: tickFontSize }}
           width={75}
         />
         <Tooltip
@@ -68,10 +71,11 @@ export function EbitdaChart({ data, palette }: EbitdaChartProps) {
         <Bar
           yAxisId="left"
           dataKey="value"
-          fill={barColor}
-          radius={[4, 4, 0, 0]}
-          animationDuration={1500}
-        />
+        >
+          {data.map((entry, idx) => (
+            <Cell key={`cell-${idx}`} fill={palette && palette[idx] ? palette[idx] : barColor} />
+          ))}
+        </Bar>
         <Line
           yAxisId="right"
           type="monotone"

@@ -324,138 +324,38 @@ interface StockPriceData {
   volume: number;
 }
 
-export function useStockPriceData(symbol: string, timeframe: '1D' | '1W' | '1M' | '1Y' | '5Y' = '1M') {
-  const endpoint = timeframe === '1D' 
-    ? `historical-chart/1min/${symbol}`
-    : `historical-price-full/${symbol}?serietype=line`;
+export function useStockPriceData(symbol: string, timeframe: 'YTD' | '1Y' | '5Y' = 'YTD') {
+  const FMP_API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
+  // Map timeframe to number of days
+  const timeseriesMap = {
+    'YTD': 365, // Fetch 1 year of data for YTD, will filter in hook
+    '1Y': 365,
+    '5Y': 1825,
+  };
+  const timeseries = timeseriesMap[timeframe] || 365;
+  const url = symbol
+    ? `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?serietype=line&timeseries=${timeseries}&apikey=${FMP_API_KEY}`
+    : null;
 
-  const { data, error, isLoading } = useSWR<StockPriceData[]>(
-    symbol ? endpoint : null,
-    async (endpoint: string) => {
-      try {
-        console.log(`[Stock Price Data] Fetching data for ${symbol} with endpoint ${endpoint}`);
-        const response = await fetchWithCache<any>(endpoint, symbol, 'v3');
-        console.log(`[Stock Price Data] Raw response for ${symbol}:`, response);
+  const fetcher = (url: string) => fetch(url).then(res => res.json());
+  const { data, error } = useSWR(url, fetcher);
 
-        if (!response || typeof response !== 'object') {
-          console.warn(`[Stock Price Data] Invalid response type for ${symbol}:`, typeof response);
-          return [];
-        }
-
-        let processedData: StockPriceData[] = [];
-
-        if (timeframe === '1D') {
-          if (!Array.isArray(response)) {
-            console.warn(`[Stock Price Data] Invalid intraday data format for ${symbol}:`, typeof response);
-            return [];
-          }
-          if (!response[0]?.date) {
-            console.warn(`[Stock Price Data] Missing date field in intraday data for ${symbol}`);
-            return [];
-          }
-          processedData = response.map((item: any) => ({
-            date: item.date,
-            open: item.open,
-            high: item.high,
-            low: item.low,
-            close: item.close,
-            volume: item.volume
-          }));
-        } else {
-          // For historical data, we get an object with a historical array
-          if (!response.historical || !Array.isArray(response.historical)) {
-            console.warn(`[Stock Price Data] Invalid historical data format for ${symbol}:`, response);
-            return [];
-          }
-          if (response.historical.length === 0) {
-            console.warn(`[Stock Price Data] Empty historical data array for ${symbol}`);
-            return [];
-          }
-          if (!response.historical[0]?.date || !response.historical[0]?.close) {
-            console.warn(`[Stock Price Data] Missing required fields in historical data for ${symbol}:`, response.historical[0]);
-            return [];
-          }
-          processedData = response.historical.map((item: any) => ({
-            date: item.date,
-            price: item.close
-          }));
-        }
-
-        console.log(`[Stock Price Data] Processed data for ${symbol}:`, processedData);
-
-        if (processedData.length === 0) {
-          console.warn(`[Stock Price Data] No data points found for ${symbol}`);
-          return [];
-        }
-
-        // Sort by date ascending and filter based on timeframe
-        processedData.sort((a: StockPriceData, b: StockPriceData) => {
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
-          return dateA.getTime() - dateB.getTime();
-        });
-
-        // Filter data based on timeframe
-        const now = new Date();
-        const cutoffDate = new Date();
-        switch (timeframe) {
-          case '1D':
-            cutoffDate.setDate(now.getDate() - 1);
-            break;
-          case '1W':
-            cutoffDate.setDate(now.getDate() - 7);
-            break;
-          case '1M':
-            cutoffDate.setMonth(now.getMonth() - 1);
-            break;
-          case '1Y':
-            cutoffDate.setFullYear(now.getFullYear() - 1);
-            break;
-          case '5Y':
-            cutoffDate.setFullYear(now.getFullYear() - 5);
-            break;
-        }
-
-        // Set cutoff date to start of day to include all data from that day
-        cutoffDate.setHours(0, 0, 0, 0);
-
-        const filteredData = processedData.filter((item: StockPriceData) => {
-          const itemDate = new Date(item.date);
-          return itemDate >= cutoffDate;
-        });
-
-        console.log(`[Stock Price Data] Filtered data for ${symbol}:`, filteredData);
-        console.log(`[Stock Price Data] Cutoff date: ${cutoffDate.toISOString()}`);
-
-        if (filteredData.length === 0) {
-          console.warn(`[Stock Price Data] No data points within timeframe for ${symbol}`);
-          return [];
-        }
-
-        return filteredData;
-      } catch (error) {
-        console.error(`[Stock Price Data] Error processing data for ${symbol}:`, error);
-        return [];
-      }
-    },
-    {
-      dedupingInterval: timeframe === '1D' ? 60 * 1000 : 5 * 60 * 1000, // 1 min for intraday, 5 min for historical
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
-      onErrorRetry: (error, key, config, revalidate, { retryCount }) => {
-        if (retryCount >= 3) return;
-        setTimeout(() => revalidate({ retryCount: retryCount + 1 }), 1000);
-      }
-    }
-  );
+  // Map FMP data to expected format
+  let prices = data?.historical?.map((item: any) => ({
+    date: item.date,
+    price: item.close,
+    volume: item.volume,
+  })) || [];
+  // For YTD, filter to only include data from Jan 1 of current year
+  if (timeframe === 'YTD') {
+    const janFirst = new Date(new Date().getFullYear(), 0, 1);
+    prices = prices.filter(item => new Date(item.date) >= janFirst);
+  }
 
   return {
-    prices: data || [],
-    isLoading,
+    prices,
+    isLoading: !error && !data,
     error,
-    mutate: () => {
-      // Implementation of mutate function
-    }
   };
 }
 
