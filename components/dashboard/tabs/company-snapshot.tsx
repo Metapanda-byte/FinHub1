@@ -24,6 +24,7 @@ import { useStockQuote } from "@/lib/api/stock";
 import { format } from "date-fns";
 import { useTheme } from 'next-themes';
 import { pieChartPalettes } from "@/components/dashboard/charts/pie-chart-palettes";
+import clsx from 'clsx';
 
 // Define a consistent FinHub blue palette (dark to light)
 const finhubBluePalette = [
@@ -44,7 +45,6 @@ function formatMarketCapBillions(value: number) {
 }
 
 export function CompanySnapshot() {
-  const [showMovingAverage, setShowMovingAverage] = useState(false);
   const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M' | '1Y' | '5Y'>('1M');
   const { hasStock, addStock, removeStock } = useWatchlistStore();
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
@@ -161,10 +161,39 @@ export function CompanySnapshot() {
   const cash = mostRecentBalanceSheet ? (mostRecentBalanceSheet.cashAndShortTermInvestments || mostRecentBalanceSheet.cashAndCashEquivalents || 0) : null;
   const ebitda = mostRecentIncome ? mostRecentIncome.ebitda : null;
   const marketCap = profile && profile.mktCap ? profile.mktCap : null;
+  const minorityInterest = mostRecentBalanceSheet && mostRecentBalanceSheet.minorityInterest ? mostRecentBalanceSheet.minorityInterest : 0;
   const enterpriseValue = (marketCap !== null && totalDebt !== null && cash !== null)
-    ? marketCap + totalDebt - cash
+    ? marketCap + totalDebt - cash + minorityInterest
     : null;
   const evToEbitda = (enterpriseValue !== null && ebitda) ? enterpriseValue / ebitda : null;
+  // Get highlight color from palette based on theme
+  const highlightColor = resolvedTheme === 'dark'
+    ? pieChartPalettes[selectedPalette][0] || '#1e293b' // darkest for dark mode
+    : pieChartPalettes[selectedPalette][pieChartPalettes[selectedPalette].length - 1] || '#f9fafb'; // lightest for light mode
+  // Determine border color class for theme
+  const borderColorClass = resolvedTheme === 'dark' ? 'border-white' : 'border-black';
+  const highlightTextColor = resolvedTheme === 'dark' ? '#fff' : '#111';
+
+  // Helper to format numbers with aligned 'B' using '#,##0_)' approach
+  function formatWithParens(value: number | null) {
+    if (value === null || isNaN(value)) return 'N/A';
+    const absStr = (Math.abs(value) / 1_000_000_000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    if (value < 0) {
+      return <span><span>(</span>{absStr}<span style={{ display: 'inline-block', minWidth: '1.2ch', textAlign: 'left' }}>B)</span></span>;
+    }
+    // Add a space after B to align with parenthesis in negative numbers
+    return <span>{absStr}<span style={{ display: 'inline-block', minWidth: '1.2ch', textAlign: 'left' }}>B&nbsp;</span></span>;
+  }
+  // Helper to format ratios with 'x' and align using '#,##0_)' approach
+  function formatRatio(value: number | null) {
+    if (value === null || isNaN(value)) return 'N/A';
+    const absStr = value.toFixed(1);
+    if (value < 0) {
+      return <span><span>(</span>{absStr}<span style={{ display: 'inline-block', minWidth: '1.2ch', textAlign: 'left' }}>x)</span></span>;
+    }
+    // Add a space after x to align with parenthesis in negative numbers
+    return <span>{absStr}<span style={{ display: 'inline-block', minWidth: '1.2ch', textAlign: 'left' }}>x&nbsp;</span></span>;
+  }
 
   if (!currentSymbol || profileLoading || statementsLoading || pricesLoading || segmentsLoading || regionsLoading) {
     return (
@@ -397,20 +426,7 @@ export function CompanySnapshot() {
       <div className="grid md:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Stock Performance</CardTitle>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="moving-average"
-                  checked={showMovingAverage}
-                  onCheckedChange={setShowMovingAverage}
-                />
-                <Label htmlFor="moving-average">Show Moving Average</Label>
-              </div>
-            </div>
-            <CardDescription>
-              Historical stock price and volume data
-            </CardDescription>
+            <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Stock Performance</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -423,19 +439,19 @@ export function CompanySnapshot() {
                   <TabsTrigger value="5Y">5Y</TabsTrigger>
                 </TabsList>
                 <TabsContent value="1D">
-                  <StockChart symbol={currentSymbol} timeframe="1D" showMovingAverage={showMovingAverage} />
+                  <StockChart symbol={currentSymbol} timeframe="1D" />
                 </TabsContent>
                 <TabsContent value="1W">
-                  <StockChart symbol={currentSymbol} timeframe="1W" showMovingAverage={showMovingAverage} />
+                  <StockChart symbol={currentSymbol} timeframe="1W" />
                 </TabsContent>
                 <TabsContent value="1M">
-                  <StockChart symbol={currentSymbol} timeframe="1M" showMovingAverage={showMovingAverage} />
+                  <StockChart symbol={currentSymbol} timeframe="1M" />
                 </TabsContent>
                 <TabsContent value="1Y">
-                  <StockChart symbol={currentSymbol} timeframe="1Y" showMovingAverage={showMovingAverage} />
+                  <StockChart symbol={currentSymbol} timeframe="1Y" />
                 </TabsContent>
                 <TabsContent value="5Y">
-                  <StockChart symbol={currentSymbol} timeframe="5Y" showMovingAverage={showMovingAverage} />
+                  <StockChart symbol={currentSymbol} timeframe="5Y" />
                 </TabsContent>
               </Tabs>
             </div>
@@ -444,35 +460,64 @@ export function CompanySnapshot() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Capitalization Table</CardTitle>
-            <CardDescription>Build-up from Market Cap to Enterprise Value and key valuation metrics</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
+              <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
                 <span>Market Cap</span>
-                <span>{formatMarketCapBillions(marketCap)}</span>
+                <span>{formatWithParens(marketCap)}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
                 <span>+ Total Debt</span>
-                <span>{totalDebt !== null ? formatMarketCapBillions(totalDebt) : 'N/A'}</span>
+                <span>{formatWithParens(totalDebt)}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
+                <span>+ Minority Interest</span>
+                <span>{formatWithParens(minorityInterest)}</span>
+              </div>
+              <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
                 <span>- Cash & Equivalents</span>
-                <span>{cash !== null ? formatMarketCapBillions(cash) : 'N/A'}</span>
+                <span>{formatWithParens(cash !== null ? -Math.abs(cash) : null)}</span>
               </div>
-              <div className="flex justify-between text-sm font-semibold border-t pt-2 mt-2">
+              <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm font-semibold border-t pt-2 mt-2">
                 <span>Enterprise Value</span>
-                <span>{enterpriseValue !== null ? formatMarketCapBillions(enterpriseValue) : 'N/A'}</span>
+                <span>{formatWithParens(enterpriseValue)}</span>
               </div>
             </div>
-            <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-sm">
+            <div className="mt-4 space-y-0">
+              <div
+                style={{
+                  background: highlightColor,
+                  color: highlightTextColor,
+                  fontWeight: 600,
+                  padding: '0.25rem 1rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderBottom: 'none',
+                  borderRadius: '4px 4px 0 0',
+                }}
+                className={clsx('text-sm font-semibold border', borderColorClass)}
+              >
                 <span>P/E Ratio</span>
-                <span>{quote && quote.pe ? quote.pe.toFixed(1) : 'N/A'}</span>
+                <span>{formatRatio(quote && quote.pe ? quote.pe : null)}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div
+                style={{
+                  background: highlightColor,
+                  color: highlightTextColor,
+                  fontWeight: 600,
+                  padding: '0.25rem 1rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderTop: 'none',
+                  borderRadius: '0 0 4px 4px',
+                }}
+                className={clsx('text-sm font-semibold border', borderColorClass)}
+              >
                 <span>EV / EBITDA</span>
-                <span>{evToEbitda ? evToEbitda.toFixed(1) : 'N/A'}</span>
+                <span>{formatRatio(evToEbitda)}</span>
               </div>
             </div>
           </CardContent>
