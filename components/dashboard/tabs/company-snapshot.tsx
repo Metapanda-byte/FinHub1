@@ -13,7 +13,7 @@ import { StockChart } from "@/components/dashboard/charts/stock-chart";
 import { ShareholdersTable } from "@/components/dashboard/tables/shareholders-table";
 import { useState, useMemo } from "react";
 import { useSearchStore } from "@/lib/store/search-store";
-import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegmentsTTM, useGeographicRevenueTTM, useEmployeeCount } from "@/lib/api/financial";
+import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegmentsTTM, useGeographicRevenueTTM, useEmployeeCount, useBalanceSheets } from "@/lib/api/financial";
 import { formatFinancialNumber, formatLargeNumber } from "@/lib/utils/formatters";
 import { Star, StarOff } from "lucide-react";
 import { useWatchlistStore } from "@/lib/store/watchlist-store";
@@ -55,6 +55,7 @@ export function CompanySnapshot() {
   const { segments: ttmSegmentData, referenceDate: ttmSegmentRefDate, isLoading: segmentsLoading } = useRevenueSegmentsTTM(currentSymbol);
   const { regions: ttmGeographyData, referenceDate: ttmGeoRefDate, isLoading: regionsLoading } = useGeographicRevenueTTM(currentSymbol);
   const { employeeCount, isLoading: employeeCountLoading } = useEmployeeCount(currentSymbol);
+  const { statements: balanceSheets, isLoading: balanceSheetLoading } = useBalanceSheets(currentSymbol);
   const { resolvedTheme } = useTheme();
   const pieLabelColor = resolvedTheme === 'dark' ? '#fff' : '#111';
   const [selectedPalette, setSelectedPalette] = useState<keyof typeof pieChartPalettes>('finhubBlues');
@@ -153,6 +154,17 @@ export function CompanySnapshot() {
     label: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
     colors: value,
   }));
+
+  const mostRecentBalanceSheet = balanceSheets && balanceSheets.length > 0 ? balanceSheets[0] : null;
+  const mostRecentIncome = statements && statements.length > 0 ? statements[0] : null;
+  const totalDebt = mostRecentBalanceSheet ? (mostRecentBalanceSheet.shortTermDebt || 0) + (mostRecentBalanceSheet.longTermDebt || 0) : null;
+  const cash = mostRecentBalanceSheet ? (mostRecentBalanceSheet.cashAndShortTermInvestments || mostRecentBalanceSheet.cashAndCashEquivalents || 0) : null;
+  const ebitda = mostRecentIncome ? mostRecentIncome.ebitda : null;
+  const marketCap = profile && profile.mktCap ? profile.mktCap : null;
+  const enterpriseValue = (marketCap !== null && totalDebt !== null && cash !== null)
+    ? marketCap + totalDebt - cash
+    : null;
+  const evToEbitda = (enterpriseValue !== null && ebitda) ? enterpriseValue / ebitda : null;
 
   if (!currentSymbol || profileLoading || statementsLoading || pricesLoading || segmentsLoading || regionsLoading) {
     return (
@@ -280,7 +292,7 @@ export function CompanySnapshot() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
                   <div>
                     <p className="text-xs text-muted-foreground">Market Cap</p>
-                    <p className="text-sm font-medium">{formatMarketCapBillions(profile.mktCap)}</p>
+                    <p className="text-sm font-medium">{formatMarketCapBillions(marketCap)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Employees</p>
@@ -382,52 +394,90 @@ export function CompanySnapshot() {
         </Card>
       </div>
       
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Stock Performance</CardTitle>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="moving-average"
-                checked={showMovingAverage}
-                onCheckedChange={setShowMovingAverage}
-              />
-              <Label htmlFor="moving-average">Show Moving Average</Label>
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Stock Performance</CardTitle>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="moving-average"
+                  checked={showMovingAverage}
+                  onCheckedChange={setShowMovingAverage}
+                />
+                <Label htmlFor="moving-average">Show Moving Average</Label>
+              </div>
             </div>
-          </div>
-          <CardDescription>
-            Historical stock price and volume data
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Tabs defaultValue="1M" onValueChange={(value) => setTimeframe(value as '1D' | '1W' | '1M' | '1Y' | '5Y')}>
-              <TabsList>
-                <TabsTrigger value="1D">1D</TabsTrigger>
-                <TabsTrigger value="1W">1W</TabsTrigger>
-                <TabsTrigger value="1M">1M</TabsTrigger>
-                <TabsTrigger value="1Y">1Y</TabsTrigger>
-                <TabsTrigger value="5Y">5Y</TabsTrigger>
-              </TabsList>
-              <TabsContent value="1D">
-                <StockChart symbol={currentSymbol} timeframe="1D" showMovingAverage={showMovingAverage} />
-              </TabsContent>
-              <TabsContent value="1W">
-                <StockChart symbol={currentSymbol} timeframe="1W" showMovingAverage={showMovingAverage} />
-              </TabsContent>
-              <TabsContent value="1M">
-                <StockChart symbol={currentSymbol} timeframe="1M" showMovingAverage={showMovingAverage} />
-              </TabsContent>
-              <TabsContent value="1Y">
-                <StockChart symbol={currentSymbol} timeframe="1Y" showMovingAverage={showMovingAverage} />
-              </TabsContent>
-              <TabsContent value="5Y">
-                <StockChart symbol={currentSymbol} timeframe="5Y" showMovingAverage={showMovingAverage} />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </CardContent>
-      </Card>
+            <CardDescription>
+              Historical stock price and volume data
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Tabs defaultValue="1M" onValueChange={(value) => setTimeframe(value as '1D' | '1W' | '1M' | '1Y' | '5Y')}>
+                <TabsList>
+                  <TabsTrigger value="1D">1D</TabsTrigger>
+                  <TabsTrigger value="1W">1W</TabsTrigger>
+                  <TabsTrigger value="1M">1M</TabsTrigger>
+                  <TabsTrigger value="1Y">1Y</TabsTrigger>
+                  <TabsTrigger value="5Y">5Y</TabsTrigger>
+                </TabsList>
+                <TabsContent value="1D">
+                  <StockChart symbol={currentSymbol} timeframe="1D" showMovingAverage={showMovingAverage} />
+                </TabsContent>
+                <TabsContent value="1W">
+                  <StockChart symbol={currentSymbol} timeframe="1W" showMovingAverage={showMovingAverage} />
+                </TabsContent>
+                <TabsContent value="1M">
+                  <StockChart symbol={currentSymbol} timeframe="1M" showMovingAverage={showMovingAverage} />
+                </TabsContent>
+                <TabsContent value="1Y">
+                  <StockChart symbol={currentSymbol} timeframe="1Y" showMovingAverage={showMovingAverage} />
+                </TabsContent>
+                <TabsContent value="5Y">
+                  <StockChart symbol={currentSymbol} timeframe="5Y" showMovingAverage={showMovingAverage} />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Capitalization Table</CardTitle>
+            <CardDescription>Build-up from Market Cap to Enterprise Value and key valuation metrics</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Market Cap</span>
+                <span>{formatMarketCapBillions(marketCap)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>+ Total Debt</span>
+                <span>{totalDebt !== null ? formatMarketCapBillions(totalDebt) : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>- Cash & Equivalents</span>
+                <span>{cash !== null ? formatMarketCapBillions(cash) : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between text-sm font-semibold border-t pt-2 mt-2">
+                <span>Enterprise Value</span>
+                <span>{enterpriseValue !== null ? formatMarketCapBillions(enterpriseValue) : 'N/A'}</span>
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>P/E Ratio</span>
+                <span>{quote && quote.pe ? quote.pe.toFixed(1) : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>EV / EBITDA</span>
+                <span>{evToEbitda ? evToEbitda.toFixed(1) : 'N/A'}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
