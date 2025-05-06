@@ -472,64 +472,27 @@ export interface ProcessedSegment {
 }
 
 function getSimplifiedLabel(fullName: string): string {
-  // Split by common separators and get the last meaningful parts
-  const parts = fullName.split(/[-–—]/).map(part => part.trim());
-  
-  // Get the last meaningful part
-  const lastPart = parts[parts.length - 1];
-  const words = lastPart.split(/\s+/).filter(word => word.length > 0);
-  
-  // Define terms to filter out
-  const filterTerms = [
-    // Common prefixes
-    'the', 'and', 'of', 'in', 'at', 'by', 'for', 'with', 'to', 'from',
-    // Business terms
-    'segment', 'region', 'area', 'division', 'unit', 'group', 'business', 
-    'product', 'service', 'revenue', 'revenues', 'excluding', 'including',
-    'assessed', 'tax', 'taxes', 'total', 'net', 'gross', 'other', 'miscellaneous',
-    'various', 'multiple', 'diverse', 'different', 'various', 'remaining',
-    // Geographic terms
-    'region', 'area', 'zone', 'territory', 'district', 'province', 'state',
-    // Generic terms
-    'items', 'categories', 'types', 'kinds', 'sorts', 'varieties'
+  // Normalize US and Non-US region names for geographic revenue
+  const usVariants = [
+    'us', 'u.s.', 'u.s', 'united states', 'unitedstates', 'usa', 'u.s.a.'
   ];
-
-  // Remove filtered terms and get meaningful words
-  const meaningfulWords = words.filter(word => {
-    const lowerWord = word.toLowerCase();
-    return !filterTerms.includes(lowerWord) && 
-           !word.match(/^(segment|region|area|division|unit|group|business|product|service)$/i) &&
-           word.length > 1; // Filter out single letters
-  });
-
-  // If we have no meaningful words, try to find a better label
-  if (meaningfulWords.length === 0) {
-    // Try to find a meaningful word in the full path
-    const allWords = fullName.split(/\s+/);
-    const meaningfulWord = allWords.find(word => 
-      word.length > 2 && 
-      !filterTerms.includes(word.toLowerCase()) &&
-      !word.match(/[0-9]/) // Exclude words with numbers
-    );
-    
-    return meaningfulWord || lastPart;
+  const lower = fullName.trim().toLowerCase();
+  if (usVariants.some(v => lower === v || lower.endsWith(' ' + v))) {
+    return 'United States';
   }
-
-  // Take the last 2-3 meaningful words
-  const simplifiedWords = meaningfulWords.slice(-3);
-  
-  // If the simplified label is too generic, try to include more context
-  if (simplifiedWords.length === 1 && simplifiedWords[0].length < 4) {
-    const contextWords = meaningfulWords.slice(-4, -1);
-    if (contextWords.length > 0) {
-      return [...contextWords, ...simplifiedWords].join(' ');
-    }
-  }
-
-  return simplifiedWords.join(' ');
+  // If it's not US, label as Non-US for the geography split
+  // (You may want to restrict this only for the geography split, but for now, apply globally)
+  return 'Non-US';
 }
 
-function processNestedRevenueData(data: RevenueSegment, parentName: string = ''): ProcessedSegment[] {
+// NEW: Helper to extract concise segment label
+function getConciseSegmentLabel(fullName: string): string {
+  // Split by ' - ' and return the last non-empty trimmed part
+  const parts = fullName.split(' - ').map(p => p.trim()).filter(Boolean);
+  return parts.length > 0 ? parts[parts.length - 1] : fullName.trim();
+}
+
+function processNestedRevenueData(data: RevenueSegment, parentName: string = '', isGeography: boolean = false): ProcessedSegment[] {
   const processed: ProcessedSegment[] = [];
   let totalRevenue = 0;
 
@@ -554,12 +517,15 @@ function processNestedRevenueData(data: RevenueSegment, parentName: string = '')
     Object.entries(obj).forEach(([key, value]) => {
       const name = key.replace(' Segment', '');
       const fullName = currentParentName ? `${currentParentName} - ${name}` : name;
-      const simplifiedName = getSimplifiedLabel(fullName);
+      // Use concise label for segments, simplified label for geography
+      const displayName = isGeography
+        ? getSimplifiedLabel(fullName)
+        : getConciseSegmentLabel(fullName);
 
       if (typeof value === 'number') {
         // Leaf node - actual revenue value
         segments.push({
-          name: simplifiedName,
+          name: displayName,
           value: value / 1e9,
           percentage: totalRevenue > 0 ? (value / totalRevenue) * 100 : 0,
           fullName
@@ -620,7 +586,7 @@ export function useRevenueSegments(symbol: string) {
 
     if (!segmentData || typeof segmentData !== 'object') return [];
 
-    const processed = processNestedRevenueData(segmentData);
+    const processed = processNestedRevenueData(segmentData, '', false);
     console.log('[useRevenueSegments] Processed segments:', processed);
     return processed;
   }, [data]);
@@ -663,7 +629,7 @@ export function useGeographicRevenue(symbol: string) {
 
     if (!regionData || typeof regionData !== 'object') return [];
 
-    const processed = processNestedRevenueData(regionData);
+    const processed = processNestedRevenueData(regionData, '', true);
     console.log('[useGeographicRevenue] Processed regions:', processed);
     return processed;
   }, [data]);
@@ -690,6 +656,103 @@ export function useCompetitorAnalysis(symbol: string) {
 
   return {
     peers: Array.isArray(data) ? data : [],
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Helper to aggregate TTM for revenue segments or regions
+function aggregateTTMRevenue(
+  data: any[],
+  getDateKey: (entry: any) => string,
+  isGeography: boolean
+): { ttmSegments: ProcessedSegment[], referenceDate: string | null } {
+  if (!Array.isArray(data) || data.length === 0) return { ttmSegments: [], referenceDate: null };
+
+  // Sort by date descending (most recent first)
+  const sorted = [...data].sort((a, b) => {
+    const dateA = new Date(getDateKey(a));
+    const dateB = new Date(getDateKey(b));
+    return dateB.getTime() - dateA.getTime();
+  });
+
+  // Take last 4 quarters
+  const ttmEntries = sorted.slice(0, 4);
+
+  // Aggregate all segment/region values
+  const aggregate: RevenueSegment = {};
+  ttmEntries.forEach(entry => {
+    const dateKey = getDateKey(entry);
+    const segmentData = entry[dateKey] as RevenueSegment;
+    function addToAggregate(obj: RevenueSegment, target: RevenueSegment) {
+      for (const [key, value] of Object.entries(obj)) {
+        if (typeof value === 'number') {
+          target[key] = (target[key] as number || 0) + value;
+        } else if (typeof value === 'object' && value !== null) {
+          if (!target[key]) target[key] = {};
+          addToAggregate(value, target[key] as RevenueSegment);
+        }
+      }
+    }
+    addToAggregate(segmentData, aggregate);
+  });
+
+  // Use the most recent quarter's date as the reference
+  const referenceDate = getDateKey(ttmEntries[0]) || null;
+
+  // Process as before
+  const ttmSegments = processNestedRevenueData(aggregate, '', isGeography);
+
+  return { ttmSegments, referenceDate };
+}
+
+export function useRevenueSegmentsTTM(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `revenue-product-segmentation/${symbol}` : null,
+    () => fetchWithCache<any[]>('revenue-product-segmentation', symbol, 'v4'),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATION,
+      shouldRetryOnError: false
+    }
+  );
+
+  const { ttmSegments, referenceDate } = React.useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return { ttmSegments: [], referenceDate: null };
+    return aggregateTTMRevenue(data, entry => Object.keys(entry)[0], false);
+  }, [data]);
+
+  return {
+    segments: ttmSegments,
+    referenceDate,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+export function useGeographicRevenueTTM(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `revenue-geographic-segmentation/${symbol}` : null,
+    () => fetchWithCache<any[]>('revenue-geographic-segmentation', symbol, 'v4'),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATION,
+      shouldRetryOnError: false
+    }
+  );
+
+  const { ttmSegments, referenceDate } = React.useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return { ttmSegments: [], referenceDate: null };
+    return aggregateTTMRevenue(data, entry => Object.keys(entry)[0], true);
+  }, [data]);
+
+  return {
+    regions: ttmSegments,
+    referenceDate,
     isLoading,
     error,
     mutate

@@ -13,7 +13,7 @@ import { StockChart } from "@/components/dashboard/charts/stock-chart";
 import { ShareholdersTable } from "@/components/dashboard/tables/shareholders-table";
 import { useState, useMemo } from "react";
 import { useSearchStore } from "@/lib/store/search-store";
-import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegments, useGeographicRevenue } from "@/lib/api/financial";
+import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegmentsTTM, useGeographicRevenueTTM } from "@/lib/api/financial";
 import { formatFinancialNumber, formatLargeNumber } from "@/lib/utils/formatters";
 import { Star, StarOff } from "lucide-react";
 import { useWatchlistStore } from "@/lib/store/watchlist-store";
@@ -31,8 +31,8 @@ export function CompanySnapshot() {
   const { quote, loading: quoteLoading } = useStockQuote(currentSymbol);
   const { statements, isLoading: statementsLoading } = useIncomeStatements(currentSymbol);
   const { prices, isLoading: pricesLoading } = useStockPriceData(currentSymbol, timeframe);
-  const { segments, isLoading: segmentsLoading } = useRevenueSegments(currentSymbol);
-  const { regions, isLoading: regionsLoading } = useGeographicRevenue(currentSymbol);
+  const { segments: ttmSegmentData, referenceDate: ttmSegmentRefDate, isLoading: segmentsLoading } = useRevenueSegmentsTTM(currentSymbol);
+  const { regions: ttmGeographyData, referenceDate: ttmGeoRefDate, isLoading: regionsLoading } = useGeographicRevenueTTM(currentSymbol);
 
   console.log('Debug:', {
     currentSymbol,
@@ -45,7 +45,7 @@ export function CompanySnapshot() {
   });
 
   const processedData = useMemo(() => {
-    if (!profile || !statements || !prices || !segments || !regions) {
+    if (!profile || !statements || !prices) {
       return null;
     }
 
@@ -64,18 +64,10 @@ export function CompanySnapshot() {
         price: price.close,
         volume: price.volume
       })),
-      segmentData: segments.map(segment => ({
-        name: segment.name,
-        value: segment.value,
-        percentage: segment.percentage
-      })).sort((a, b) => b.value - a.value),
-      geographyData: regions.map(region => ({
-        name: region.name,
-        value: region.value,
-        percentage: region.percentage
-      })).sort((a, b) => b.value - a.value)
+      segmentData: ttmSegmentData.sort((a, b) => b.value - a.value),
+      geographyData: ttmGeographyData.sort((a, b) => b.value - a.value)
     };
-  }, [profile, statements, prices, segments, regions]);
+  }, [profile, statements, prices, ttmSegmentData, ttmGeographyData]);
 
   const isWatchlisted = hasStock(currentSymbol);
 
@@ -263,10 +255,10 @@ export function CompanySnapshot() {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-medium">Revenue Distribution</CardTitle>
+          <CardTitle className="text-lg font-medium">Revenue Distribution (TTM)</CardTitle>
           <CardDescription>
             {segmentData.length > 0 && geographyData.length > 0 ? (
-              "Breakdown by segment and geography"
+              "Breakdown by segment and geography (Trailing Twelve Months)"
             ) : (
               "Revenue segmentation data not available"
             )}
@@ -277,7 +269,7 @@ export function CompanySnapshot() {
             <div className="grid md:grid-cols-2 gap-6">
               {segmentData.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium mb-2 text-center">By Segment</h3>
+                  <h3 className="text-sm font-medium mb-2 text-center">By Segment (TTM)</h3>
                   <PieChart 
                     data={segmentData} 
                     nameKey="name" 
@@ -289,12 +281,15 @@ export function CompanySnapshot() {
                     <p className="text-sm text-muted-foreground">
                       Largest segment: {segmentData[0].name} ({segmentData[0].percentage.toFixed(1)}% of revenue)
                     </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      TTM as at: {ttmSegmentRefDate ? ttmSegmentRefDate : "N/A"}
+                    </p>
                   </div>
                 </div>
               )}
               {geographyData.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium mb-2 text-center">By Geography</h3>
+                  <h3 className="text-sm font-medium mb-2 text-center">By Geography (TTM)</h3>
                   <PieChart 
                     data={geographyData} 
                     nameKey="name" 
@@ -305,6 +300,9 @@ export function CompanySnapshot() {
                   <div className="mt-4">
                     <p className="text-sm text-muted-foreground">
                       Largest region: {geographyData[0].name} ({geographyData[0].percentage.toFixed(1)}% of revenue)
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      TTM as at: {ttmGeoRefDate ? ttmGeoRefDate : "N/A"}
                     </p>
                   </div>
                 </div>
