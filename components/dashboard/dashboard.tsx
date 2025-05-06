@@ -7,7 +7,6 @@ import { HistoricalFinancials } from "@/components/dashboard/tabs/historical-fin
 import { CompetitorAnalysis } from "@/components/dashboard/tabs/competitor-analysis";
 import { ValuationConsiderations } from "@/components/dashboard/tabs/valuation-considerations";
 import { RecentNews } from "@/components/dashboard/tabs/recent-news";
-import { SentimentAnalysis } from "@/components/dashboard/tabs/sentiment-analysis";
 import { ScreeningTool } from "@/components/dashboard/tabs/screening-tool";
 import { WatchlistTable } from "@/components/dashboard/tabs/watchlist-table";
 import { useSearchStore } from "@/lib/store/search-store";
@@ -61,12 +60,6 @@ export function Dashboard() {
           Recent News
         </TabsTrigger>
         <TabsTrigger 
-          value="sentiment-analysis"
-          className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 border-b-2 border-transparent rounded-none transition-all"
-        >
-          Sentiment Analysis
-        </TabsTrigger>
-        <TabsTrigger 
           value="screening-tool"
           className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 border-b-2 border-transparent rounded-none transition-all"
         >
@@ -93,9 +86,6 @@ export function Dashboard() {
       </TabsContent>
       <TabsContent value="recent-news" className="space-y-4 mt-4">
         <RecentNews />
-      </TabsContent>
-      <TabsContent value="sentiment-analysis" className="space-y-4 mt-4">
-        <SentimentAnalysis />
       </TabsContent>
       <TabsContent value="screening-tool" className="space-y-4 mt-4">
         <ScreeningTool />

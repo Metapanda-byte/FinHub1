@@ -21,7 +21,7 @@ export function RevenueChart({ data, palette }: RevenueChartProps) {
   const barColor = palette && palette.length > 0 ? palette[0] : '#2563eb';
   return (
     <ResponsiveContainer width="100%" height={280}>
-      <BarChart data={data} margin={{ top: 10, right: 0, left: 10, bottom: 40 }}>
+      <BarChart data={data} margin={{ top: 10, right: 0, left: 10, bottom: 10 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis
           dataKey="year"

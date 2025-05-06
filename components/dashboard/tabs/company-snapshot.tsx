@@ -13,7 +13,7 @@ import { StockChart } from "@/components/dashboard/charts/stock-chart";
 import { ShareholdersTable } from "@/components/dashboard/tables/shareholders-table";
 import { useState, useMemo } from "react";
 import { useSearchStore } from "@/lib/store/search-store";
-import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegmentsTTM, useGeographicRevenueTTM } from "@/lib/api/financial";
+import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegmentsTTM, useGeographicRevenueTTM, useEmployeeCount } from "@/lib/api/financial";
 import { formatFinancialNumber, formatLargeNumber } from "@/lib/utils/formatters";
 import { Star, StarOff } from "lucide-react";
 import { useWatchlistStore } from "@/lib/store/watchlist-store";
@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useStockQuote } from "@/lib/api/stock";
 import { format } from "date-fns";
 import { useTheme } from 'next-themes';
+import { pieChartPalettes } from "@/components/dashboard/charts/pie-chart-palettes";
 
 // Define a consistent FinHub blue palette (dark to light)
 const finhubBluePalette = [
@@ -36,6 +37,12 @@ const finhubBluePalette = [
   '#e0e7ff', // Lightest blue
 ];
 
+// Add a helper for market cap in billions
+function formatMarketCapBillions(value: number) {
+  if (typeof value !== 'number' || isNaN(value)) return 'N/A';
+  return `${(value / 1_000_000_000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}B`;
+}
+
 export function CompanySnapshot() {
   const [showMovingAverage, setShowMovingAverage] = useState(false);
   const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M' | '1Y' | '5Y'>('1M');
@@ -47,8 +54,10 @@ export function CompanySnapshot() {
   const { prices, isLoading: pricesLoading } = useStockPriceData(currentSymbol, timeframe);
   const { segments: ttmSegmentData, referenceDate: ttmSegmentRefDate, isLoading: segmentsLoading } = useRevenueSegmentsTTM(currentSymbol);
   const { regions: ttmGeographyData, referenceDate: ttmGeoRefDate, isLoading: regionsLoading } = useGeographicRevenueTTM(currentSymbol);
+  const { employeeCount, isLoading: employeeCountLoading } = useEmployeeCount(currentSymbol);
   const { resolvedTheme } = useTheme();
   const pieLabelColor = resolvedTheme === 'dark' ? '#fff' : '#111';
+  const [selectedPalette, setSelectedPalette] = useState<keyof typeof pieChartPalettes>('finhubBlues');
 
   console.log('Debug:', {
     currentSymbol,
@@ -138,6 +147,13 @@ export function CompanySnapshot() {
     }
   };
 
+  // Palette selector UI
+  const paletteOptions = Object.entries(pieChartPalettes).map(([key, value]) => ({
+    key,
+    label: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+    colors: value,
+  }));
+
   if (!currentSymbol || profileLoading || statementsLoading || pricesLoading || segmentsLoading || regionsLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -218,6 +234,25 @@ export function CompanySnapshot() {
           </TooltipProvider>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center gap-2 mb-4">
+            <label htmlFor="palette-select" className="text-sm font-medium">Chart Palette:</label>
+            <select
+              id="palette-select"
+              className="border rounded px-2 py-1 text-sm"
+              value={selectedPalette}
+              onChange={e => setSelectedPalette(e.target.value as keyof typeof pieChartPalettes)}
+            >
+              {paletteOptions.map(opt => (
+                <option key={opt.key} value={opt.key}>{opt.label}</option>
+              ))}
+            </select>
+            {/* Show color swatches for preview */}
+            <div className="flex gap-1 ml-2">
+              {pieChartPalettes[selectedPalette].slice(0, 8).map((color, idx) => (
+                <span key={color} style={{ background: color, width: 16, height: 16, borderRadius: 4, border: '1px solid #ccc', display: 'inline-block' }} />
+              ))}
+            </div>
+          </div>
           <div className="grid gap-6">
             <div className="flex items-start space-x-4 rounded-md border p-4">
               <Avatar className="h-12 w-12">
@@ -245,12 +280,16 @@ export function CompanySnapshot() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
                   <div>
                     <p className="text-xs text-muted-foreground">Market Cap</p>
-                    <p className="text-sm font-medium">{formatLargeNumber(profile.mktCap)}</p>
+                    <p className="text-sm font-medium">{formatMarketCapBillions(profile.mktCap)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Employees</p>
                     <p className="text-sm font-medium">
-                      {profile?.fullTimeEmployees ? profile.fullTimeEmployees.toLocaleString() : 'N/A'}
+                      {employeeCountLoading
+                        ? <span className="animate-pulse text-muted-foreground">Loading...</span>
+                        : (employeeCount !== null && employeeCount !== undefined)
+                          ? employeeCount.toLocaleString()
+                          : 'N/A'}
                     </p>
                   </div>
                   <div>
@@ -269,18 +308,18 @@ export function CompanySnapshot() {
             <div className="grid md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Revenue (5 Years)</CardTitle>
+                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical Revenue (Last 5Y)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <RevenueChart data={revenueData} palette={finhubBluePalette} />
+                  <RevenueChart data={revenueData} palette={pieChartPalettes[selectedPalette]} />
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>EBITDA & Margin</CardTitle>
+                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical EBITDA (Last 5Y)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <EbitdaChart data={ebitdaData} palette={finhubBluePalette} />
+                  <EbitdaChart data={ebitdaData} palette={pieChartPalettes[selectedPalette]} />
                 </CardContent>
               </Card>
             </div>
@@ -291,21 +330,23 @@ export function CompanySnapshot() {
       <div className="grid md:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Revenue by Segment (TTM)</CardTitle>
-            <span className="text-xs" style={{ color: 'var(--finhub-title)' }}>
-              {ttmSegmentRefDate ? `As at: ${format(new Date(ttmSegmentRefDate), 'dd-MMM-yy')}` : ''}
-            </span>
+            <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>LTM Revenue by Segment</CardTitle>
           </CardHeader>
           <CardContent>
             {segmentData.length > 0 ? (
-              <PieChart 
-                data={segmentData} 
-                nameKey="name" 
-                dataKey="value" 
-                colors={finhubBluePalette}
-                formatter={(value) => `$${value.toFixed(1)}B`}
-                labelColor={pieLabelColor}
-              />
+              <>
+                <PieChart 
+                  data={segmentData} 
+                  nameKey="name" 
+                  dataKey="value" 
+                  colors={pieChartPalettes[selectedPalette]}
+                  formatter={(value) => `$${value.toFixed(1)}B`}
+                  labelColor={pieLabelColor}
+                />
+                <div className="pt-2 text-xs text-muted-foreground text-left w-full" style={{ position: 'relative' }}>
+                  {ttmSegmentRefDate ? `As at: ${format(new Date(ttmSegmentRefDate), 'dd-MMM-yy')}` : ''}
+                </div>
+              </>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 No revenue segmentation data available for this company
@@ -315,21 +356,23 @@ export function CompanySnapshot() {
         </Card>
         <Card>
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Revenue by Geography (TTM)</CardTitle>
-            <span className="text-xs" style={{ color: 'var(--finhub-title)' }}>
-              {ttmGeoRefDate ? `As at: ${format(new Date(ttmGeoRefDate), 'dd-MMM-yy')}` : ''}
-            </span>
+            <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>LTM Revenue by Geography</CardTitle>
           </CardHeader>
           <CardContent>
             {geographyData.length > 0 ? (
-              <PieChart 
-                data={geographyData} 
-                nameKey="name" 
-                dataKey="value" 
-                colors={finhubBluePalette}
-                formatter={(value) => `$${value.toFixed(1)}B`}
-                labelColor={pieLabelColor}
-              />
+              <>
+                <PieChart 
+                  data={geographyData} 
+                  nameKey="name" 
+                  dataKey="value" 
+                  colors={pieChartPalettes[selectedPalette]}
+                  formatter={(value) => `$${value.toFixed(1)}B`}
+                  labelColor={pieLabelColor}
+                />
+                <div className="pt-2 text-xs text-muted-foreground text-left w-full" style={{ position: 'relative' }}>
+                  {ttmGeoRefDate ? `As at: ${format(new Date(ttmGeoRefDate), 'dd-MMM-yy')}` : ''}
+                </div>
+              </>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 No geographic revenue data available for this company

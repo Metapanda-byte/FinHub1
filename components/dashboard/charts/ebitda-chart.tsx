@@ -23,7 +23,7 @@ export function EbitdaChart({ data, palette }: EbitdaChartProps) {
   const lineColor = palette && palette.length > 1 ? palette[1] : '#3b82f6';
   return (
     <ResponsiveContainer width="100%" height={280}>
-      <ComposedChart data={data} margin={{ top: 10, right: 15, left: 10, bottom: 40 }}>
+      <ComposedChart data={data} margin={{ top: 10, right: 15, left: 10, bottom: 10 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis
           dataKey="year"

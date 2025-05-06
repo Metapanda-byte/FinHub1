@@ -5,7 +5,6 @@ import { Overview } from "./overview";
 import { Financials } from "./financials";
 import { ValuationConsiderations } from "./valuation-considerations";
 import { RecentNews } from "./recent-news";
-import { SentimentAnalysis } from "./sentiment-analysis";
 import { ScreeningTool } from "./screening-tool";
 
 export function DashboardTabs() {
@@ -16,7 +15,6 @@ export function DashboardTabs() {
         <TabsTrigger value="financials">Financials</TabsTrigger>
         <TabsTrigger value="valuation">Valuation</TabsTrigger>
         <TabsTrigger value="recent-news">Recent News</TabsTrigger>
-        <TabsTrigger value="sentiment">Sentiment</TabsTrigger>
         <TabsTrigger value="screening">Screening Tool</TabsTrigger>
       </TabsList>
       <TabsContent value="overview">
@@ -30,9 +28,6 @@ export function DashboardTabs() {
       </TabsContent>
       <TabsContent value="recent-news">
         <RecentNews />
-      </TabsContent>
-      <TabsContent value="sentiment">
-        <SentimentAnalysis />
       </TabsContent>
       <TabsContent value="screening">
         <ScreeningTool />

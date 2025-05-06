@@ -758,3 +758,34 @@ export function useGeographicRevenueTTM(symbol: string) {
     mutate
   };
 }
+
+export function useEmployeeCount(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `employee-count/${symbol}` : null,
+    () => fetchWithCache<any[]>('employee_count', symbol, 'v4'),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATION,
+      shouldRetryOnError: false
+    }
+  );
+
+  // FMP returns an array of objects, take the most recent (first) entry
+  const employeeCount = React.useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return null;
+    // The API returns objects like { date: '2023-12-31', employeeCount: 12345 }
+    const mostRecent = data[0];
+    if (mostRecent && typeof mostRecent.employeeCount === 'number') {
+      return mostRecent.employeeCount;
+    }
+    return null;
+  }, [data]);
+
+  return {
+    employeeCount,
+    isLoading,
+    error,
+    mutate
+  };
+}
