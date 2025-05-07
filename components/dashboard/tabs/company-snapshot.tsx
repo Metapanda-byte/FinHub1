@@ -102,6 +102,12 @@ export function CompanySnapshot() {
     quote
   });
 
+  // Debug: Log the TTM API response and date
+  if (ttm) {
+    console.log('[DEBUG] TTM API response:', ttm);
+    console.log('[DEBUG] TTM date:', ttm.date);
+  }
+
   const TOP_N = 6; // Show top 6, rest as 'Other'
 
   function groupTopNPlusOther(data: any[], nameKey = 'name', valueKey = 'value') {
@@ -429,7 +435,7 @@ export function CompanySnapshot() {
                     tickFontSize={12}
                   />
                   {ltmRefDate && (
-                    <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)' }}>
+                    <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
                       <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
                     </div>
                   )}
@@ -437,7 +443,7 @@ export function CompanySnapshot() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical EBITDA</CardTitle>
+                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical EBITDA & Margin</CardTitle>
                 </CardHeader>
                 <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
                   <EbitdaChart 
@@ -446,7 +452,7 @@ export function CompanySnapshot() {
                     tickFontSize={12}
                   />
                   {ltmRefDate && (
-                    <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)' }}>
+                    <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
                       <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
                     </div>
                   )}
@@ -456,7 +462,7 @@ export function CompanySnapshot() {
             <div className="grid md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>LTM¹ Revenue by Segment</CardTitle>
+                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>LTM Revenue by Segment<sup style={{ fontWeight: 700, fontSize: '0.55em', verticalAlign: 'super', marginLeft: 2 }}>1</sup></CardTitle>
                 </CardHeader>
                 <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
                   {segmentData.length > 0 ? (
@@ -470,7 +476,7 @@ export function CompanySnapshot() {
                         labelColor={pieLabelColor}
                       />
                       {ltmRefDate && (
-                        <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)' }}>
+                        <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
                           <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
                         </div>
                       )}
@@ -484,7 +490,7 @@ export function CompanySnapshot() {
               </Card>
               <Card>
                 <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>LTM¹ Revenue by Geography</CardTitle>
+                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>LTM Revenue by Geography<sup style={{ fontWeight: 700, fontSize: '0.55em', verticalAlign: 'super', marginLeft: 2 }}>1</sup></CardTitle>
                 </CardHeader>
                 <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
                   {geographyData.length > 0 ? (
@@ -498,7 +504,7 @@ export function CompanySnapshot() {
                         labelColor={pieLabelColor}
                       />
                       {ltmRefDate && (
-                        <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)' }}>
+                        <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
                           <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
                         </div>
                       )}
@@ -516,7 +522,7 @@ export function CompanySnapshot() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Share Price Performance</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent style={{ position: 'relative', padding: '0 12px' }}>
                   <div className="space-y-4">
                     <div className="flex flex-row flex-wrap items-center justify-between gap-2 mb-2">
                       <Tabs defaultValue="YTD" onValueChange={(value) => setTimeframe(value as 'YTD' | '1Y' | '5Y')}>
@@ -526,24 +532,28 @@ export function CompanySnapshot() {
                           <TabsTrigger value="5Y">5Y</TabsTrigger>
                         </TabsList>
                       </Tabs>
-                      {quote && (
-                        <div className="flex flex-col items-end text-right min-w-[180px]">
-                          <span className="text-base font-medium">Current Price: ${quote.price?.toFixed(2)}</span>
-                          <span className="text-sm text-muted-foreground">Performance: {quote.changesPercentage ? `${quote.changesPercentage.toFixed(1)}%` : 'N/A'}</span>
-                        </div>
-                      )}
+                      <div className="flex flex-col items-end text-right min-w-[180px]">
+                        {pricesLoading ? (
+                          <>
+                            <span className="text-base font-medium animate-pulse text-muted-foreground">Loading...</span>
+                            <span className="text-sm text-muted-foreground animate-pulse">Loading...</span>
+                          </>
+                        ) : (prices && prices.length > 0) ? (
+                          <>
+                            <span className="text-base font-medium">Current Price: ${prices[prices.length - 1].price.toFixed(2)}</span>
+                            <span className="text-sm text-muted-foreground">
+                              Performance: {prices.length > 1 ? `${(((prices[prices.length - 1].price - prices[0].price) / prices[0].price) * 100).toFixed(1)}%` : 'N/A'}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-base font-medium">Current Price: N/A</span>
+                            <span className="text-sm text-muted-foreground">Performance: N/A</span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <Tabs defaultValue="YTD" onValueChange={(value) => setTimeframe(value as 'YTD' | '1Y' | '5Y')}>
-                      <TabsContent value="YTD">
-                        <StockChart symbol={currentSymbol} timeframe="YTD" />
-                      </TabsContent>
-                      <TabsContent value="1Y">
-                        <StockChart symbol={currentSymbol} timeframe="1Y" />
-                      </TabsContent>
-                      <TabsContent value="5Y">
-                        <StockChart symbol={currentSymbol} timeframe="5Y" />
-                      </TabsContent>
-                    </Tabs>
+                    <StockChart symbol={currentSymbol} timeframe={timeframe} />
                   </div>
                 </CardContent>
               </Card>
@@ -574,6 +584,8 @@ export function CompanySnapshot() {
                       <span>{formatWithParens(enterpriseValue)}</span>
                     </div>
                   </div>
+                  <div style={{ marginTop: '1.5rem' }} />
+                  <div className="text-sm font-semibold mb-1 underline" style={{ color: highlightTextColor }}>Key Metrics</div>
                   <div className="mt-4 space-y-0">
                     <div
                       style={{

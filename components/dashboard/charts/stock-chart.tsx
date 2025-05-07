@@ -131,12 +131,12 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
     <ResponsiveContainer width="100%" height={280}>
       <ComposedChart
         data={processedData}
-        margin={{ top: 10, right: 0, left: 0, bottom: 10 }}
+        margin={{ top: 10, right: 0, left: 10, bottom: 10 }}
       >
         <defs>
           <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+            <stop offset="5%" stopColor="#15803d" stopOpacity={0.8} />
+            <stop offset="95%" stopColor="#15803d" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -146,11 +146,11 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
           tickLine={false}
           axisLine={false}
           tick={{ fontSize: 12 }}
-          dy={12}
+          dy={8}
           angle={0}
           textAnchor="middle"
-          height={40}
-          interval={0}
+          height={30}
+          interval="preserveEnd"
           minTickGap={0}
           ticks={(() => {
             if (processedData.length === 0) return [];
@@ -215,7 +215,7 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
           tickLine={false}
           axisLine={false}
           tick={{ fontSize: 12 }}
-          width={75}
+          width={55}
           tickCount={tickCount}
           tickFormatter={formatValue}
           dx={-10}
@@ -269,13 +269,13 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
           yAxisId="left"
           type="monotone"
           dataKey="price"
-          stroke="hsl(var(--chart-1))"
+          stroke="#15803d"
           strokeWidth={2}
           fillOpacity={1}
           fill="url(#colorPrice)"
           animationDuration={1500}
           dot={false}
-          activeDot={{ r: 4, fill: "hsl(var(--chart-1))" }}
+          activeDot={{ r: 4, fill: "#15803d" }}
         />
         {showMovingAverage && (
           <Area

@@ -11,6 +11,7 @@ import {
   Line,
   ComposedChart,
   Cell,
+  LabelList,
 } from "recharts";
 import { formatBillions, formatPercentage } from "@/lib/formatters";
 
@@ -23,7 +24,20 @@ interface EbitdaChartProps {
 
 export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient = false }: EbitdaChartProps) {
   const barColor = palette && palette.length > 0 ? palette[0] : '#2563eb';
-  const lineColor = palette && palette.length > 1 ? palette[1] : '#3b82f6';
+  const lineColor = '#1e3a8a';
+  const maxValue = Math.max(...data.map(d => d.value));
+  // Round up to the next logical step for the axis
+  let step = 50;
+  if (maxValue > 200) step = 100;
+  else if (maxValue > 100) step = 50;
+  else if (maxValue > 50) step = 25;
+  else if (maxValue > 20) step = 10;
+  else if (maxValue > 10) step = 5;
+  const roundedMax = Math.ceil(maxValue / step) * step;
+  const yTicks = [];
+  for (let i = 0; i <= roundedMax; i += step) {
+    yTicks.push(i);
+  }
   return (
     <ResponsiveContainer width="100%" height={280}>
       <ComposedChart data={data} margin={{ top: 10, right: 2, left: 2, bottom: 10 }}>
@@ -44,15 +58,8 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
           tick={{ fontSize: tickFontSize }}
           width={75}
           dx={-10}
-        />
-        <YAxis
-          yAxisId="right"
-          orientation="right"
-          tickFormatter={(value) => formatPercentage(value)}
-          tickLine={false}
-          axisLine={false}
-          tick={{ fontSize: tickFontSize }}
-          width={75}
+          domain={[0, roundedMax]}
+          ticks={yTicks}
         />
         <Tooltip
           formatter={(value: number, name: string) => {
@@ -77,7 +84,7 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
           ))}
         </Bar>
         <Line
-          yAxisId="right"
+          yAxisId="left"
           type="monotone"
           dataKey="margin"
           stroke={lineColor}
@@ -85,7 +92,42 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
           dot={{ r: 4, fill: lineColor }}
           activeDot={{ r: 6 }}
           animationDuration={1500}
-        />
+        >
+          <LabelList
+            dataKey="margin"
+            position="top"
+            content={({ x, y, value }) => {
+              const xNum = typeof x === 'number' ? x : Number(x);
+              const yNum = typeof y === 'number' ? y : Number(y);
+              const marginValue = typeof value === 'number' ? value : Number(value);
+              if (isNaN(xNum) || isNaN(yNum) || isNaN(marginValue)) return null;
+              // Position label just above the line node (dot)
+              const labelY = yNum - 36;
+              return (
+                <foreignObject x={xNum - 18} y={labelY} width={54} height={24} style={{ pointerEvents: 'none', overflow: 'visible' }}>
+                  <div
+                    style={{
+                      background: '#fff',
+                      borderRadius: 4,
+                      padding: '2px 8px',
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: '#1e3a8a',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                      textAlign: 'center',
+                      border: '1px solid #b0b0b0',
+                      minWidth: 32,
+                      minHeight: 18,
+                      display: 'inline-block',
+                    }}
+                  >
+                    {`${marginValue.toFixed(1)}%`}
+                  </div>
+                </foreignObject>
+              );
+            }}
+          />
+        </Line>
       </ComposedChart>
     </ResponsiveContainer>
   );
