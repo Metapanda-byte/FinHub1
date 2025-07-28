@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
+import { TableLoadingSkeleton } from "@/components/ui/loading-skeleton";
 
 const financialMetricTooltips = {
   revenue: "Total income generated from sales of goods and services",
@@ -77,50 +78,127 @@ function getPeriodsByYear(statements: any[]) {
   const periodsByYear: Record<string, string[]> = {};
   statements.forEach(s => {
     if (!s.period) return;
-    // Extract 4-digit year from the period string using regex
-    const match = s.period.match(/(\d{4})/);
-    if (!match) {
-      console.warn('[getPeriodsByYear] Could not extract year from period:', s.period);
-      return;
+    
+    // Use calendarYear if available (for API format like period: "Q3", calendarYear: "2025")
+    let year: string;
+    if (s.calendarYear) {
+      year = s.calendarYear;
+    } else {
+      // Fallback: Extract 4-digit year from the period string using regex
+      const match = s.period.match(/(\d{4})/);
+      if (!match) {
+        console.warn('[getPeriodsByYear] Could not extract year from period:', s.period, 'and no calendarYear provided');
+        return;
+      }
+      year = match[1];
     }
-    const year = match[1];
+    
     if (!periodsByYear[year]) periodsByYear[year] = [];
     if (!periodsByYear[year].includes(s.period)) periodsByYear[year].push(s.period);
   });
-  // Ensure Q1-Q4 order for each year
+  
+  // Ensure Q1-Q4 order for each year - handle both formats
   Object.keys(periodsByYear).forEach(year => {
     periodsByYear[year] = ['Q1','Q2','Q3','Q4']
       .map(q => {
-        // Find the period string that matches this year and quarter
-        return periodsByYear[year].find(p => p.includes(year) && p.includes(q));
+        // Find the period string that matches this quarter
+        // Handle both "Q3" format and "2025-Q3" format
+        return periodsByYear[year].find(p => 
+          p === q || // Direct match like "Q3"
+          (p.includes(year) && p.includes(q)) // Full format like "2025-Q3"
+        );
       })
       .filter(Boolean) as string[];
   });
   return periodsByYear;
 }
 
+// Helper to calculate LTM (Last Twelve Months) value from periodMap
+function calculateLTM(periodMap: Record<string, any>, field: string, years: string[]): number | null {
+  if (!years || years.length === 0) return null;
+  
+  // Get the most recent year and the 4 most recent quarters
+  const recentYear = years[years.length - 1];
+  const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+  
+  let values: number[] = [];
+  
+  // Try to get 4 quarters starting from the most recent year, going backwards if needed
+  for (let yearOffset = 0; yearOffset < 2; yearOffset++) {
+    const targetYear = String(Number(recentYear) - yearOffset);
+    for (let i = quarters.length - 1; i >= 0; i--) {
+      if (values.length >= 4) break;
+      const period = `${targetYear}-${quarters[i]}`;
+      const value = periodMap[period]?.[field];
+      if (value !== null && value !== undefined && !isNaN(value)) {
+        values.unshift(value); // Add to beginning to maintain chronological order
+      }
+    }
+    if (values.length >= 4) break;
+  }
+  
+  // Need at least 4 quarters for LTM calculation
+  if (values.length < 4) return null;
+  
+  // Sum the most recent 4 quarters
+  return values.slice(-4).reduce((sum, val) => sum + val, 0);
+}
+
 // Helper to normalize period keys
-function normalizePeriod(period: string, type: 'annual' | 'quarter', calendarYear?: string): string | null {
-  if (!period) return null;
+function normalizePeriod(period: string, type: 'annual' | 'quarter', calendarYear?: string, date?: string): string | null {
+  if (!period && !date) return null;
   
   if (type === 'annual') {
     // For annual data, use calendarYear if available, otherwise try to extract from period
     if (calendarYear) {
       return calendarYear;
     }
-    const yearMatch = period.match(/(\d{4})/);
+    const yearMatch = period?.match(/(\d{4})/);
     if (!yearMatch) return null;
     return yearMatch[1];
   } else {
-    // For quarterly data, try to extract year and quarter from period
-    const yearMatch = period.match(/(\d{4})/);
-    if (!yearMatch) return null;
+    // For quarterly data, we need to determine the quarter from the date
+    // API might provide date like "2024-03-31" for Q1, "2024-06-30" for Q2, etc.
+    if (date) {
+      const dateObj = new Date(date);
+      const year = dateObj.getFullYear();
+      const month = dateObj.getMonth() + 1; // getMonth() is 0-indexed
+      
+      let quarter: string;
+      if (month <= 3) quarter = 'Q1';
+      else if (month <= 6) quarter = 'Q2';
+      else if (month <= 9) quarter = 'Q3';
+      else quarter = 'Q4';
+      
+      const result = `${year}-${quarter}`;
+      return result;
+    }
+    
+    // Handle direct Q1, Q2, Q3, Q4 format from API (no year in period string)
+    if (period && period.match(/^Q[1-4]$/i)) {
+      // Direct format like "Q3" - use with calendar year
+      if (!calendarYear) {
+        return null;
+      }
+      const result = `${calendarYear}-${period.toUpperCase()}`;
+      return result;
+    }
+    
+    // Fallback: try to extract year from period string for other formats
+    const yearMatch = period?.match(/(\d{4})/);
+    if (!yearMatch) {
+      return null;
+    }
     const year = yearMatch[1];
     
-    // Try to find Q1-Q4 in the string
-    const quarterMatch = period.match(/Q([1-4])/i);
-    if (!quarterMatch) return null;
-    return `${year}-Q${quarterMatch[1]}`;
+    const quarterMatch = period.match(/Q([1-4])/i) || 
+                       period.match(/([1-4])Q/i) ||
+                       period.match(/Quarter\s*([1-4])/i);
+    if (!quarterMatch) {
+      return null;
+    }
+    const result = `${year}-Q${quarterMatch[1]}`;
+    return result;
   }
 }
 
@@ -137,6 +215,8 @@ export function HistoricalFinancials() {
   const { statements: incomeStatements, isLoading: incomeLoading } = useIncomeStatements(currentSymbol || '', selectedPeriod);
   const { statements: cashFlowStatements, isLoading: cashFlowLoading } = useCashFlows(currentSymbol || '', selectedPeriod);
   const { statements: balanceSheets, isLoading: balanceSheetLoading } = useBalanceSheets(currentSymbol || '', selectedPeriod);
+
+
 
   // Check if quarterly data is actually annual data (indicating fallback)
   useEffect(() => {
@@ -155,10 +235,6 @@ export function HistoricalFinancials() {
 
   // Debug: Log the structure of the first two income statements
   if (incomeStatements && incomeStatements.length > 0) {
-    console.log('[DEBUG] Sample income statement:', incomeStatements[0]);
-    if (incomeStatements[1]) console.log('[DEBUG] Second income statement:', incomeStatements[1]);
-    console.log('[DEBUG] All keys in first:', Object.keys(incomeStatements[0]));
-    console.log('[DEBUG] All periods:', incomeStatements.map(s => s.period));
   }
 
   if (!currentSymbol || incomeLoading || cashFlowLoading || balanceSheetLoading) {
@@ -201,14 +277,11 @@ export function HistoricalFinancials() {
   let periodsByYear: Record<string, string[]> = {};
   if (selectedPeriod === 'quarter') {
     periodsByYear = getPeriodsByYear(incomeStatements);
-    // Only include years that have at least one valid quarter
+    // Only include years that have at least one valid quarter, limit to 5 most recent fiscal years
     years = Object.keys(periodsByYear)
       .filter(year => /\d{4}/.test(year) && periodsByYear[year].length > 0)
-      .sort((a, b) => Number(a) - Number(b));
-    // Debug logs
-    console.log('[DEBUG] All periods in data:', incomeStatements.map(s => s.period));
-    console.log('[DEBUG] years:', years);
-    console.log('[DEBUG] periodsByYear:', periodsByYear);
+      .sort((a, b) => Number(a) - Number(b))
+      .slice(-5);
   } else {
     years = Array.from(new Set(incomeStatements.map(s => s.calendarYear)))
       .filter(y => y)
@@ -223,13 +296,17 @@ export function HistoricalFinancials() {
         <table className="w-full">
           <thead className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <tr className="border-b border-border/50">
-              <th className="text-left py-4 px-6 font-semibold text-sm text-muted-foreground w-1/4 align-bottom">
+              <th className={cn(
+                "text-left py-4 px-6 font-semibold text-sm text-muted-foreground align-bottom",
+                selectedPeriod === 'quarter' ? "w-64" : "w-1/4"
+              )}>
                 {title}
               </th>
               {selectedPeriod === 'quarter'
-                ? years.map(year => (
+                ? [...years.map(year => (
                     <th key={year} colSpan={4} className="text-center py-4 px-6 font-semibold text-sm text-muted-foreground align-bottom">FY{year.slice(-2)}</th>
-                  ))
+                  )), 
+                  <th key="ltm" className="text-center py-4 px-6 font-semibold text-sm text-muted-foreground align-bottom">LTM</th>]
                 : years.map(year => (
                     <th key={year} className="text-right py-4 px-6 font-semibold text-sm text-muted-foreground align-bottom">FY {year}</th>
                   ))}
@@ -237,9 +314,10 @@ export function HistoricalFinancials() {
             {selectedPeriod === 'quarter' && (
               <tr className="border-b border-border/50">
                 <th className="text-left py-2 px-6 text-xs text-muted-foreground align-bottom">In $m unless otherwise specified</th>
-                {years.map(year => ["Q1","Q2","Q3","Q4"].map(q => (
+                {[...years.map(year => ["Q1","Q2","Q3","Q4"].map(q => (
                   <th key={year+q} className="text-right py-2 px-3 text-xs text-muted-foreground align-bottom">{q}</th>
-                )))}
+                ))).flat(),
+                <th key="ltm-sub" className="text-right py-2 px-3 text-xs text-muted-foreground align-bottom"></th>]}
               </tr>
             )}
             {selectedPeriod === 'annual' && (
@@ -276,21 +354,21 @@ export function HistoricalFinancials() {
                     isEBITDA ? "text-primary" : ""
                   )}>
                     {row.label}
-                    {financialMetricTooltips[row.label] && (
+                    {financialMetricTooltips[row.label as keyof typeof financialMetricTooltips] && (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <InfoIcon className="h-4 w-4 text-muted-foreground/60" />
                           </TooltipTrigger>
                           <TooltipContent>
-                            {financialMetricTooltips[row.label]}
+                            {financialMetricTooltips[row.label as keyof typeof financialMetricTooltips]}
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     )}
                   </td>
                   {selectedPeriod === 'quarter'
-                    ? years.flatMap(year => ["Q1","Q2","Q3","Q4"].map(q => {
+                    ? [...years.flatMap(year => ["Q1","Q2","Q3","Q4"].map(q => {
                         const period = `${year}-${q}`;
                         return (
                           <td key={period} className={cn(
@@ -302,7 +380,15 @@ export function HistoricalFinancials() {
                             {formatMetric(row[period], row.label)}
                           </td>
                         );
-                      }))
+                      })),
+                      <td key="ltm" className={cn(
+                        "text-right py-3 px-3 text-sm tabular-nums font-medium bg-muted/20",
+                        row.isImportant ? "font-semibold" : "",
+                        row.isItalic ? "italic" : "",
+                        isEBITDA ? "text-primary" : ""
+                      )}>
+                        {formatMetric(row.ltm, row.label)}
+                      </td>]
                     : years.map(year => (
                         <td key={year} className={cn(
                           "text-right py-3 px-6 text-sm tabular-nums",
@@ -324,21 +410,24 @@ export function HistoricalFinancials() {
 
   const processIncomeStatements = () => {
     const type = selectedPeriod;
+    
     // Build a map of normalized period -> statement
     const periodMap: Record<string, any> = {};
     incomeStatements.forEach(s => {
-      const norm = normalizePeriod(s.period, type, s.calendarYear);
+      const norm = normalizePeriod(s.period, type, s.calendarYear, s.date);
       if (norm) periodMap[norm] = s;
     });
+    
     // For annual, use years; for quarter, use all year-Qx in periodsByYear
     const periods = type === 'annual'
       ? years
       : years.flatMap(year => ['Q1','Q2','Q3','Q4'].map(q => `${year}-${q}`));
-    return [
+    const data = [
       {
         label: "Revenue",
         isImportant: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.revenue ?? null])),
+        ltm: type === 'quarter' ? calculateLTM(periodMap, 'revenue', years) : null,
         unit: 'millions'
       },
       {
@@ -351,50 +440,71 @@ export function HistoricalFinancials() {
           if (!current || !prev) return [p, null];
           return [p, ((current - prev) / Math.abs(prev)) * 100];
         })),
+        ltm: type === 'quarter' ? null : null, // YoY Growth doesn't make sense for LTM
         unit: 'millions'
       },
       {
         label: "Cost of Revenue",
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.costOfRevenue ? -periodMap[p].costOfRevenue : null])),
+        ltm: type === 'quarter' ? (() => {
+          const ltmValue = calculateLTM(periodMap, 'costOfRevenue', years);
+          return ltmValue ? -ltmValue : null;
+        })() : null,
         unit: 'millions'
       },
       {
         label: "Gross Profit",
         isImportant: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.grossProfit ?? null])),
+        ltm: type === 'quarter' ? calculateLTM(periodMap, 'grossProfit', years) : null,
         unit: 'millions'
       },
       {
         label: "Gross Margin %",
         isItalic: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.grossProfit && periodMap[p]?.revenue ? (periodMap[p].grossProfit / periodMap[p].revenue) * 100 : null])),
+        ltm: type === 'quarter' ? (calculateLTM(periodMap, 'grossProfit', years) && calculateLTM(periodMap, 'revenue', years) ? (calculateLTM(periodMap, 'grossProfit', years)! / calculateLTM(periodMap, 'revenue', years)!) * 100 : null) : null,
         unit: 'millions'
       },
       {
         label: "Research & Development",
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.researchAndDevelopmentExpenses ? -periodMap[p].researchAndDevelopmentExpenses : null])),
+        ltm: type === 'quarter' ? (() => {
+          const ltmValue = calculateLTM(periodMap, 'researchAndDevelopmentExpenses', years);
+          return ltmValue ? -ltmValue : null;
+        })() : null,
         unit: 'millions'
       },
       {
         label: "SG&A Expenses",
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.sellingGeneralAndAdministrativeExpenses ? -periodMap[p].sellingGeneralAndAdministrativeExpenses : null])),
+        ltm: type === 'quarter' ? (() => {
+          const ltmValue = calculateLTM(periodMap, 'sellingGeneralAndAdministrativeExpenses', years);
+          return ltmValue ? -ltmValue : null;
+        })() : null,
         unit: 'millions'
       },
       {
         label: "Operating Expenses",
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.operatingExpenses ? -periodMap[p].operatingExpenses : null])),
+        ltm: type === 'quarter' ? (() => {
+          const ltmValue = calculateLTM(periodMap, 'operatingExpenses', years);
+          return ltmValue ? -ltmValue : null;
+        })() : null,
         unit: 'millions'
       },
       {
         label: "Operating Income",
         isImportant: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.operatingIncome ?? null])),
+        ltm: type === 'quarter' ? calculateLTM(periodMap, 'operatingIncome', years) : null,
         unit: 'millions'
       },
       {
         label: "Operating Margin %",
         isItalic: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.operatingIncome && periodMap[p]?.revenue ? (periodMap[p].operatingIncome / periodMap[p].revenue) * 100 : null])),
+        ltm: type === 'quarter' ? (calculateLTM(periodMap, 'operatingIncome', years) && calculateLTM(periodMap, 'revenue', years) ? (calculateLTM(periodMap, 'operatingIncome', years)! / calculateLTM(periodMap, 'revenue', years)!) * 100 : null) : null,
         unit: 'millions'
       },
       {
@@ -448,26 +558,32 @@ export function HistoricalFinancials() {
         label: "Net Income",
         isImportant: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.netIncome ?? null])),
+        ltm: type === 'quarter' ? calculateLTM(periodMap, 'netIncome', years) : null,
         unit: 'millions'
       },
       {
         label: "Net Margin %",
         isItalic: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.netIncome && periodMap[p]?.revenue ? (periodMap[p].netIncome / periodMap[p].revenue) * 100 : null])),
+        ltm: type === 'quarter' ? (calculateLTM(periodMap, 'netIncome', years) && calculateLTM(periodMap, 'revenue', years) ? (calculateLTM(periodMap, 'netIncome', years)! / calculateLTM(periodMap, 'revenue', years)!) * 100 : null) : null,
         unit: 'millions'
       },
       {
         label: "EPS",
         isImportant: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.eps ?? null])),
+        ltm: type === 'quarter' ? calculateLTM(periodMap, 'eps', years) : null,
         unit: 'millions'
       },
       {
         label: "EPS Diluted",
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.epsDiluted ?? null])),
+        ltm: type === 'quarter' ? calculateLTM(periodMap, 'epsDiluted', years) : null,
         unit: 'millions'
       }
     ];
+    
+    return data;
   };
 
   const processCashFlowStatements = () => {
@@ -475,18 +591,19 @@ export function HistoricalFinancials() {
     // Build a map of normalized period -> statement
     const periodMap: Record<string, any> = {};
     cashFlowStatements.forEach(s => {
-      const norm = normalizePeriod(s.period, type, s.calendarYear);
+      const norm = normalizePeriod(s.period, type, s.calendarYear, s.date);
       if (norm) periodMap[norm] = s;
     });
     // For annual, use years; for quarter, use all year-Qx in periodsByYear
     const periods = type === 'annual'
       ? years
       : years.flatMap(year => ['Q1','Q2','Q3','Q4'].map(q => `${year}-${q}`));
-    return [
+    const data = [
       {
         label: "Net Income",
         isImportant: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.netIncome ?? null])),
+        ltm: type === 'quarter' ? calculateLTM(periodMap, 'netIncome', years) : null,
         unit: 'millions'
       },
       {
@@ -561,15 +678,19 @@ export function HistoricalFinancials() {
         label: "Free Cash Flow",
         isImportant: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.freeCashFlow ?? null])),
+        ltm: type === 'quarter' ? calculateLTM(periodMap, 'freeCashFlow', years) : null,
         unit: 'millions'
       },
       {
         label: "Net Cash Flow",
         isImportant: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.netCashFlow ?? null])),
+        ltm: type === 'quarter' ? calculateLTM(periodMap, 'netCashFlow', years) : null,
         unit: 'millions'
       }
     ];
+    
+    return data;
   };
 
   const processBalanceSheets = () => {
@@ -577,18 +698,19 @@ export function HistoricalFinancials() {
     // Build a map of normalized period -> statement
     const periodMap: Record<string, any> = {};
     balanceSheets.forEach(s => {
-      const norm = normalizePeriod(s.period, type, s.calendarYear);
+      const norm = normalizePeriod(s.period, type, s.calendarYear, s.date);
       if (norm) periodMap[norm] = s;
     });
     // For annual, use years; for quarter, use all year-Qx in periodsByYear
     const periods = type === 'annual'
       ? years
       : years.flatMap(year => ['Q1','Q2','Q3','Q4'].map(q => `${year}-${q}`));
-    return [
+    const data = [
       {
         label: "Total Assets",
         isImportant: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.totalAssets ?? null])),
+        ltm: type === 'quarter' ? null : null, // Balance sheet items are point-in-time, not cumulative
         unit: 'millions'
       },
       {
@@ -671,9 +793,19 @@ export function HistoricalFinancials() {
       {
         label: "Common Stock",
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.commonStock ?? null])),
+        ltm: type === 'quarter' ? null : null, // Balance sheet items are point-in-time, not cumulative  
         unit: 'millions'
       }
     ];
+    
+    // Add ltm: null to all balance sheet items since they're point-in-time
+    data.forEach((item: any) => {
+      if (!item.hasOwnProperty('ltm')) {
+        item.ltm = null;
+      }
+    });
+    
+    return data;
   };
 
   const exportToExcel = async () => {
@@ -711,6 +843,10 @@ export function HistoricalFinancials() {
             headerRow.push(year);
           }
         });
+        // Add LTM column for quarterly data
+        if (selectedPeriod === 'quarter') {
+          headerRow.push('LTM');
+        }
         excelData.push(headerRow);
         
         // Add data rows
@@ -742,6 +878,18 @@ export function HistoricalFinancials() {
                 : '-');
             }
           });
+          // Add LTM value for quarterly data
+          if (selectedPeriod === 'quarter') {
+            const ltmValue = row.ltm;
+            dataRow.push(ltmValue !== null && ltmValue !== undefined 
+              ? typeof ltmValue === 'number' 
+                ? ltmValue.toLocaleString('en-US', { 
+                    minimumFractionDigits: 0, 
+                    maximumFractionDigits: 2 
+                  })
+                : ltmValue
+              : '-');
+          }
           excelData.push(dataRow);
         });
         
@@ -876,7 +1024,7 @@ export function HistoricalFinancials() {
             <Alert className="border-amber-200 bg-amber-50">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-800">
-                <strong>Quarterly data not available:</strong> Your current API subscription doesn't include quarterly financial data. 
+                <strong>Quarterly data not available:</strong> Your current API subscription doesn&apos;t include quarterly financial data. 
                 Showing annual data instead. To access quarterly data, please upgrade your Financial Modeling Prep subscription.
               </AlertDescription>
             </Alert>
@@ -905,7 +1053,11 @@ export function HistoricalFinancials() {
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 px-4">
-              {renderFinancialTable(processIncomeStatements(), "Income Statement")}
+              {incomeLoading ? (
+                <TableLoadingSkeleton rows={12} />
+              ) : (
+                renderFinancialTable(processIncomeStatements(), "Income Statement")
+              )}
             </CollapsibleContent>
           </Collapsible>
 
@@ -933,7 +1085,11 @@ export function HistoricalFinancials() {
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 px-4">
-              {renderFinancialTable(processCashFlowStatements(), "Cash Flow Statement")}
+              {cashFlowLoading ? (
+                <TableLoadingSkeleton rows={8} />
+              ) : (
+                renderFinancialTable(processCashFlowStatements(), "Cash Flow Statement")
+              )}
             </CollapsibleContent>
           </Collapsible>
 
@@ -961,7 +1117,11 @@ export function HistoricalFinancials() {
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 px-4">
-              {renderFinancialTable(processBalanceSheets(), "Balance Sheet")}
+              {balanceSheetLoading ? (
+                <TableLoadingSkeleton rows={10} />
+              ) : (
+                renderFinancialTable(processBalanceSheets(), "Balance Sheet")
+              )}
             </CollapsibleContent>
           </Collapsible>
         </CardContent>

@@ -33,28 +33,28 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
 
   // Process and sort data chronologically
   let processedData = stockPrices
-    .filter(item => new Date(item.date) <= new Date()) // Filter out future dates
-    .map(item => ({
+    .filter((item: any) => new Date(item.date) <= new Date()) // Filter out future dates
+    .map((item: any) => ({
       ...item,
       date: new Date(item.date),
       volume: item.volume
     }))
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
+    .sort((a: any, b: any) => a.date.getTime() - b.date.getTime());
 
   // Filter data to match the selected timeframe
   const now = new Date();
   if (timeframe === '5Y') {
     const fiveYearsAgo = new Date(now.getFullYear() - 5, now.getMonth(), 1);
-    processedData = processedData.filter(item => item.date >= fiveYearsAgo);
+    processedData = processedData.filter((item: any) => item.date >= fiveYearsAgo);
   } else if (timeframe === '1Y') {
     const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-    processedData = processedData.filter(item => item.date >= oneYearAgo);
+    processedData = processedData.filter((item: any) => item.date >= oneYearAgo);
   } else if (timeframe === 'YTD') {
     const janFirst = new Date(now.getFullYear(), 0, 1);
-    processedData = processedData.filter(item => item.date >= janFirst);
+    processedData = processedData.filter((item: any) => item.date >= janFirst);
   }
 
-  processedData = processedData.map((item, index, array) => {
+  processedData = processedData.map((item: any, index: number, array: any[]) => {
     // Calculate moving average if enabled
     let ma = null;
     if (showMovingAverage) {
@@ -62,7 +62,7 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
       const startIndex = Math.max(0, index - lookbackPeriod + 1);
       const sum = array
         .slice(startIndex, index + 1)
-        .reduce((acc, curr) => acc + curr.price, 0);
+        .reduce((acc: number, curr: any) => acc + curr.price, 0);
       ma = sum / lookbackPeriod;
     }
     return {
@@ -73,7 +73,7 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
   });
 
   // Calculate price range for y-axis
-  const priceValues = processedData.map(d => d.price);
+  const priceValues = processedData.map((d: any) => d.price);
   const minPrice = Math.min(0, ...priceValues); // Allow negative prices for some stocks
   const maxPrice = Math.max(...priceValues);
   const priceRange = maxPrice - minPrice;
@@ -157,9 +157,9 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
             // Helper to get evenly spaced ticks from processedData
             const getEvenlySpacedTicks = (count: number) => {
               const n = processedData.length;
-              if (n <= count) return processedData.map(d => d.date);
+              if (n <= count) return processedData.map((d: any) => d.date);
               const step = Math.floor(n / (count - 1));
-              const ticks = [];
+              const ticks: string[] = [];
               for (let i = 0; i < count - 1; i++) {
                 ticks.push(processedData[i * step].date);
               }
@@ -168,13 +168,13 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
             };
             if (timeframe === '5Y') {
               // Most recent month and every 12 months prior (6 ticks)
-              const ticks = [];
+              const ticks: string[] = [];
               const lastDate = new Date(processedData[processedData.length - 1].date);
               for (let i = 0; i < 6; i++) {
                 const d = new Date(lastDate);
                 d.setMonth(d.getMonth() - i * 12, 1); // Set to first of the month
                 // Find the closest data point to this month
-                const tick = processedData.reduce((prev, curr) => {
+                const tick = processedData.reduce((prev: any, curr: any) => {
                   return Math.abs(new Date(curr.date).getTime() - d.getTime()) < Math.abs(new Date(prev.date).getTime() - d.getTime()) ? curr : prev;
                 });
                 // Avoid duplicates
@@ -188,8 +188,8 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
             } else if (timeframe === 'YTD') {
               // One tick per month, last tick is always the most recent date (if not already present)
               const months = new Set();
-              const ticks = [];
-              processedData.forEach(d => {
+              const ticks: string[] = [];
+              processedData.forEach((d: any) => {
                 const m = d.date.slice(0, 7); // 'YYYY-MM'
                 if (!months.has(m)) {
                   months.add(m);

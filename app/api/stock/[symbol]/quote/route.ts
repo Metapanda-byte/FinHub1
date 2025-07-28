@@ -1,5 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { fetchStockQuote } from "@/lib/financial-modeling-prep";
+import { ApiError, handleApiError, createApiResponse } from "@/lib/api/error-handler";
+import { rateLimit } from "@/lib/api/rate-limit";
 
 export interface StockQuote {
   symbol: string;
@@ -25,24 +27,28 @@ export interface StockQuote {
   sharesOutstanding: number;
 }
 
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  maxRequests: 30, // 30 requests per minute
+});
+
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { symbol: string } }
 ) {
-  const { symbol } = params;
-
-  if (!symbol) {
-    return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
-  }
-
   try {
+    // Apply rate limiting
+    await limiter(request);
+
+    const { symbol } = params;
+
+    if (!symbol) {
+      throw new ApiError("Symbol is required", 400, "MISSING_SYMBOL");
+    }
+
     const quote = await fetchStockQuote(symbol);
-    return NextResponse.json(quote);
+    return createApiResponse(quote);
   } catch (error) {
-    console.error("Error fetching stock quote:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch stock quote", details: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 } 

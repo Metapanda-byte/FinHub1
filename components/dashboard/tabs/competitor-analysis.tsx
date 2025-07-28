@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import useSWR from "swr";
 import { Input } from "@/components/ui/input";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+// @ts-ignore
 import debounce from "lodash/debounce";
 import { useSWRConfig } from "swr";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -201,7 +202,7 @@ export function CompetitorAnalysis() {
   }, [manualTicker, debouncedSearch]);
 
   // Create optimistic data updater
-  const updateDataOptimistically = (newTicker: string) => {
+  const updateDataOptimistically = useCallback((newTicker: string) => {
     if (!data) return;
 
     // Create optimistic data update
@@ -240,9 +241,9 @@ export function CompetitorAnalysis() {
     };
 
     return optimisticData;
-  };
+  }, [data]);
 
-  const handleAddManualTicker = async (symbol: string) => {
+  const handleAddManualTicker = useCallback(async (symbol: string) => {
     if (!symbol) return;
     
     const ticker = symbol.toUpperCase().trim();
@@ -285,7 +286,7 @@ export function CompetitorAnalysis() {
     setSearchResults([]);
     setIsSearchOpen(false);
     setError(null);
-  };
+  }, [data?.peerCompanies, manualTickers, currentSymbol, apiUrl, mutate, updateDataOptimistically]);
 
   const handleRemoveManualTicker = async (ticker: string) => {
     const newManualTickers = manualTickers.filter(t => t !== ticker);
@@ -393,8 +394,9 @@ export function CompetitorAnalysis() {
     
     // Initialize metrics object based on first item's keys
     if (data.length > 0) {
-      Object.keys(data[0]).forEach(key => {
-        if (typeof data[0][key] === 'number') {
+      const firstItem = data[0] as any;
+      Object.keys(firstItem).forEach(key => {
+        if (typeof firstItem[key] === 'number') {
           metrics[key] = [];
         }
       });
@@ -402,7 +404,7 @@ export function CompetitorAnalysis() {
 
     // Collect all numeric values
     data.forEach(item => {
-      Object.entries(item).forEach(([key, value]) => {
+      Object.entries(item as any).forEach(([key, value]) => {
         if (typeof value === 'number') {
           metrics[key].push(value);
         }

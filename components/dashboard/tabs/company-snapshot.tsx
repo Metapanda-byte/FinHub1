@@ -26,6 +26,7 @@ import { useTheme } from 'next-themes';
 import { pieChartPalettes } from "@/components/dashboard/charts/pie-chart-palettes";
 import clsx from 'clsx';
 import useSWR from 'swr';
+import { ChartLoadingSkeleton, CardLoadingSkeleton } from "@/components/ui/loading-skeleton";
 
 // Define a consistent FinHub blue palette (dark to light)
 const finhubBluePalette = [
@@ -52,7 +53,11 @@ function useTTMRevenue(symbol: string) {
     ? `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?period=ttm&apikey=${FMP_API_KEY}`
     : null;
   const fetcher = (url: string) => fetch(url).then(res => res.json());
-  const { data, error } = useSWR(url, fetcher);
+  const { data, error } = useSWR(url, fetcher, {
+    refreshInterval: 5 * 60 * 1000, // 5 minutes for TTM data
+    revalidateOnFocus: false,
+    dedupingInterval: 5 * 60 * 1000
+  });
   // FMP returns an array with one object, e.g. [{ revenue: 1234567890, ... }]
   const ttmRevenue =
     data && Array.isArray(data) && data.length > 0 && typeof data[0].revenue === 'number'
@@ -68,40 +73,171 @@ function useTTMIncomeStatement(symbol: string) {
     ? `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?period=ttm&apikey=${FMP_API_KEY}`
     : null;
   const fetcher = (url: string) => fetch(url).then(res => res.json());
-  const { data, error } = useSWR(url, fetcher);
+  const { data, error } = useSWR(url, fetcher, {
+    refreshInterval: 5 * 60 * 1000, // 5 minutes for TTM data
+    revalidateOnFocus: false,
+    dedupingInterval: 5 * 60 * 1000
+  });
   // FMP returns an array with one object, e.g. [{ revenue: 1234567890, ebitda: 123456789, ... }]
   const ttm = data && Array.isArray(data) && data.length > 0 ? data[0] : null;
   return { ttm, isLoading: !error && !data, error };
 }
 
-// Helper to get the last word after the last dash
+// Financial-report-style geographic labeling system
 function getGeoLabel(region: string): string {
   if (!region) return '';
-  const lastDash = region.lastIndexOf('-');
-  let lastSegment = lastDash !== -1 ? region.slice(lastDash + 1).trim() : region.trim();
-  // Only the last word
-  const words = lastSegment.split(' ').filter(Boolean);
-  let label = words[words.length - 1];
-  return label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
+  
+  console.log(`[DEBUG getGeoLabel] Processing: "${region}"`);
+  
+  // Clean and normalize input
+  let cleaned = region.toLowerCase().trim();
+  
+  // Remove common business prefixes/suffixes first
+  const cleanPatterns = [
+    /^(revenue|sales|income|segment|geographic)[\s-]+/i,
+    /[\s-]+(revenue|sales|income|segment|geographic)$/i,
+    /^(by|from|in)[\s-]+/i,
+  ];
+  
+  for (const pattern of cleanPatterns) {
+    cleaned = cleaned.replace(pattern, '').trim();
+  }
+  
+  // Handle dash/underscore separated values (common in APIs)
+  if (cleaned.includes('-') || cleaned.includes('_')) {
+    const parts = cleaned.split(/[-_]+/).map(p => p.trim()).filter(Boolean);
+    // Take the most meaningful part (usually the last geographic identifier)
+    cleaned = parts[parts.length - 1] || cleaned;
+  }
+  
+  console.log(`[DEBUG getGeoLabel] Cleaned to: "${cleaned}"`);
+  
+  // Exact match mappings (most reliable) - ordered by specificity
+  const exactMappings: Record<string, string> = {
+    // Countries (most specific)
+    'united states of america': 'United States',
+    'united states': 'United States',
+    'usa': 'United States',
+    'u.s.a': 'United States',
+    'u.s.': 'United States',
+    'us': 'United States',
+    'united kingdom': 'United Kingdom',
+    'great britain': 'United Kingdom',
+    'uk': 'United Kingdom',
+    'peoples republic of china': 'China',
+    'prc': 'China',
+    'china': 'China',
+    'japan': 'Japan',
+    'germany': 'Germany',
+    'france': 'France',
+    'canada': 'Canada',
+    'australia': 'Australia',
+    'india': 'India',
+    'brazil': 'Brazil',
+    'mexico': 'Mexico',
+    'south korea': 'South Korea',
+    'korea': 'South Korea',
+    'netherlands': 'Netherlands',
+    'switzerland': 'Switzerland',
+    'spain': 'Spain',
+    'italy': 'Italy',
+    'sweden': 'Sweden',
+    'norway': 'Norway',
+    'denmark': 'Denmark',
+    'singapore': 'Singapore',
+    'russia': 'Russia',
+    'south africa': 'South Africa',
+    
+    // Major Business Regions
+    'asia pacific': 'Asia Pacific',
+    'asia-pacific': 'Asia Pacific',
+    'apac': 'Asia Pacific',
+    'north america': 'North America',
+    'emea': 'EMEA',
+    'europe middle east africa': 'EMEA',
+    'europe middle east and africa': 'EMEA',
+    'latin america': 'Latin America',
+    'latam': 'Latin America',
+    'south america': 'South America',
+    
+    // Broader Regions
+    'europe': 'Europe',
+    'european union': 'Europe',
+    'eu': 'Europe',
+    'asia': 'Asia',
+    'africa': 'Africa',
+    'middle east': 'Middle East',
+    'americas': 'Americas',
+    'oceania': 'Oceania',
+    
+    // Business Categories
+    'domestic': 'Domestic',
+    'international': 'International',
+    'foreign': 'International',
+    'home': 'Domestic',
+    'rest of world': 'Rest of World',
+    'row': 'Rest of World',
+    'other': 'Other',
+    'global': 'Global',
+    'worldwide': 'Worldwide',
+  };
+  
+  // Try exact match first
+  const exactMatch = exactMappings[cleaned];
+  if (exactMatch) {
+    console.log(`[DEBUG getGeoLabel] Exact match: "${cleaned}" -> "${exactMatch}"`);
+    return exactMatch;
+  }
+  
+  // Handle special cases first
+  if (cleaned === 'non us' || cleaned === 'non-us') {
+    console.log(`[DEBUG getGeoLabel] Special case: "${cleaned}" -> "International"`);
+    return 'International';
+  }
+  
+  // Try word-boundary matching for compound terms, but exclude problematic short matches
+  for (const [key, value] of Object.entries(exactMappings)) {
+    // Skip short keys that could cause false matches in compound terms
+    if (key.length <= 2 && cleaned.includes(' ')) {
+      continue;
+    }
+    
+    // Only match if it's a complete word (prevents "us" matching in "business" or "non us")
+    const wordRegex = new RegExp(`\\b${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+    if (wordRegex.test(cleaned)) {
+      console.log(`[DEBUG getGeoLabel] Word boundary match: "${key}" -> "${value}"`);
+      return value;
+    }
+  }
+  
+  // If no match found, format the original nicely
+  const formatted = cleaned
+    .split(/[\s-_]+/)
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+  
+  console.log(`[DEBUG getGeoLabel] No match found, formatted: "${region}" -> "${formatted}"`);
+  return formatted || region;
 }
 
 export function CompanySnapshot() {
   const [timeframe, setTimeframe] = useState<'YTD' | '1Y' | '5Y'>('YTD');
   const { hasStock, addStock, removeStock } = useWatchlistStore();
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
-  const { profile, isLoading: profileLoading } = useCompanyProfile(currentSymbol);
-  const { quote, loading: quoteLoading } = useStockQuote(currentSymbol);
-  const { statements, isLoading: statementsLoading } = useIncomeStatements(currentSymbol);
-  const { prices, isLoading: pricesLoading } = useStockPriceData(currentSymbol, timeframe);
-  const { segments: ttmSegmentData, referenceDate: ttmSegmentRefDate, isLoading: segmentsLoading } = useRevenueSegmentsTTM(currentSymbol);
-  const { regions: ttmGeographyData, referenceDate: ttmGeoRefDate, isLoading: regionsLoading } = useGeographicRevenueTTM(currentSymbol);
-  const { employeeCount, isLoading: employeeCountLoading } = useEmployeeCount(currentSymbol);
-  const { statements: balanceSheets, isLoading: balanceSheetLoading } = useBalanceSheets(currentSymbol);
+  const { profile, isLoading: profileLoading } = useCompanyProfile(currentSymbol || '');
+  const { quote, loading: quoteLoading } = useStockQuote(currentSymbol || '');
+  const { statements, isLoading: statementsLoading } = useIncomeStatements(currentSymbol || '');
+  const { prices, isLoading: pricesLoading } = useStockPriceData(currentSymbol || '', timeframe);
+  const { segments: ttmSegmentData, referenceDate: ttmSegmentRefDate, isLoading: segmentsLoading } = useRevenueSegmentsTTM(currentSymbol || '');
+  const { regions: ttmGeographyData, referenceDate: ttmGeoRefDate, isLoading: regionsLoading } = useGeographicRevenueTTM(currentSymbol || '');
+  const { employeeCount, isLoading: employeeCountLoading } = useEmployeeCount(currentSymbol || '');
+  const { statements: balanceSheets, isLoading: balanceSheetLoading } = useBalanceSheets(currentSymbol || '');
   const { resolvedTheme } = useTheme();
   const pieLabelColor = resolvedTheme === 'dark' ? '#fff' : '#111';
-  const [selectedPalette, setSelectedPalette] = useState<keyof typeof pieChartPalettes>('finhubBlues');
-  const { ttmRevenue, isLoading: ttmRevenueLoading } = useTTMRevenue(currentSymbol);
-  const { ttm, isLoading: ttmLoading } = useTTMIncomeStatement(currentSymbol);
+  const [selectedPalette, setSelectedPalette] = useState<keyof typeof pieChartPalettes>('oceanic');
+  const { ttmRevenue, isLoading: ttmRevenueLoading } = useTTMRevenue(currentSymbol || '');
+  const { ttm, isLoading: ttmLoading } = useTTMIncomeStatement(currentSymbol || '');
 
   console.log('Debug:', {
     currentSymbol,
@@ -118,6 +254,31 @@ export function CompanySnapshot() {
     console.log('[DEBUG] TTM API response:', ttm);
     console.log('[DEBUG] TTM date:', ttm.date);
   }
+  
+  // Calculate the canonical LTM revenue that all displays should use
+  let canonicalLTMRevenue: number | null = null;
+  let canonicalLTMDate: string | null = null;
+  
+  if (ttm && typeof ttm.revenue === 'number') {
+    // Prefer TTM endpoint if available
+    canonicalLTMRevenue = ttm.revenue / 1e9;
+    canonicalLTMDate = ttm.date;
+    console.log('[DEBUG] Using TTM endpoint for canonical revenue:', canonicalLTMRevenue);
+  } else if (statements && statements.length >= 4) {
+    // Fallback to summing 4 quarters
+    const latestFour = statements.slice(0, 4);
+    const ltmRevenue = latestFour.reduce((sum, s) => sum + (s.revenue || 0), 0);
+    canonicalLTMRevenue = ltmRevenue / 1e9;
+    canonicalLTMDate = latestFour[0].date;
+    console.log('[DEBUG] Using 4-quarter sum for canonical revenue:', canonicalLTMRevenue);
+  }
+  
+  // Log revenue consistency check
+  console.log('[DEBUG] Revenue Consistency Check:', {
+    canonicalLTMRevenue,
+    segmentTotal: ttmSegmentData.reduce((sum, s) => sum + s.value, 0),
+    geographyTotal: ttmGeographyData.reduce((sum, s) => sum + s.value, 0)
+  });
 
   const TOP_N = 6; // Show top 6, rest as 'Other'
 
@@ -200,21 +361,25 @@ export function CompanySnapshot() {
   const annualEbitdaBars = statements.slice(0, 5).reverse().map(statement => ({
     year: 'FY' + statement.calendarYear.toString().slice(-2),
     value: statement.ebitda / 1e9,
-    margin: (statement.ebitdaratio * 100),
-    isLTM: false
+    margin: statement.ebitdaratio ? (statement.ebitdaratio * 100) : 0
   }));
-  const ebitdaData = ltmEbitdaBar ? [...annualEbitdaBars, ltmEbitdaBar] : annualEbitdaBars;
+  
+  const ebitdaData = ltmEbitdaBar ? [...annualEbitdaBars, {
+    year: ltmEbitdaBar.year,
+    value: ltmEbitdaBar.value,
+    margin: ltmEbitdaBar.margin || 0
+  }] : annualEbitdaBars;
 
   // FYE note extraction (move out of useMemo)
   const mostRecentFYE = statements && statements.length > 0 ? statements[0].date : null;
   const fyeNote = mostRecentFYE ? `FYE = ${format(new Date(mostRecentFYE), 'dd-MMM')}` : '';
 
-  const isWatchlisted = hasStock(currentSymbol);
+  const isWatchlisted = hasStock(currentSymbol || '');
 
   const handleWatchlistToggle = () => {
     console.log('Watchlist toggle clicked:', {
       currentSymbol,
-      hasStock: hasStock(currentSymbol),
+      hasStock: hasStock(currentSymbol || ''),
       profile,
       quote
     });
@@ -233,7 +398,7 @@ export function CompanySnapshot() {
     } else {
       addStock({
         symbol: currentSymbol,
-        name: profile.companyName,
+        name: profile?.companyName,
         lastPrice: quote.price,
         change: quote.change,
         changePercent: quote.changesPercentage,
@@ -255,7 +420,7 @@ export function CompanySnapshot() {
   const totalDebt = mostRecentBalanceSheet ? (mostRecentBalanceSheet.shortTermDebt || 0) + (mostRecentBalanceSheet.longTermDebt || 0) : null;
   const cash = mostRecentBalanceSheet ? (mostRecentBalanceSheet.cashAndShortTermInvestments || mostRecentBalanceSheet.cashAndCashEquivalents || 0) : null;
   const ebitda = mostRecentIncome ? mostRecentIncome.ebitda : null;
-  const marketCap = profile && profile.mktCap ? profile.mktCap : null;
+  const marketCap = profile && profile?.mktCap ? profile?.mktCap : null;
   const minorityInterest = mostRecentBalanceSheet && mostRecentBalanceSheet.minorityInterest ? mostRecentBalanceSheet.minorityInterest : 0;
   const enterpriseValue = (marketCap !== null && totalDebt !== null && cash !== null)
     ? marketCap + totalDebt - cash + minorityInterest
@@ -333,12 +498,80 @@ export function CompanySnapshot() {
 
   // Debug: Log the raw geographyData before any processing
   console.log('[DEBUG] Raw geographyData:', ttmGeographyData);
+  console.log('[DEBUG] Raw segmentData:', ttmSegmentData);
+  console.log('[DEBUG] Segments loading:', segmentsLoading);
+  console.log('[DEBUG] Regions loading:', regionsLoading);
+  
+  // SPECIAL DEBUG FOR MSFT - let's see the exact structure
+  if (currentSymbol === 'MSFT') {
+    console.log('[MSFT DEBUG] ttmGeographyData length:', ttmGeographyData.length);
+    ttmGeographyData.forEach((item, idx) => {
+      console.log(`[MSFT DEBUG] Item ${idx}:`, JSON.stringify(item, null, 2));
+    });
+  }
 
-  // Minimal processing: get clean label for each region
-  const processedGeographyData = ttmGeographyData.map(item => ({
-    ...item,
-    name: getGeoLabel(item.fullName || item.name),
-  }));
+  // Scale segment data to match canonical LTM revenue if needed
+  let scaledSegmentData = [...ttmSegmentData];
+  if (canonicalLTMRevenue && ttmSegmentData.length > 0) {
+    const segmentTotal = ttmSegmentData.reduce((sum, s) => sum + s.value, 0);
+    if (segmentTotal > 0 && Math.abs(segmentTotal - canonicalLTMRevenue) > 0.1) {
+      const scaleFactor = canonicalLTMRevenue / segmentTotal;
+      console.log(`[DEBUG] Scaling segments by ${scaleFactor} to match canonical revenue`);
+      scaledSegmentData = ttmSegmentData.map(seg => ({
+        ...seg,
+        value: seg.value * scaleFactor,
+        percentage: (seg.value * scaleFactor / canonicalLTMRevenue) * 100
+      }));
+    }
+  }
+  
+  // Scale geography data to match canonical LTM revenue if needed
+  let scaledGeographyData = [...ttmGeographyData];
+  if (canonicalLTMRevenue && ttmGeographyData.length > 0) {
+    const geoTotal = ttmGeographyData.reduce((sum, s) => sum + s.value, 0);
+    if (geoTotal > 0 && Math.abs(geoTotal - canonicalLTMRevenue) > 0.1) {
+      const scaleFactor = canonicalLTMRevenue / geoTotal;
+      console.log(`[DEBUG] Scaling geography by ${scaleFactor} to match canonical revenue`);
+      scaledGeographyData = ttmGeographyData.map(geo => ({
+        ...geo,
+        value: geo.value * scaleFactor,
+        percentage: (geo.value * scaleFactor / canonicalLTMRevenue) * 100
+      }));
+    }
+  }
+
+  // Process geography labels using the improved geographic labeling function
+  // Use fullName when available (contains original unprocessed name), fallback to name
+  const processedGeographyData = scaledGeographyData.map((item, index) => {
+    const originalName = item.fullName || item.name;
+    const processedName = getGeoLabel(originalName);
+    console.log(`[DEBUG] Geographic label processing [${index}]: "${originalName}" -> "${processedName}"`);
+    console.log(`[DEBUG] Item data:`, item);
+    return {
+      ...item,
+      name: processedName,
+    };
+  });
+
+  // Consolidate duplicate geographic regions
+  const consolidatedGeographyData = processedGeographyData.reduce((acc: typeof processedGeographyData, current) => {
+    const existingIndex = acc.findIndex(item => item.name === current.name);
+    if (existingIndex >= 0) {
+      // Combine values and recalculate percentage
+      acc[existingIndex].value += current.value;
+      acc[existingIndex].percentage += current.percentage;
+      console.log(`[DEBUG] Consolidated "${current.name}": ${acc[existingIndex].value}B (${acc[existingIndex].percentage.toFixed(1)}%)`);
+    } else {
+      acc.push({ ...current });
+    }
+    return acc;
+  }, []);
+
+  // Sort by value descending
+  consolidatedGeographyData.sort((a, b) => b.value - a.value);
+
+  // Debug the final processed data
+  console.log('[DEBUG] Final consolidated geography data:', consolidatedGeographyData);
 
   return (
     <Card>
@@ -346,7 +579,7 @@ export function CompanySnapshot() {
         <div className="space-y-1">
           <CardTitle className="text-2xl font-bold" style={{ color: 'var(--finhub-title)' }}>Company Overview</CardTitle>
           <CardDescription>
-            Key information about {profile.companyName}
+            Key information about {profile?.companyName || 'the company'}
           </CardDescription>
         </div>
         <TooltipProvider>
@@ -398,31 +631,31 @@ export function CompanySnapshot() {
         <div className="grid gap-6">
           <div className="flex items-start space-x-4 rounded-md border p-4">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={profile.image} alt={profile.companyName} />
-              <AvatarFallback>{profile.symbol}</AvatarFallback>
+              <AvatarImage src={profile?.image} alt={profile?.companyName} />
+              <AvatarFallback>{profile?.symbol}</AvatarFallback>
             </Avatar>
             <div className="space-y-2 flex-1">
               <div className="space-y-0.5">
                 <h3 className="text-base font-semibold leading-none tracking-tight">
-                  {profile.companyName} ({profile.symbol})
+                  {profile?.companyName} ({profile?.symbol})
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="outline" className="text-xs">
-                    {profile.sector}
+                    {profile?.sector}
                   </Badge>
                   <Badge variant="outline" className="text-xs">
-                    {profile.industry}
+                    {profile?.industry}
                   </Badge>
                   <Badge variant="outline" className="text-xs">
-                    {profile.exchangeShortName}
+                    {profile?.exchangeShortName}
                   </Badge>
                 </div>
               </div>
-              <p className="text-sm">{profile.description}</p>
+              <p className="text-sm">{profile?.description}</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
                 <div>
                   <p className="text-xs text-muted-foreground">Market Cap</p>
-                  <p className="text-sm font-medium">{formatMarketCapBillions(marketCap)}</p>
+                  <p className="text-sm font-medium">{formatMarketCapBillions(marketCap || 0)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Employees</p>
@@ -441,7 +674,7 @@ export function CompanySnapshot() {
                 <div>
                   <p className="text-xs text-muted-foreground">Location</p>
                   <p className="text-sm font-medium">
-                    {profile?.city && profile?.state ? `${profile.city}, ${profile.state}` : 'N/A'}
+                    {profile?.city && profile?.state ? `${profile?.city}, ${profile?.state}` : 'N/A'}
                   </p>
                 </div>
               </div>
@@ -449,40 +682,48 @@ export function CompanySnapshot() {
           </div>
           <div className="grid gap-4 mt-6">
             <div className="grid md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical Revenue</CardTitle>
-                </CardHeader>
-                <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
-                  <RevenueChart 
-                    data={revenueData}
-                    palette={revenueData.map((bar, idx) => idx === revenueData.length - 1 ? pieChartPalettes[selectedPalette][0] : pieChartPalettes[selectedPalette][3])}
-                    tickFontSize={12}
-                  />
-                  {ltmRefDate && (
-                    <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
-                      <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical EBITDA & Margin</CardTitle>
-                </CardHeader>
-                <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
-                  <EbitdaChart 
-                    data={ebitdaData}
-                    palette={ebitdaData.map((bar, idx) => idx === ebitdaData.length - 1 ? pieChartPalettes[selectedPalette][0] : pieChartPalettes[selectedPalette][3])}
-                    tickFontSize={12}
-                  />
-                  {ltmRefDate && (
-                    <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
-                      <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              {statementsLoading ? (
+                <ChartLoadingSkeleton />
+              ) : (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical Revenue</CardTitle>
+                  </CardHeader>
+                  <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
+                    <RevenueChart 
+                      data={revenueData}
+                      palette={revenueData.map((bar, idx) => idx === revenueData.length - 1 ? pieChartPalettes[selectedPalette][0] : pieChartPalettes[selectedPalette][3])}
+                      tickFontSize={12}
+                    />
+                    {ltmRefDate && (
+                      <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
+                        <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+              {statementsLoading ? (
+                <ChartLoadingSkeleton />
+              ) : (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical EBITDA & Margin</CardTitle>
+                  </CardHeader>
+                  <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
+                    <EbitdaChart 
+                      data={ebitdaData}
+                      palette={ebitdaData.map((bar, idx) => idx === ebitdaData.length - 1 ? pieChartPalettes[selectedPalette][0] : pieChartPalettes[selectedPalette][3])}
+                      tickFontSize={12}
+                    />
+                    {ltmRefDate && (
+                      <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
+                        <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
             {/* FYE Note below both charts */}
             {fyeNote && (
@@ -491,66 +732,107 @@ export function CompanySnapshot() {
               </div>
             )}
             <div className="grid md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>LTM Revenue by Segment<sup style={{ fontWeight: 700, fontSize: '0.55em', verticalAlign: 'super', marginLeft: 2 }}>1</sup></CardTitle>
-                </CardHeader>
-                <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
-                  {ttmSegmentData.length > 0 ? (
-                    <>
+              {segmentsLoading ? (
+                <ChartLoadingSkeleton />
+              ) : (
+                <Card>
+                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>
+                      LTM Revenue by Segment<sup style={{ fontWeight: 700, fontSize: '0.55em', verticalAlign: 'super', marginLeft: 2 }}>1</sup>
+                      {canonicalLTMRevenue && (
+                        <span className="text-sm font-normal text-muted-foreground ml-2">
+                          (Total: ${canonicalLTMRevenue.toFixed(1)}B)
+                        </span>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
+                    {(() => {
+                      console.log('[DEBUG] About to render segment pie chart:', { 
+                        scaledSegmentData, 
+                        dataLength: scaledSegmentData.length,
+                        hasData: scaledSegmentData.length > 0 
+                      });
+                      return null;
+                    })()}
+                    {scaledSegmentData.length > 0 ? (
+                      <>
+                        <PieChart 
+                          data={scaledSegmentData} 
+                          nameKey="name" 
+                          dataKey="value" 
+                          colors={pieChartPalettes[selectedPalette]}
+                          formatter={(value) => `$${value.toFixed(1)}B`}
+                          labelColor={pieLabelColor}
+                        />
+                        {ltmRefDate && (
+                          <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
+                            <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No revenue segmentation data available for this company
+                      </div>
+                  )}
+                </CardContent>
+              </Card>
+              )}
+              {regionsLoading ? (
+                <ChartLoadingSkeleton />
+              ) : (
+                <Card>
+                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>
+                      LTM Revenue by Geography<sup style={{ fontWeight: 700, fontSize: '0.55em', verticalAlign: 'super', marginLeft: 2 }}>1</sup>
+                      {canonicalLTMRevenue && (
+                        <span className="text-sm font-normal text-muted-foreground ml-2">
+                          (Total: ${canonicalLTMRevenue.toFixed(1)}B)
+                        </span>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
+                    {(() => {
+                      console.log('[DEBUG] About to render geography pie chart:', { 
+                        processedGeographyData, 
+                        dataLength: processedGeographyData.length,
+                        hasData: processedGeographyData.length > 1 
+                      });
+                      return null;
+                    })()}
+                    {consolidatedGeographyData.length > 1 ? (
                       <PieChart 
-                        data={ttmSegmentData} 
+                        data={consolidatedGeographyData} 
                         nameKey="name" 
                         dataKey="value" 
                         colors={pieChartPalettes[selectedPalette]}
                         formatter={(value) => `$${value.toFixed(1)}B`}
                         labelColor={pieLabelColor}
                       />
-                      {ltmRefDate && (
-                        <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
-                          <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No revenue segmentation data available for this company
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>LTM Revenue by Geography<sup style={{ fontWeight: 700, fontSize: '0.55em', verticalAlign: 'super', marginLeft: 2 }}>1</sup></CardTitle>
-                </CardHeader>
-                <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
-                  {processedGeographyData.length > 1 ? (
-                    <PieChart 
-                      data={processedGeographyData} 
-                      nameKey="name" 
-                      dataKey="value" 
-                      colors={pieChartPalettes[selectedPalette]}
-                      formatter={(value) => `$${value.toFixed(1)}B`}
-                      labelColor={pieLabelColor}
-                    />
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Not enough data to display geographic split.
-                    </div>
-                  )}
-                  {ltmRefDate && (
-                    <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
-                      <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Not enough data to display geographic split.
+                      </div>
+                    )}
+                    {ltmRefDate && (
+                      <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
+                        <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
             <div className="grid md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Share Price Performance</CardTitle>
-                </CardHeader>
+              {pricesLoading ? (
+                <ChartLoadingSkeleton />
+              ) : (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Share Price Performance</CardTitle>
+                  </CardHeader>
                 <CardContent style={{ position: 'relative', padding: '0 12px' }}>
                   <div className="space-y-4">
                     <div className="flex flex-row flex-wrap items-center justify-between gap-2 mb-2">
@@ -586,10 +868,14 @@ export function CompanySnapshot() {
                   </div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Capitalization Table</CardTitle>
-                </CardHeader>
+              )}
+              {balanceSheetLoading ? (
+                <CardLoadingSkeleton />
+              ) : (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Capitalization Table</CardTitle>
+                  </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
@@ -653,6 +939,7 @@ export function CompanySnapshot() {
                   </div>
                 </CardContent>
               </Card>
+              )}
             </div>
           </div>
         </div>

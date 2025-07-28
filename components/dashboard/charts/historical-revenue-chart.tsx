@@ -23,7 +23,7 @@ export function HistoricalRevenueChart({ data, type }: HistoricalRevenueChartPro
 
     // Create data points for each year with all segments/regions
     return data.map(yearData => {
-      const baseData = {
+      const baseData: any = {
         year: yearData.year,
       };
 

@@ -51,8 +51,8 @@ export function IncomeStatementLine({
       {hasGrowth && (
         <td className={cn(
           "text-right py-3 px-4 text-sm",
-          growthPercentage > 0 ? "text-green-600 dark:text-green-400" :
-          growthPercentage < 0 ? "text-red-600 dark:text-red-400" :
+          (growthPercentage || 0) > 0 ? "text-green-600 dark:text-green-400" :
+          (growthPercentage || 0) < 0 ? "text-red-600 dark:text-red-400" :
           "text-muted-foreground"
         )}>
           {growthPercentage !== null 

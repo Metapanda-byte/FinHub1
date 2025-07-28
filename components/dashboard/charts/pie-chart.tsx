@@ -50,7 +50,7 @@ const MinimalActiveShape = (props: any) => {
 
 // Pure function for outside label rendering
 function renderCustomLabel(labelColor: string) {
-  return function (props: PieLabelRenderProps & { percentage?: number; name?: string }) {
+  const CustomLabel = (props: PieLabelRenderProps & { percentage?: number; name?: string }) => {
     const RADIAN = Math.PI / 180;
     const {
       cx, cy, midAngle, outerRadius, percent, name, index, payload
@@ -63,7 +63,7 @@ function renderCustomLabel(labelColor: string) {
     const radius = outerRadiusNum + 16;
     const x = cxNum + radius * Math.cos(-midAngleNum * RADIAN);
     const y = cyNum + radius * Math.sin(-midAngleNum * RADIAN);
-    const percentValue = payload && payload.percentage !== undefined ? payload.percentage : percent * 100;
+    const percentValue = payload && payload.percentage !== undefined ? payload.percentage : (percent || 0) * 100;
     return (
       <g>
         {/* Leader line */}
@@ -92,6 +92,9 @@ function renderCustomLabel(labelColor: string) {
       </g>
     );
   };
+  
+  CustomLabel.displayName = 'CustomLabel';
+  return CustomLabel;
 }
 
 export function PieChart({
@@ -155,20 +158,22 @@ export function PieChart({
           contentStyle={{
             borderRadius: "6px",
             padding: "8px 12px",
-            border: "1px solid var(--border)",
-            backgroundColor: "hsl(var(--muted))",
-            color: "hsl(var(--foreground))",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+            border: "1px solid hsl(var(--border))",
+            backgroundColor: "hsl(var(--card))",
+            color: "hsl(var(--card-foreground))",
+            boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
             fontSize: "13px"
           }}
           itemStyle={{
             margin: 0,
             padding: 0,
-            fontWeight: 500
+            fontWeight: 500,
+            color: "hsl(var(--card-foreground))"
           }}
           labelStyle={{
             marginBottom: 2,
-            fontWeight: 600
+            fontWeight: 600,
+            color: "hsl(var(--card-foreground))"
           }}
           separator={": "}
         />

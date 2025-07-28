@@ -161,18 +161,9 @@ export async function GET(request: Request) {
         console.log('API-based peer discovery failed:', error);
       }
       
-      // Fallback to hardcoded peers only if API completely fails
+      // Log if no peers found instead of using hardcoded fallback
       if (peerSymbols.length === 0) {
-        const fallbackPeers: Record<string, string[]> = {
-          'AAPL': ['MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META'],
-          'ZGN': ['LVMH', 'KORS', 'COH', 'TPR', 'CPRI'],
-          'MSFT': ['AAPL', 'GOOGL', 'AMZN', 'META', 'NFLX'],
-          'GOOGL': ['AAPL', 'MSFT', 'META', 'AMZN', 'NFLX'],
-          'TSLA': ['GM', 'F', 'NIO', 'RIVN', 'LUCID'],
-          'META': ['GOOGL', 'SNAP', 'PINS', 'SPOT', 'NFLX'],
-        };
-        peerSymbols = fallbackPeers[symbol.toUpperCase()] || [];
-        console.log(`Using fallback peers for ${symbol}:`, peerSymbols);
+        console.log(`No peers found for ${symbol} - will proceed with empty peer list`);
       }
     }
 

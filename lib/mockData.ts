@@ -1,5 +1,4 @@
 // Mock financial data for visualization
-import { mockCompanies } from "@/lib/data/companies";
 
 export const companyInfo = {
   name: "Apple Inc.",

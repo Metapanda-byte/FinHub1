@@ -62,7 +62,7 @@ export function StockSearch() {
     search.length >= 2 
       ? `${BASE_URL}/search?query=${encodeURIComponent(search)}&limit=10&exchange=${exchanges.join(',')}&apikey=${API_KEY}`
       : null,
-    async (url) => {
+    async (url: string) => {
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch');
       return response.json();
