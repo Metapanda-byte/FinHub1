@@ -54,24 +54,129 @@ export async function GET(request: Request) {
   }
 
   try {
-    // 1. Fetch peer data from our database
-    const { data: peerData, error: peerError } = await supabase
-      .from('stock_peers')
-      .select('peers, name')
-      .eq('symbol', symbol)
-      .single();
+    // 1. Try to fetch peer data from our database, but handle gracefully if it fails
+    let peerSymbols: string[] = [];
+    
+    try {
+      const { data: peerData, error: peerError } = await supabase
+        .from('stock_peers')
+        .select('peers, name')
+        .eq('symbol', symbol)
+        .single();
 
-    if (peerError) {
-      console.error("Error fetching peer data:", peerError);
-      return NextResponse.json({ error: "Failed to fetch peer data" }, { status: 500 });
+      if (!peerError && peerData?.peers) {
+        peerSymbols = peerData.peers;
+      }
+    } catch (dbError) {
+      console.log("Database peer lookup failed, using fallback method");
     }
 
-    if (!peerData) {
-      return NextResponse.json({ error: "No peer data found for symbol" }, { status: 404 });
+    // 2. If no peers found in database, use API-based peer discovery
+    if (peerSymbols.length === 0) {
+      try {
+        // First, get the company's profile to understand its sector/industry
+        const companyProfileResponse = await fetch(`https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${apiKey}`);
+        if (companyProfileResponse.ok) {
+          const profileData = await companyProfileResponse.json();
+          const companyProfile = profileData[0];
+          
+          if (companyProfile) {
+            const { sector, industry, marketCap } = companyProfile;
+            console.log(`Finding peers for ${symbol}: Sector=${sector}, Industry=${industry}, MarketCap=${marketCap}`);
+            
+            // Strategy 1: Find companies in the same industry
+            if (industry) {
+              try {
+                const industryResponse = await fetch(
+                  `https://financialmodelingprep.com/api/v3/stock-screener?industry=${encodeURIComponent(industry)}&marketCapMoreThan=1000000000&limit=20&apikey=${apiKey}`
+                );
+                if (industryResponse.ok) {
+                  const industryData = await industryResponse.json();
+                  const industryPeers = industryData
+                    .filter((company: any) => company.symbol !== symbol)
+                    .filter((company: any) => company.marketCap > 0)
+                    .sort((a: any, b: any) => Math.abs(a.marketCap - marketCap) - Math.abs(b.marketCap - marketCap)) // Sort by market cap similarity
+                    .slice(0, 8)
+                    .map((company: any) => company.symbol);
+                  
+                  peerSymbols.push(...industryPeers);
+                  console.log(`Found ${industryPeers.length} industry peers:`, industryPeers);
+                }
+              } catch (error) {
+                console.log('Industry-based peer search failed:', error);
+              }
+            }
+            
+            // Strategy 2: If we need more peers, find companies in the same sector
+            if (peerSymbols.length < 5 && sector) {
+              try {
+                const sectorResponse = await fetch(
+                  `https://financialmodelingprep.com/api/v3/stock-screener?sector=${encodeURIComponent(sector)}&marketCapMoreThan=1000000000&limit=15&apikey=${apiKey}`
+                );
+                if (sectorResponse.ok) {
+                  const sectorData = await sectorResponse.json();
+                  const sectorPeers = sectorData
+                    .filter((company: any) => company.symbol !== symbol)
+                    .filter((company: any) => !peerSymbols.includes(company.symbol))
+                    .filter((company: any) => company.marketCap > 0)
+                    .sort((a: any, b: any) => Math.abs(a.marketCap - marketCap) - Math.abs(b.marketCap - marketCap))
+                    .slice(0, 5 - peerSymbols.length)
+                    .map((company: any) => company.symbol);
+                  
+                  peerSymbols.push(...sectorPeers);
+                  console.log(`Found ${sectorPeers.length} additional sector peers:`, sectorPeers);
+                }
+              } catch (error) {
+                console.log('Sector-based peer search failed:', error);
+              }
+            }
+            
+            // Strategy 3: Market cap similarity as last resort
+            if (peerSymbols.length < 3 && marketCap) {
+              try {
+                const marketCapMin = marketCap * 0.2; // 20% to 500% of company's market cap
+                const marketCapMax = marketCap * 5;
+                
+                const marketCapResponse = await fetch(
+                  `https://financialmodelingprep.com/api/v3/stock-screener?marketCapMoreThan=${marketCapMin}&marketCapLowerThan=${marketCapMax}&limit=10&apikey=${apiKey}`
+                );
+                if (marketCapResponse.ok) {
+                  const marketCapData = await marketCapResponse.json();
+                  const marketCapPeers = marketCapData
+                    .filter((company: any) => company.symbol !== symbol)
+                    .filter((company: any) => !peerSymbols.includes(company.symbol))
+                    .slice(0, 5 - peerSymbols.length)
+                    .map((company: any) => company.symbol);
+                  
+                  peerSymbols.push(...marketCapPeers);
+                  console.log(`Found ${marketCapPeers.length} market cap-based peers:`, marketCapPeers);
+                }
+              } catch (error) {
+                console.log('Market cap-based peer search failed:', error);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.log('API-based peer discovery failed:', error);
+      }
+      
+      // Fallback to hardcoded peers only if API completely fails
+      if (peerSymbols.length === 0) {
+        const fallbackPeers: Record<string, string[]> = {
+          'AAPL': ['MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META'],
+          'ZGN': ['LVMH', 'KORS', 'COH', 'TPR', 'CPRI'],
+          'MSFT': ['AAPL', 'GOOGL', 'AMZN', 'META', 'NFLX'],
+          'GOOGL': ['AAPL', 'MSFT', 'META', 'AMZN', 'NFLX'],
+          'TSLA': ['GM', 'F', 'NIO', 'RIVN', 'LUCID'],
+          'META': ['GOOGL', 'SNAP', 'PINS', 'SPOT', 'NFLX'],
+        };
+        peerSymbols = fallbackPeers[symbol.toUpperCase()] || [];
+        console.log(`Using fallback peers for ${symbol}:`, peerSymbols);
+      }
     }
 
-    // 2. Get company profiles for the symbol and its peers
-    const peerSymbols = peerData.peers || [];
+    // 3. Get company profiles for the symbol and its peers
     const allSymbols = Array.from(new Set([symbol, ...peerSymbols, ...additionalTickers]));
 
     const companyProfiles = await Promise.all(
@@ -87,7 +192,7 @@ export async function GET(request: Request) {
       })
     );
 
-    // 3. Format competitors data
+    // 4. Format competitors data
     const competitors = companyProfiles
       .filter(Boolean)
       .filter((profile) => profile.symbol !== symbol)
@@ -97,7 +202,7 @@ export async function GET(request: Request) {
         symbol: profile.symbol,
       }));
 
-    // 4. Fetch key metrics for all companies (includes valuation metrics)
+    // 5. Fetch key metrics for all companies (includes valuation metrics)
     const keyMetricsPromises = allSymbols.map(async (sym) => {
       try {
         const response = await fetch(`https://financialmodelingprep.com/api/v3/key-metrics-ttm/${sym}?apikey=${apiKey}`);
@@ -111,7 +216,7 @@ export async function GET(request: Request) {
 
     const keyMetricsResults = await Promise.all(keyMetricsPromises);
 
-    // 5. Fetch financial ratios for additional metrics
+    // 6. Fetch financial ratios for additional metrics
     const ratiosPromises = allSymbols.map(async (sym) => {
       try {
         const response = await fetch(`https://financialmodelingprep.com/api/v3/ratios-ttm/${sym}?apikey=${apiKey}`);
@@ -144,7 +249,7 @@ export async function GET(request: Request) {
       };
     }).filter((data) => data.marketCap > 0); // Filter out companies with no data
 
-    // 6. Fetch income statements for performance metrics
+    // 7. Fetch income statements for performance metrics
     const incomePromises = allSymbols.map(async (sym) => {
       try {
         const response = await fetch(`https://financialmodelingprep.com/api/v3/income-statement/${sym}?limit=2&apikey=${apiKey}`);

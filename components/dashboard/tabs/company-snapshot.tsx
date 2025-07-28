@@ -74,6 +74,17 @@ function useTTMIncomeStatement(symbol: string) {
   return { ttm, isLoading: !error && !data, error };
 }
 
+// Helper to get the last word after the last dash
+function getGeoLabel(region: string): string {
+  if (!region) return '';
+  const lastDash = region.lastIndexOf('-');
+  let lastSegment = lastDash !== -1 ? region.slice(lastDash + 1).trim() : region.trim();
+  // Only the last word
+  const words = lastSegment.split(' ').filter(Boolean);
+  let label = words[words.length - 1];
+  return label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
+}
+
 export function CompanySnapshot() {
   const [timeframe, setTimeframe] = useState<'YTD' | '1Y' | '5Y'>('YTD');
   const { hasStock, addStock, removeStock } = useWatchlistStore();
@@ -127,69 +138,76 @@ export function CompanySnapshot() {
     return top;
   }
 
-  const processedData = useMemo(() => {
-    if (!profile || !statements || !prices) {
-      return null;
-    }
+  // Find the latest quarterly statement date
+  const latestQuarterDate = statements && statements.length > 0 ? statements[0].date : null;
 
-    // Prepare annual revenue bars
-    const annualBars = statements.slice(0, 5).reverse().map(statement => ({
-      year: parseInt(statement.calendarYear),
-      value: statement.revenue / 1e9,
-      isLTM: false
-    }));
+  // Prepare annual revenue bars with FYXX labels
+  const annualBars = statements.slice(0, 5).reverse().map(statement => ({
+    year: 'FY' + statement.calendarYear.toString().slice(-2),
+    value: statement.revenue / 1e9,
+    isLTM: false
+  }));
 
-    // Add TTM/LTM bar from income-statement endpoint if available
-    let ltmBar = null;
-    let ltmLabel = null;
-    let ltmRefDate = null;
-    if (ttm && typeof ttm.revenue === 'number') {
-      const mostRecent = statements && statements.length > 0 ? statements[0] : null;
-      ltmRefDate = mostRecent ? new Date(mostRecent.date) : null;
-      ltmLabel = 'LTM¹'; // LTM with superscript 1
-      ltmBar = {
-        year: ltmLabel,
-        value: ttm.revenue / 1e9,
-        isLTM: true
-      };
-    }
-    const revenueData = ltmBar ? [...annualBars, ltmBar] : annualBars;
-    if (typeof window !== 'undefined' && (window as any).__DEBUG_TTM_REVENUE) {
-      console.log('[DEBUG] revenueData for chart:', revenueData);
-    }
+  // LTM logic: use TTM endpoint if up-to-date, otherwise sum latest 4 quarters
+  let ltmBar = null;
+  let ltmEbitdaBar = null;
+  let ltmRefDate = null;
+  let ltmLabel = 'LTM¹';
+  let ltmFootnoteDate = null;
 
-    // Prepare annual EBITDA bars
-    const annualEbitdaBars = statements.slice(0, 5).reverse().map(statement => ({
-      year: parseInt(statement.calendarYear),
-      value: statement.ebitda / 1e9,
-      margin: (statement.ebitdaratio * 100),
-      isLTM: false
-    }));
-    // Add TTM/LTM EBITDA bar if available
-    let ltmEbitdaBar = null;
-    if (ttm && typeof ttm.ebitda === 'number') {
-      ltmEbitdaBar = {
-        year: ltmLabel || 'LTM¹',
-        value: ttm.ebitda / 1e9,
-        margin: ttm.ebitdaratio ? ttm.ebitdaratio * 100 : null,
-        isLTM: true
-      };
-    }
-    const ebitdaData = ltmEbitdaBar ? [...annualEbitdaBars, ltmEbitdaBar] : annualEbitdaBars;
-
-    return {
-      revenueData,
-      ebitdaData,
-      ltmRefDate,
-      stockData: prices.map(price => ({
-        date: price.date,
-        price: price.close,
-        volume: price.volume
-      })),
-      segmentData: groupTopNPlusOther(ttmSegmentData.sort((a, b) => b.value - a.value)),
-      geographyData: groupTopNPlusOther(ttmGeographyData.sort((a, b) => b.value - a.value)),
+  // Check if TTM endpoint is up-to-date
+  if (
+    ttm && typeof ttm.revenue === 'number' &&
+    ttm.date && latestQuarterDate && ttm.date === latestQuarterDate
+  ) {
+    // Use TTM endpoint
+    ltmBar = {
+      year: ltmLabel,
+      value: ttm.revenue / 1e9,
+      isLTM: true
     };
-  }, [profile, statements, prices, ttm, ttmSegmentData, ttmGeographyData]);
+    ltmEbitdaBar = {
+      year: ltmLabel,
+      value: ttm.ebitda / 1e9,
+      margin: ttm.revenue && ttm.ebitda ? (ttm.ebitda / ttm.revenue) * 100 : null,
+      isLTM: true
+    };
+    ltmRefDate = ttm.date ? new Date(ttm.date) : null;
+    ltmFootnoteDate = ttm.date;
+  } else if (statements && statements.length >= 4) {
+    // Sum latest 4 quarters
+    const latestFour = statements.slice(0, 4);
+    const ltmRevenue = latestFour.reduce((sum, s) => sum + (s.revenue || 0), 0);
+    const ltmEbitda = latestFour.reduce((sum, s) => sum + (s.ebitda || 0), 0);
+    ltmBar = {
+      year: ltmLabel,
+      value: ltmRevenue / 1e9,
+      isLTM: true
+    };
+    ltmEbitdaBar = {
+      year: ltmLabel,
+      value: ltmEbitda / 1e9,
+      margin: ltmRevenue > 0 ? (ltmEbitda / ltmRevenue) * 100 : null,
+      isLTM: true
+    };
+    ltmRefDate = latestFour[0].date ? new Date(latestFour[0].date) : null;
+    ltmFootnoteDate = latestFour[0].date;
+  }
+
+  const revenueData = ltmBar ? [...annualBars, ltmBar] : annualBars;
+
+  // Prepare annual EBITDA bars with FYXX labels
+  const annualEbitdaBars = statements.slice(0, 5).reverse().map(statement => ({
+    year: 'FY' + statement.calendarYear.toString().slice(-2),
+    value: statement.ebitda / 1e9,
+    margin: (statement.ebitdaratio * 100),
+    isLTM: false
+  }));
+  const ebitdaData = ltmEbitdaBar ? [...annualEbitdaBars, ltmEbitdaBar] : annualEbitdaBars;
+
+  // FYE note extraction (move out of useMemo)
+  const mostRecentFYE = statements && statements.length > 0 ? statements[0].date : null;
+  const fyeNote = mostRecentFYE ? `FYE = ${format(new Date(mostRecentFYE), 'dd-MMM')}` : '';
 
   const isWatchlisted = hasStock(currentSymbol);
 
@@ -295,7 +313,7 @@ export function CompanySnapshot() {
     );
   }
 
-  if (!processedData) {
+  if (!revenueData || !ebitdaData || !ltmRefDate) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="col-span-full">
@@ -313,7 +331,14 @@ export function CompanySnapshot() {
     );
   }
 
-  const { revenueData, ebitdaData, ltmRefDate, stockData, segmentData, geographyData } = processedData;
+  // Debug: Log the raw geographyData before any processing
+  console.log('[DEBUG] Raw geographyData:', ttmGeographyData);
+
+  // Minimal processing: get clean label for each region
+  const processedGeographyData = ttmGeographyData.map(item => ({
+    ...item,
+    name: getGeoLabel(item.fullName || item.name),
+  }));
 
   return (
     <Card>
@@ -459,16 +484,22 @@ export function CompanySnapshot() {
                 </CardContent>
               </Card>
             </div>
+            {/* FYE Note below both charts */}
+            {fyeNote && (
+              <div className="text-xs text-muted-foreground mt-2" style={{ gridColumn: '1 / -1' }}>
+                Note: {fyeNote}
+              </div>
+            )}
             <div className="grid md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-3 flex flex-row items-center justify-between">
                   <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>LTM Revenue by Segment<sup style={{ fontWeight: 700, fontSize: '0.55em', verticalAlign: 'super', marginLeft: 2 }}>1</sup></CardTitle>
                 </CardHeader>
                 <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
-                  {segmentData.length > 0 ? (
+                  {ttmSegmentData.length > 0 ? (
                     <>
                       <PieChart 
-                        data={segmentData} 
+                        data={ttmSegmentData} 
                         nameKey="name" 
                         dataKey="value" 
                         colors={pieChartPalettes[selectedPalette]}
@@ -493,25 +524,23 @@ export function CompanySnapshot() {
                   <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>LTM Revenue by Geography<sup style={{ fontWeight: 700, fontSize: '0.55em', verticalAlign: 'super', marginLeft: 2 }}>1</sup></CardTitle>
                 </CardHeader>
                 <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
-                  {geographyData.length > 0 ? (
-                    <>
-                      <PieChart 
-                        data={geographyData} 
-                        nameKey="name" 
-                        dataKey="value" 
-                        colors={pieChartPalettes[selectedPalette]}
-                        formatter={(value) => `$${value.toFixed(1)}B`}
-                        labelColor={pieLabelColor}
-                      />
-                      {ltmRefDate && (
-                        <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
-                          <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
-                        </div>
-                      )}
-                    </>
+                  {processedGeographyData.length > 1 ? (
+                    <PieChart 
+                      data={processedGeographyData} 
+                      nameKey="name" 
+                      dataKey="value" 
+                      colors={pieChartPalettes[selectedPalette]}
+                      formatter={(value) => `$${value.toFixed(1)}B`}
+                      labelColor={pieLabelColor}
+                    />
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
-                      No geographic revenue data available for this company
+                      Not enough data to display geographic split.
+                    </div>
+                  )}
+                  {ltmRefDate && (
+                    <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
+                      <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
                     </div>
                   )}
                 </CardContent>
