@@ -10,10 +10,39 @@ import { RecentNews } from "@/components/dashboard/tabs/recent-news";
 import { ScreeningTool } from "@/components/dashboard/tabs/screening-tool";
 import { WatchlistTable } from "@/components/dashboard/tabs/watchlist-table";
 import { useSearchStore } from "@/lib/store/search-store";
+import { FinancialChat } from "@/components/ui/financial-chat";
+import { ChatFAB } from "@/components/ui/chat-fab";
+import { useIncomeStatements, useCashFlows, useBalanceSheets } from "@/lib/api/financial";
+import useSWR from "swr";
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState("company-snapshot");
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
+
+  // Fetch financial data for AI analysis
+  const { statements: incomeStatements } = useIncomeStatements(currentSymbol || '');
+  const { statements: cashFlows } = useCashFlows(currentSymbol || '');
+  const { statements: balanceSheets } = useBalanceSheets(currentSymbol || '');
+
+  // Fetch news data for AI analysis
+  const { data: newsData } = useSWR(
+    currentSymbol ? `/api/stock-news?symbol=${currentSymbol}` : null,
+    async (url: string) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch news');
+      return response.json();
+    },
+    { revalidateOnFocus: false }
+  );
+
+  // Prepare financial data for AI
+  const financialData = {
+    incomeStatements: incomeStatements?.slice(0, 5) || [],
+    cashFlows: cashFlows?.slice(0, 5) || [],
+    balanceSheets: balanceSheets?.slice(0, 5) || [],
+    news: newsData?.slice(0, 10) || [],
+  };
 
   if (!currentSymbol) {
     return (
@@ -27,6 +56,7 @@ export function Dashboard() {
   }
 
   return (
+    <>
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
       <TabsList className="w-full justify-start overflow-x-auto py-2 px-0 h-auto bg-transparent">
         <TabsTrigger 
@@ -94,5 +124,19 @@ export function Dashboard() {
         <WatchlistTable />
       </TabsContent>
     </Tabs>
+    
+    {/* AI Chat Components */}
+    {currentSymbol && (
+      <>
+        <ChatFAB onClick={() => setIsChatOpen(true)} />
+        <FinancialChat
+          symbol={currentSymbol}
+          financialData={financialData}
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+        />
+      </>
+    )}
+    </>
   );
 }

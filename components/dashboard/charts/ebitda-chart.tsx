@@ -67,7 +67,7 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
   }
   return (
     <ResponsiveContainer width="100%" height={280}>
-      <ComposedChart data={data} margin={{ top: 10, right: 2, left: 2, bottom: 10 }}>
+      <ComposedChart data={data} margin={{ top: 40, right: 2, left: 2, bottom: 10 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis
           dataKey="year"
@@ -139,10 +139,10 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
               const yNum = typeof y === 'number' ? y : Number(y);
               const marginValue = typeof value === 'number' ? value : Number(value);
               if (isNaN(xNum) || isNaN(yNum) || isNaN(marginValue)) return null;
-              // Position label just above the line node (dot)
-              const labelY = yNum - 36;
+              // Position label just above the line node (dot) with more clearance
+              const labelY = yNum - 28;
               return (
-                <foreignObject x={xNum - 18} y={labelY} width={54} height={24} style={{ pointerEvents: 'none', overflow: 'visible' }}>
+                <foreignObject x={xNum - 27} y={labelY} width={54} height={30} style={{ pointerEvents: 'none', overflow: 'visible' }}>
                   <div
                     style={{
                       background: '#fff',

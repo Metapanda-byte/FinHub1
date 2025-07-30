@@ -235,7 +235,7 @@ export function CompanySnapshot() {
   const { statements: balanceSheets, isLoading: balanceSheetLoading } = useBalanceSheets(currentSymbol || '');
   const { resolvedTheme } = useTheme();
   const pieLabelColor = resolvedTheme === 'dark' ? '#fff' : '#111';
-  const [selectedPalette, setSelectedPalette] = useState<keyof typeof pieChartPalettes>('oceanic');
+  const [selectedPalette, setSelectedPalette] = useState<keyof typeof pieChartPalettes>('finhubBlues');
   const { ttmRevenue, isLoading: ttmRevenueLoading } = useTTMRevenue(currentSymbol || '');
   const { ttm, isLoading: ttmLoading } = useTTMIncomeStatement(currentSymbol || '');
 
@@ -681,6 +681,94 @@ export function CompanySnapshot() {
             </div>
           </div>
           <div className="grid gap-4 mt-6">
+            {/* Share Price Performance and Capital Structure */}
+            <div className="grid md:grid-cols-2 gap-4">
+              {pricesLoading ? (
+                <ChartLoadingSkeleton />
+              ) : (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Share Price Performance</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <StockChart symbol={currentSymbol} timeframe={timeframe} />
+                  </CardContent>
+                </Card>
+              )}
+              {balanceSheetLoading ? (
+                <CardLoadingSkeleton />
+              ) : (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Capital Structure</CardTitle>
+                  </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
+                      <span>Market Cap</span>
+                      <span>{formatWithParens(marketCap)}</span>
+                    </div>
+                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
+                      <span>+ Total Debt</span>
+                      <span>{formatWithParens(totalDebt)}</span>
+                    </div>
+                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
+                      <span>+ Minority Interest</span>
+                      <span>{formatWithParens(minorityInterest)}</span>
+                    </div>
+                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
+                      <span>- Cash & Equivalents</span>
+                      <span>{formatWithParens(cash !== null ? -Math.abs(cash) : null)}</span>
+                    </div>
+                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm font-semibold border-t pt-2 mt-2">
+                      <span>Enterprise Value</span>
+                      <span>{formatWithParens(enterpriseValue)}</span>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '1.5rem' }} />
+                  <div className="text-sm font-semibold mb-1 underline" style={{ color: highlightTextColor }}>Key Metrics</div>
+                  <div className="mt-4 space-y-0">
+                    <div
+                      style={{
+                        background: highlightColor,
+                        color: highlightTextColor,
+                        fontWeight: 600,
+                        padding: '0.25rem 1rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        borderBottom: 'none',
+                        borderRadius: '4px 4px 0 0',
+                      }}
+                      className={clsx('text-sm font-semibold border', borderColorClass)}
+                    >
+                      <span>P/E Ratio</span>
+                      <span>{formatRatio(quote && quote.pe ? quote.pe : null)}</span>
+                    </div>
+                    <div
+                      style={{
+                        background: highlightColor,
+                        color: highlightTextColor,
+                        fontWeight: 600,
+                        padding: '0.25rem 1rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        borderTop: 'none',
+                        borderRadius: '0 0 4px 4px',
+                      }}
+                      className={clsx('text-sm font-semibold border', borderColorClass)}
+                    >
+                      <span>EV / EBITDA</span>
+                      <span>{formatRatio(evToEbitda)}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              )}
+            </div>
+            
+            {/* Historical Financial Charts */}
             <div className="grid md:grid-cols-2 gap-4">
               {statementsLoading ? (
                 <ChartLoadingSkeleton />
@@ -823,122 +911,6 @@ export function CompanySnapshot() {
                     )}
                   </CardContent>
                 </Card>
-              )}
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              {pricesLoading ? (
-                <ChartLoadingSkeleton />
-              ) : (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Share Price Performance</CardTitle>
-                  </CardHeader>
-                <CardContent style={{ position: 'relative', padding: '0 12px' }}>
-                  <div className="space-y-4">
-                    <div className="flex flex-row flex-wrap items-center justify-between gap-2 mb-2">
-                      <Tabs defaultValue="YTD" onValueChange={(value) => setTimeframe(value as 'YTD' | '1Y' | '5Y')}>
-                        <TabsList>
-                          <TabsTrigger value="YTD">YTD</TabsTrigger>
-                          <TabsTrigger value="1Y">1Y</TabsTrigger>
-                          <TabsTrigger value="5Y">5Y</TabsTrigger>
-                        </TabsList>
-                      </Tabs>
-                      <div className="flex flex-col items-end text-right min-w-[180px]">
-                        {pricesLoading ? (
-                          <>
-                            <span className="text-base font-medium animate-pulse text-muted-foreground">Loading...</span>
-                            <span className="text-sm text-muted-foreground animate-pulse">Loading...</span>
-                          </>
-                        ) : (prices && prices.length > 0) ? (
-                          <>
-                            <span className="text-base font-medium">Current Price: ${prices[prices.length - 1].price.toFixed(2)}</span>
-                            <span className="text-sm text-muted-foreground">
-                              Performance: {prices.length > 1 ? `${(((prices[prices.length - 1].price - prices[0].price) / prices[0].price) * 100).toFixed(1)}%` : 'N/A'}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-base font-medium">Current Price: N/A</span>
-                            <span className="text-sm text-muted-foreground">Performance: N/A</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <StockChart symbol={currentSymbol} timeframe={timeframe} />
-                  </div>
-                </CardContent>
-              </Card>
-              )}
-              {balanceSheetLoading ? (
-                <CardLoadingSkeleton />
-              ) : (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Capitalization Table</CardTitle>
-                  </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
-                      <span>Market Cap</span>
-                      <span>{formatWithParens(marketCap)}</span>
-                    </div>
-                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
-                      <span>+ Total Debt</span>
-                      <span>{formatWithParens(totalDebt)}</span>
-                    </div>
-                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
-                      <span>+ Minority Interest</span>
-                      <span>{formatWithParens(minorityInterest)}</span>
-                    </div>
-                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
-                      <span>- Cash & Equivalents</span>
-                      <span>{formatWithParens(cash !== null ? -Math.abs(cash) : null)}</span>
-                    </div>
-                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm font-semibold border-t pt-2 mt-2">
-                      <span>Enterprise Value</span>
-                      <span>{formatWithParens(enterpriseValue)}</span>
-                    </div>
-                  </div>
-                  <div style={{ marginTop: '1.5rem' }} />
-                  <div className="text-sm font-semibold mb-1 underline" style={{ color: highlightTextColor }}>Key Metrics</div>
-                  <div className="mt-4 space-y-0">
-                    <div
-                      style={{
-                        background: highlightColor,
-                        color: highlightTextColor,
-                        fontWeight: 600,
-                        padding: '0.25rem 1rem',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderBottom: 'none',
-                        borderRadius: '4px 4px 0 0',
-                      }}
-                      className={clsx('text-sm font-semibold border', borderColorClass)}
-                    >
-                      <span>P/E Ratio</span>
-                      <span>{formatRatio(quote && quote.pe ? quote.pe : null)}</span>
-                    </div>
-                    <div
-                      style={{
-                        background: highlightColor,
-                        color: highlightTextColor,
-                        fontWeight: 600,
-                        padding: '0.25rem 1rem',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderTop: 'none',
-                        borderRadius: '0 0 4px 4px',
-                      }}
-                      className={clsx('text-sm font-semibold border', borderColorClass)}
-                    >
-                      <span>EV / EBITDA</span>
-                      <span>{formatRatio(evToEbitda)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
               )}
             </div>
           </div>

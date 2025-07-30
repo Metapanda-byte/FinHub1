@@ -8,11 +8,11 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Bar,
-  ComposedChart,
 } from "recharts";
 import { format } from "date-fns";
 import { useStockPriceData } from "@/lib/api/financial";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 interface StockChartProps {
   symbol: string;
@@ -20,8 +20,13 @@ interface StockChartProps {
   timeframe?: 'YTD' | '1Y' | '5Y';
 }
 
+type TimeframeOption = 'YTD' | '1Y' | '5Y';
+
 export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD' }: StockChartProps) {
-  const { prices: stockPrices, isLoading } = useStockPriceData(symbol, timeframe);
+  const [selectedTimeframe, setSelectedTimeframe] = useState<TimeframeOption>('YTD');
+  const { prices: stockPrices, isLoading } = useStockPriceData(symbol, selectedTimeframe);
+
+  const timeframeOptions: TimeframeOption[] = ['YTD', '1Y', '5Y'];
 
   if (isLoading) {
     return <div className="h-[280px] flex items-center justify-center">Loading...</div>;
@@ -31,266 +36,222 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
     return <div className="h-[280px] flex items-center justify-center">No data available</div>;
   }
 
-  // Process and sort data chronologically
+  // Process and sort data chronologically, then filter by timeframe
   let processedData = stockPrices
-    .filter((item: any) => new Date(item.date) <= new Date()) // Filter out future dates
+    .filter((item: any) => new Date(item.date) <= new Date())
     .map((item: any) => ({
       ...item,
       date: new Date(item.date),
-      volume: item.volume
+      volume: item.volume || 0
     }))
     .sort((a: any, b: any) => a.date.getTime() - b.date.getTime());
 
-  // Filter data to match the selected timeframe
+  // Filter data based on selected timeframe
   const now = new Date();
-  if (timeframe === '5Y') {
-    const fiveYearsAgo = new Date(now.getFullYear() - 5, now.getMonth(), 1);
-    processedData = processedData.filter((item: any) => item.date >= fiveYearsAgo);
-  } else if (timeframe === '1Y') {
-    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-    processedData = processedData.filter((item: any) => item.date >= oneYearAgo);
-  } else if (timeframe === 'YTD') {
+  if (selectedTimeframe === 'YTD') {
     const janFirst = new Date(now.getFullYear(), 0, 1);
     processedData = processedData.filter((item: any) => item.date >= janFirst);
+  } else if (selectedTimeframe === '1Y') {
+    const oneYearAgo = new Date(now);
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    processedData = processedData.filter((item: any) => item.date >= oneYearAgo);
+  } else if (selectedTimeframe === '5Y') {
+    const fiveYearsAgo = new Date(now);
+    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    processedData = processedData.filter((item: any) => item.date >= fiveYearsAgo);
   }
 
-  processedData = processedData.map((item: any, index: number, array: any[]) => {
-    // Calculate moving average if enabled
-    let ma = null;
-    if (showMovingAverage) {
-      const lookbackPeriod = Math.min(7, index + 1);
-      const startIndex = Math.max(0, index - lookbackPeriod + 1);
-      const sum = array
-        .slice(startIndex, index + 1)
-        .reduce((acc: number, curr: any) => acc + curr.price, 0);
-      ma = sum / lookbackPeriod;
-    }
-    return {
-      ...item,
-      date: item.date.toISOString(),
-      ma
-    };
-  });
+  // Convert dates back to strings for charting
+  processedData = processedData.map((item: any) => ({
+    ...item,
+    date: item.date.toISOString()
+  }));
+
+  // Calculate price change and percentage
+  const currentPrice = processedData[processedData.length - 1]?.price || 0;
+  const previousPrice = processedData[0]?.price || 0;
+  const priceChange = currentPrice - previousPrice;
+  const percentageChange = previousPrice !== 0 ? (priceChange / previousPrice) * 100 : 0;
 
   // Calculate price range for y-axis
   const priceValues = processedData.map((d: any) => d.price);
-  const minPrice = Math.min(0, ...priceValues); // Allow negative prices for some stocks
+  const minPrice = Math.min(...priceValues);
   const maxPrice = Math.max(...priceValues);
   const priceRange = maxPrice - minPrice;
-  const priceMargin = priceRange * 0.1; // Add 10% margin
+  const priceMargin = priceRange * 0.05;
 
-  // Generate consistent Y-axis ticks (multiples of 5, evenly spaced)
-  const yTickCount = 5;
-  const roundedMax = Math.ceil((maxPrice + priceMargin) / 5) * 5;
-  const yTickStep = Math.ceil(roundedMax / (yTickCount - 1) / 5) * 5;
-  const yTicks = Array.from({ length: yTickCount }, (_, i) => i * yTickStep);
-  if (yTicks[yTicks.length - 1] < roundedMax) {
-    yTicks[yTicks.length - 1] = roundedMax;
-  }
-
-  // Determine date format and interval based on timeframe
-  const getDateFormatter = (date: string) => {
-    const dateObj = new Date(date);
-    return format(dateObj, 'MMM-yy');
-  };
-
-  // Calculate appropriate number of Y-axis ticks and format
-  const getYTickConfig = () => {
-    const range = maxPrice - minPrice;
+  // Smart date formatter and tick generator based on timeframe
+  const getDateConfig = () => {
+    if (processedData.length === 0) return { formatter: () => '', ticks: [] };
     
-    // Determine the appropriate number of decimal places
-    let decimalPlaces = 2;
-    if (range < 0.1) decimalPlaces = 4;
-    else if (range < 1) decimalPlaces = 3;
-    else if (range < 10) decimalPlaces = 2;
-    else if (range < 100) decimalPlaces = 1;
-    else decimalPlaces = 0;
-
-    // Determine the appropriate number of ticks
-    let tickCount = 5;
-    if (range < 1) tickCount = 6;
-    else if (range < 10) tickCount = 5;
-    else if (range < 100) tickCount = 5;
-    else tickCount = 4;
-
-    // Format function for Y-axis labels
-    const formatValue = (value: number) => {
-      const absValue = Math.abs(value);
-      if (absValue >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
-      if (absValue >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
-      if (absValue >= 1e3) return `$${(value / 1e3).toFixed(1)}K`;
-      return `$${value.toFixed(decimalPlaces)}`;
+    const startDate = new Date(processedData[0].date);
+    const endDate = new Date(processedData[processedData.length - 1].date);
+    
+    const formatter = (date: string) => {
+      const dateObj = new Date(date);
+      
+      if (selectedTimeframe === 'YTD') {
+        // Show month abbreviations for YTD
+        return format(dateObj, 'MMM');
+      } else if (selectedTimeframe === '1Y') {
+        // Show month-year for 1Y
+        return format(dateObj, 'MMM yy');
+      } else if (selectedTimeframe === '5Y') {
+        // Show year for 5Y
+        return format(dateObj, 'yyyy');
+      }
+      return format(dateObj, 'MMM yy');
     };
-
-    return { tickCount, formatValue };
+    
+    // Generate optimal ticks based on timeframe - simplified and more reliable
+    const generateTicks = () => {
+      const dataLength = processedData.length;
+      if (dataLength === 0) return [];
+      
+      // Always use evenly spaced ticks based on data length
+      let tickCount = 5; // Default
+      
+      if (selectedTimeframe === 'YTD') {
+        tickCount = Math.min(8, Math.max(4, Math.floor(dataLength / 30))); // Roughly monthly
+      } else if (selectedTimeframe === '1Y') {
+        tickCount = 6; // Roughly bi-monthly over a year
+      } else if (selectedTimeframe === '5Y') {
+        tickCount = 6; // Roughly yearly
+      }
+      
+      // Generate evenly spaced ticks
+      const ticks: string[] = [];
+      const step = Math.max(1, Math.floor((dataLength - 1) / (tickCount - 1)));
+      
+      for (let i = 0; i < tickCount; i++) {
+        let index;
+        if (i === 0) {
+          index = 0; // Always include first
+        } else if (i === tickCount - 1) {
+          index = dataLength - 1; // Always include last
+        } else {
+          index = i * step;
+        }
+        
+        if (index < dataLength) {
+          ticks.push(processedData[index].date);
+        }
+      }
+      
+      // Remove duplicates and sort
+      return [...new Set(ticks)].sort();
+    };
+    
+    return { formatter, ticks: generateTicks() };
   };
 
-  const { tickCount, formatValue } = getYTickConfig();
+  const { formatter: dateFormatter, ticks: dateTicks } = getDateConfig();
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <ComposedChart
-        data={processedData}
-        margin={{ top: 10, right: 0, left: 10, bottom: 10 }}
-      >
-        <defs>
-          <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#15803d" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="#15803d" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-        <XAxis
-          dataKey="date"
-          tickFormatter={getDateFormatter}
-          tickLine={false}
-          axisLine={false}
-          tick={{ fontSize: 12 }}
-          dy={8}
-          angle={0}
-          textAnchor="middle"
-          height={30}
-          interval="preserveEnd"
-          minTickGap={0}
-          ticks={(() => {
-            if (processedData.length === 0) return [];
-            // Helper to get evenly spaced ticks from processedData
-            const getEvenlySpacedTicks = (count: number) => {
-              const n = processedData.length;
-              if (n <= count) return processedData.map((d: any) => d.date);
-              const step = Math.floor(n / (count - 1));
-              const ticks: string[] = [];
-              for (let i = 0; i < count - 1; i++) {
-                ticks.push(processedData[i * step].date);
-              }
-              ticks.push(processedData[n - 1].date); // Always include last date
-              return ticks;
-            };
-            if (timeframe === '5Y') {
-              // Most recent month and every 12 months prior (6 ticks)
-              const ticks: string[] = [];
-              const lastDate = new Date(processedData[processedData.length - 1].date);
-              for (let i = 0; i < 6; i++) {
-                const d = new Date(lastDate);
-                d.setMonth(d.getMonth() - i * 12, 1); // Set to first of the month
-                // Find the closest data point to this month
-                const tick = processedData.reduce((prev: any, curr: any) => {
-                  return Math.abs(new Date(curr.date).getTime() - d.getTime()) < Math.abs(new Date(prev.date).getTime() - d.getTime()) ? curr : prev;
-                });
-                // Avoid duplicates
-                if (!ticks.includes(tick.date)) {
-                  ticks.unshift(tick.date);
-                }
-              }
-              return ticks;
-            } else if (timeframe === '1Y') {
-              return getEvenlySpacedTicks(6);
-            } else if (timeframe === 'YTD') {
-              // One tick per month, last tick is always the most recent date (if not already present)
-              const months = new Set();
-              const ticks: string[] = [];
-              processedData.forEach((d: any) => {
-                const m = d.date.slice(0, 7); // 'YYYY-MM'
-                if (!months.has(m)) {
-                  months.add(m);
-                  ticks.push(d.date);
-                }
-              });
-              const lastDate = processedData[processedData.length - 1].date;
-              const lastMonth = lastDate.slice(0, 7);
-              if (ticks.length === 0 || (!months.has(lastMonth) && ticks[ticks.length - 1] !== lastDate)) {
-                ticks.push(lastDate);
-              }
-              // Remove duplicates if any
-              return Array.from(new Set(ticks));
-            }
-            return getEvenlySpacedTicks(5);
-          })()}
-        />
-        <YAxis
-          yAxisId="left"
-          orientation="left"
-          domain={[0, roundedMax]}
-          ticks={yTicks}
-          tickLine={false}
-          axisLine={false}
-          tick={{ fontSize: 12 }}
-          width={55}
-          tickCount={tickCount}
-          tickFormatter={formatValue}
-          dx={-10}
-        />
-        <YAxis
-          yAxisId="right"
-          orientation="right"
-          tickFormatter={(value) => {
-            const absValue = Math.abs(value);
-            if (absValue >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-            if (absValue >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-            if (absValue >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
-            return value.toFixed(0);
-          }}
-          domain={[0, 'auto']}
-          tickLine={false}
-          axisLine={false}
-          tick={{ fontSize: 12 }}
-          width={75}
-          dx={-10}
-        />
-        <Tooltip
-          formatter={(value: number, name: string) => {
-            if (name === "price") return [formatValue(value), "Price"];
-            if (name === "ma") return [formatValue(value), "MA (7-day)"];
-            if (name === "volume") {
-              const absValue = Math.abs(value);
-              if (absValue >= 1e9) return [`${(value / 1e9).toFixed(1)}B`, "Volume"];
-              if (absValue >= 1e6) return [`${(value / 1e6).toFixed(1)}M`, "Volume"];
-              if (absValue >= 1e3) return [`${(value / 1e3).toFixed(1)}K`, "Volume"];
-              return [value.toFixed(0), "Volume"];
-            }
-            return [value, name];
-          }}
-          labelFormatter={(label) => format(new Date(label), 'MMM d, yyyy HH:mm')}
-          contentStyle={{
-            borderRadius: "6px",
-            padding: "8px 12px",
-            border: "1px solid var(--border)",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-          }}
-        />
-        <Bar
-          yAxisId="right"
-          dataKey="volume"
-          fill="hsl(var(--chart-4) / 0.3)"
-          barSize={20}
-          animationDuration={1500}
-        />
-        <Area
-          yAxisId="left"
-          type="monotone"
-          dataKey="price"
-          stroke="#15803d"
-          strokeWidth={2}
-          fillOpacity={1}
-          fill="url(#colorPrice)"
-          animationDuration={1500}
-          dot={false}
-          activeDot={{ r: 4, fill: "#15803d" }}
-        />
-        {showMovingAverage && (
-          <Area
-            yAxisId="left"
-            type="monotone"
-            dataKey="ma"
-            stroke="hsl(var(--chart-2))"
-            strokeWidth={2}
-            fill="none"
-            animationDuration={1500}
-            dot={false}
-            activeDot={{ r: 4, fill: "hsl(var(--chart-2))" }}
-          />
-        )}
-      </ComposedChart>
-    </ResponsiveContainer>
+    <div className="w-full space-y-3">
+      {/* Stock Price Header - Compact */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-base font-semibold">{symbol}</span>
+          <span className="text-lg font-bold">${currentPrice.toFixed(2)}</span>
+          <div className={`flex items-center gap-1 text-sm ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <span>{priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}</span>
+            <span>({percentageChange >= 0 ? '+' : ''}{percentageChange.toFixed(2)}%)</span>
+          </div>
+        </div>
+        
+        {/* Timeframe Selector - Compact */}
+        <div className="flex gap-1">
+          {timeframeOptions.map((option) => (
+            <Button
+              key={option}
+              variant={selectedTimeframe === option ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedTimeframe(option)}
+              className="h-7 px-3 text-xs"
+            >
+              {option}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Chart */}
+      <div className="h-[240px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart
+            data={processedData}
+            margin={{ top: 10, right: 30, left: 10, bottom: 20 }}
+          >
+            <defs>
+              <linearGradient id="stockPriceGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
+            
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              vertical={false}
+            />
+            
+            <XAxis
+              dataKey="date"
+              tickFormatter={dateFormatter}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12 }}
+              height={30}
+              ticks={dateTicks}
+              interval={0}
+              domain={['dataMin', 'dataMax']}
+              type="category"
+              angle={0}
+              textAnchor="middle"
+            />
+            
+            <YAxis
+              domain={[minPrice - priceMargin, maxPrice + priceMargin]}
+              tickFormatter={(value) => {
+                if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
+                if (value >= 1) return `$${value.toFixed(0)}`;
+                return `$${value.toFixed(2)}`;
+              }}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12 }}
+              width={50}
+            />
+
+            <Tooltip
+              contentStyle={{
+                borderRadius: "6px",
+                padding: "8px 12px",
+                border: "1px solid var(--border)",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              }}
+              labelFormatter={(label) => format(new Date(label), 'MMM d, yyyy')}
+              formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Price']}
+            />
+
+            {/* Price line with gradient fill */}
+            <Area
+              type="monotone"
+              dataKey="price"
+              stroke="#3b82f6"
+              strokeWidth={2}
+              fill="url(#stockPriceGradient)"
+              dot={false}
+              activeDot={{ 
+                r: 4, 
+                fill: "#3b82f6", 
+                stroke: "#ffffff", 
+                strokeWidth: 2 
+              }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 }
