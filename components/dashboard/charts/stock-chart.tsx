@@ -139,7 +139,7 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
       }
       
       // Remove duplicates and sort
-      return [...new Set(ticks)].sort();
+      return Array.from(new Set(ticks)).sort();
     };
     
     return { formatter, ticks: generateTicks() };

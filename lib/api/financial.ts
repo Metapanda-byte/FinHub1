@@ -813,7 +813,7 @@ export function useGeographicRevenueTTM(symbol: string) {
     const result = aggregateTTMRevenue(data, entry => Object.keys(entry)[0], true, actualTTMRevenue);
     console.log('[DEBUG] useGeographicRevenueTTM - processed result:', result);
     return result;
-  }, [data, symbol, ttmIncome]);
+  }, [data, ttmIncome]);
 
   return {
     regions: ttmSegments,

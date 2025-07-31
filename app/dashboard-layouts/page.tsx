@@ -257,7 +257,13 @@ function ExecutiveSummaryLayout({ data }: { data: any }) {
             <CardTitle>Segments</CardTitle>
           </CardHeader>
           <CardContent>
-            <PieChart data={data.segments} />
+            <PieChart 
+              data={data.segments} 
+              nameKey="name" 
+              dataKey="value" 
+              colors={['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']}
+              formatter={(value) => `$${value.toFixed(1)}B`}
+            />
           </CardContent>
         </Card>
       </div>
@@ -269,7 +275,13 @@ function ExecutiveSummaryLayout({ data }: { data: any }) {
             <CardTitle>Geography</CardTitle>
           </CardHeader>
           <CardContent>
-            <PieChart data={data.geography} />
+            <PieChart 
+              data={data.geography} 
+              nameKey="name" 
+              dataKey="value" 
+              colors={['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']}
+              formatter={(value) => `$${value.toFixed(1)}B`}
+            />
           </CardContent>
         </Card>
 
@@ -549,7 +561,13 @@ function ModernCardsLayout({ data }: { data: any }) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              <PieChart data={data.segments} />
+              <PieChart 
+                data={data.segments} 
+                nameKey="name" 
+                dataKey="value" 
+                colors={['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']}
+                formatter={(value) => `$${value.toFixed(1)}B`}
+              />
               <div className="space-y-3">
                 {data.segments.map((segment: any, index: number) => (
                   <div key={index} className="flex justify-between">
@@ -571,7 +589,13 @@ function ModernCardsLayout({ data }: { data: any }) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              <PieChart data={data.geography} />
+              <PieChart 
+                data={data.geography} 
+                nameKey="name" 
+                dataKey="value" 
+                colors={['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']}
+                formatter={(value) => `$${value.toFixed(1)}B`}
+              />
               <div className="space-y-3">
                 {data.geography.map((region: any, index: number) => (
                   <div key={index} className="flex justify-between">
@@ -760,7 +784,13 @@ function MinimalistLayout({ data }: { data: any }) {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-6 text-center">
             <h3 className="text-lg font-light text-muted-foreground mb-4">SEGMENTS</h3>
-            <PieChart data={data.segments} />
+            <PieChart 
+              data={data.segments} 
+              nameKey="name" 
+              dataKey="value" 
+              colors={['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']}
+              formatter={(value) => `$${value.toFixed(1)}B`}
+            />
           </CardContent>
         </Card>
       </div>
@@ -770,7 +800,13 @@ function MinimalistLayout({ data }: { data: any }) {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-6 text-center">
             <h3 className="text-lg font-light text-muted-foreground mb-4">GEOGRAPHY</h3>
-            <PieChart data={data.geography} />
+            <PieChart 
+              data={data.geography} 
+              nameKey="name" 
+              dataKey="value" 
+              colors={['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']}
+              formatter={(value) => `$${value.toFixed(1)}B`}
+            />
           </CardContent>
         </Card>
 
@@ -857,7 +893,13 @@ function SidePanelLayout({ data }: { data: any }) {
               <CardTitle>Segments</CardTitle>
             </CardHeader>
             <CardContent>
-              <PieChart data={data.segments} />
+              <PieChart 
+                data={data.segments} 
+                nameKey="name" 
+                dataKey="value" 
+                colors={['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']}
+                formatter={(value) => `$${value.toFixed(1)}B`}
+              />
             </CardContent>
           </Card>
 
@@ -866,7 +908,13 @@ function SidePanelLayout({ data }: { data: any }) {
               <CardTitle>Geography</CardTitle>
             </CardHeader>
             <CardContent>
-              <PieChart data={data.geography} />
+              <PieChart 
+                data={data.geography} 
+                nameKey="name" 
+                dataKey="value" 
+                colors={['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']}
+                formatter={(value) => `$${value.toFixed(1)}B`}
+              />
             </CardContent>
           </Card>
         </div>
@@ -887,7 +935,7 @@ function SidePanelLayout({ data }: { data: any }) {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-2">Today's Change</h3>
+            <h3 className="font-semibold mb-2">Today&apos;s Change</h3>
             <div className="text-lg text-green-600">+${data.change}</div>
             <div className="text-lg text-green-600">+{data.changePercent}%</div>
           </div>
