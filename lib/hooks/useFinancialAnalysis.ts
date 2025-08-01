@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { validateFinancialStatement, validateFinancialRatios, logValidationResults } from '@/lib/utils/financial-validators';
 
 interface FinancialStatement {
   date: string;
@@ -24,6 +25,33 @@ export function useFinancialAnalysis(
       return null;
     }
 
+    // Validate the latest financial statements for consistency
+    const latestIncome = incomeStatements[0];
+    const latestBalance = balanceSheets?.[0];
+    const latestCashFlow = cashFlows?.[0];
+
+    if (latestIncome) {
+      const incomeValidation = validateFinancialStatement({
+        revenue: latestIncome.revenue,
+        netIncome: latestIncome.netIncome,
+        ebitda: latestIncome.ebitda,
+        date: latestIncome.date
+      });
+      logValidationResults(incomeValidation, 'Income Statement');
+    }
+
+    if (latestBalance) {
+      const balanceValidation = validateFinancialStatement({
+        totalAssets: latestBalance.totalAssets,
+        totalLiabilities: latestBalance.totalLiabilities,
+        totalEquity: latestBalance.totalEquity,
+        currentAssets: latestBalance.currentAssets,
+        currentLiabilities: latestBalance.currentLiabilities,
+        date: latestBalance.date
+      });
+      logValidationResults(balanceValidation, 'Balance Sheet');
+    }
+
     const analysis = {
       revenueAnalysis: analyzeRevenue(incomeStatements),
       profitabilityAnalysis: analyzeProfitability(incomeStatements),
@@ -31,6 +59,15 @@ export function useFinancialAnalysis(
       balanceSheetAnalysis: analyzeBalanceSheet(balanceSheets || []),
       keyMetrics: calculateKeyMetrics(incomeStatements, balanceSheets || [])
     };
+
+    // Validate calculated ratios
+    if (analysis.keyMetrics) {
+      const ratioValidation = validateFinancialRatios({
+        currentRatio: analysis.keyMetrics.currentRatio,
+        roe: analysis.keyMetrics.roe
+      });
+      logValidationResults(ratioValidation, 'Financial Ratios');
+    }
 
     return analysis;
   }, [incomeStatements, cashFlows, balanceSheets]);
@@ -135,9 +172,14 @@ function calculateKeyMetrics(income: FinancialStatement[], balance: FinancialSta
   const latestBalance = balance[0] || {};
   
   return {
-    currentPE: latest.eps ? latest.netIncome! / latest.eps : null,
-    roe: latestBalance.totalEquity ? (latest.netIncome! / latestBalance.totalEquity) * 100 : null,
-    currentRatio: latestBalance.totalAssets ? latestBalance.totalAssets / (latestBalance.totalDebt || 1) : null
+    // P/E ratio should be market price per share / earnings per share
+    // Since we don't have price here, we return null - P/E should be calculated elsewhere with price data
+    currentPE: null, // Proper P/E calculation requires stock price
+    roe: latestBalance.totalEquity && latestBalance.totalEquity !== 0 ? (latest.netIncome! / latestBalance.totalEquity) * 100 : null,
+    // Current ratio should be current assets / current liabilities
+    currentRatio: latestBalance.currentAssets && latestBalance.currentLiabilities && latestBalance.currentLiabilities !== 0 
+      ? latestBalance.currentAssets / latestBalance.currentLiabilities 
+      : null
   };
 }
 

@@ -54,10 +54,21 @@ export function ValuationMetrics({ symbol }: ValuationMetricsProps) {
 
   const marketCap = currentPrice * sharesOutstanding
   const enterpriseValue = marketCap + (latestBalanceSheet?.totalDebt || 0) - (latestBalanceSheet?.cashAndCashEquivalents || 0)
-  const peRatio = currentPrice / (latestIncomeStatement?.netIncome || 0)
-  const evEbitda = enterpriseValue / (latestIncomeStatement?.ebitda || 0)
-  const pbRatio = currentPrice / (latestBalanceSheet?.totalAssets || 0)
-  const psRatio = currentPrice / (latestIncomeStatement?.revenue || 0)
+  
+  // Calculate P/E ratio correctly: Price per share / Earnings per share
+  const eps = sharesOutstanding > 0 ? (latestIncomeStatement?.netIncome || 0) / sharesOutstanding : 0
+  const peRatio = eps > 0 ? currentPrice / eps : null
+  
+  const evEbitda = (latestIncomeStatement?.ebitda || 0) > 0 ? enterpriseValue / (latestIncomeStatement?.ebitda || 0) : null
+  
+  // P/B ratio should use book value per share, not total assets
+  const bookValue = latestBalanceSheet?.totalEquity || 0
+  const bookValuePerShare = sharesOutstanding > 0 ? bookValue / sharesOutstanding : 0
+  const pbRatio = bookValuePerShare > 0 ? currentPrice / bookValuePerShare : null
+  
+  // P/S ratio should use revenue per share
+  const revenuePerShare = sharesOutstanding > 0 ? (latestIncomeStatement?.revenue || 0) / sharesOutstanding : 0
+  const psRatio = revenuePerShare > 0 ? currentPrice / revenuePerShare : null
 
   const metrics = [
     { label: "Market Cap", value: formatCurrency(marketCap) },

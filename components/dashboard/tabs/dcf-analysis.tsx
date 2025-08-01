@@ -88,7 +88,15 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
 
     const baseRevenue = latestIncome.revenue || 0;
     const currentStockPrice = profile.price || 0;
-    const sharesOutstanding = profile.mktCap && currentStockPrice ? profile.mktCap / currentStockPrice : 1;
+    
+    // Calculate shares outstanding with proper validation
+    let sharesOutstanding = 1;
+    if (profile.mktCap && currentStockPrice && currentStockPrice > 0) {
+      sharesOutstanding = profile.mktCap / currentStockPrice;
+    } else {
+      console.warn('[DCF Warning] Unable to calculate shares outstanding, using fallback');
+      return null; // Cannot perform meaningful DCF without proper share count
+    }
 
     // Project Free Cash Flows
     const projectedFCF: number[] = [];
@@ -114,7 +122,15 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
 
     // Calculate terminal value
     const terminalFCF = projectedFCF[projectedFCF.length - 1] * (1 + assumptions.longTermGrowthRate / 100);
-    const terminalValue = terminalFCF / ((assumptions.discountRate / 100) - (assumptions.longTermGrowthRate / 100));
+    const discountMinusGrowth = (assumptions.discountRate / 100) - (assumptions.longTermGrowthRate / 100);
+    
+    // Prevent division by zero or negative denominator
+    if (discountMinusGrowth <= 0) {
+      console.warn('[DCF Warning] Discount rate must be greater than long-term growth rate');
+      return null;
+    }
+    
+    const terminalValue = terminalFCF / discountMinusGrowth;
 
     // Calculate present values
     const discountRate = assumptions.discountRate / 100;
