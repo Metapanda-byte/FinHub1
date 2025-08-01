@@ -94,4 +94,44 @@
 .scrollbar-hide::-webkit-scrollbar { 
   display: none;  /* Safari and Chrome */
 }
+
+/* Mobile-responsive enhancements */
+@media (max-width: 768px) {
+  /* Compact tables for mobile */
+  .financial-table {
+    font-size: 0.75rem;
+  }
+  
+  .financial-table th,
+  .financial-table td {
+    padding: 0.375rem 0.25rem;
+  }
+  
+  /* Mobile-friendly cards */
+  .mobile-compact .card {
+    padding: 0.75rem;
+  }
+  
+  /* Responsive charts */
+  .mobile-chart {
+    height: 200px;
+  }
+  
+  /* Touch-friendly buttons */
+  .mobile-touch button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Extra compact for very small screens */
+  .financial-table {
+    font-size: 0.7rem;
+  }
+  
+  .mobile-chart {
+    height: 180px;
+  }
+}
 }

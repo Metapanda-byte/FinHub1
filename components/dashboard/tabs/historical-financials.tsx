@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import { TableLoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { TableScrollHint } from "@/components/ui/table-scroll-hint";
 
 const expenseMetrics = new Set([
   "Cost of Revenue",
@@ -537,42 +538,42 @@ export function HistoricalFinancials() {
     return (
       <div 
         ref={(el) => { tableContainerRefs.current[title] = el; }}
-        className="overflow-x-auto rounded-lg shadow-sm"
+        className="overflow-x-auto rounded-lg border-2 border-slate-200 dark:border-slate-700 shadow-sm"
       >
-        <table className="w-full border-collapse">
+        <table className="w-full financial-table">
           <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur">
             <tr className="">
               <th className={cn(
-                "text-left py-3 px-6 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom",
-                "min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90"
+                "text-left py-3 px-3 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom",
+                "min-w-40 md:min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90"
               )}>
                 {title}
               </th>
               {selectedPeriod === 'quarter'
                 ? years.map(year => (
-                    <th key={year} colSpan={4} className="text-center py-3 px-6 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
+                    <th key={year} colSpan={4} className="text-center py-3 px-2 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
                   ))
                 : selectedPeriod === 'semi-annual'
                 ? [...years.map(year => (
-                    <th key={year} colSpan={2} className="text-center py-3 px-6 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
+                    <th key={year} colSpan={2} className="text-center py-3 px-2 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
                   )), 
-                  <th key="ltm" className="text-center py-3 px-4 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '100px' }}>LTM</th>]
+                  <th key="ltm" className="text-center py-3 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>LTM</th>]
                 : [...years.map(year => (
-                    <th key={year} className="text-center py-3 px-4 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '100px' }}>{`FY ${year}`}</th>
+                    <th key={year} className="text-center py-3 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '60px' }}>{`FY ${year}`}</th>
                   )), 
-                  <th key="ltm" className="text-center py-3 px-4 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '100px' }}>LTM</th>]}
+                  <th key="ltm" className="text-center py-3 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>LTM</th>]}
             </tr>
 {(selectedPeriod === 'quarter' || selectedPeriod === 'semi-annual') && (() => {
               const periods = selectedPeriod === 'semi-annual' ? ["H1", "H2"] : ["Q1","Q2","Q3","Q4"];
               
               return (
-                <tr>
-                  <th className="text-left py-1.5 px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90">{getCurrencyDisplayText(incomeStatements)}</th>
+                <tr className="border-none">
+                  <th className="text-left py-1.5 px-3 md:px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-40 md:min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90">{getCurrencyDisplayText(incomeStatements)}</th>
                   {years.map(year => periods.map(period => (
-                    <th key={year+period} className="text-center py-1.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom" style={{ minWidth: '80px' }}>{period}</th>
+                    <th key={year+period} className="text-center py-1.5 px-1 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none" style={{ minWidth: '45px' }}>{period}</th>
                   ))).flat()}
                   {selectedPeriod === 'semi-annual' && (
-                    <th key="ltm-sub" className="text-center py-1.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '100px' }}>
+                    <th key="ltm-sub" className="text-center py-1.5 px-1 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>
                       {quarterlyMap ? getLTMReferenceDate(quarterlyMap) : 'LTM'}
                     </th>
                   )}
@@ -580,12 +581,12 @@ export function HistoricalFinancials() {
               );
             })()}
             {selectedPeriod === 'annual' && (
-              <tr>
-                <th className="text-left py-1.5 px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90">{getCurrencyDisplayText(incomeStatements)}</th>
+              <tr className="border-none">
+                <th className="text-left py-1.5 px-3 md:px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-40 md:min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90">{getCurrencyDisplayText(incomeStatements)}</th>
                 {years.map(year => (
-                  <th key={year} className="text-center py-1.5 px-4 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom" style={{ minWidth: '100px' }}></th>
+                  <th key={year} className="text-center py-1.5 px-1 md:px-4 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none" style={{ minWidth: '60px' }}></th>
                 ))}
-                <th key="ltm-sub" className="text-center py-1.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '100px' }}>
+                <th key="ltm-sub" className="text-center py-1.5 px-1 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>
                   {quarterlyMap ? getLTMReferenceDate(quarterlyMap) : 'LTM'}
                 </th>
               </tr>
@@ -611,12 +612,12 @@ export function HistoricalFinancials() {
                   )}
                 >
                   <td className={cn(
-                    "py-1.5 text-sm flex items-center gap-2 relative z-10",
-                    row.isIndented ? "px-8" : "px-6",
+                    "py-1.5 text-xs md:text-sm flex items-center gap-1 md:gap-2 relative z-10",
+                    row.isIndented ? "px-4 md:px-8" : "px-3 md:px-6",
                     row.isImportant ? "font-semibold" : "",
                     row.isBold ? "font-bold" : "",
                     row.isMargin ? "text-slate-500 dark:text-slate-400" : "",
-                    "min-w-80 sticky left-0 z-20 bg-white dark:bg-slate-950"
+                    "min-w-40 md:min-w-80 sticky left-0 z-20 bg-white dark:bg-slate-950"
                   )}>
                     {row.label}
                   </td>
@@ -628,10 +629,10 @@ export function HistoricalFinancials() {
                           
                         return (
                           <td key={`${year}-${period}`} className={cn(
-                            "text-right py-1.5 px-4 text-sm tabular-nums relative z-10",
+                            "text-right py-1.5 px-1 md:px-4 text-xs md:text-sm tabular-nums relative z-10",
                             row.isImportant ? "font-semibold" : "",
                             row.isMargin ? "text-slate-500 dark:text-slate-400" : ""
-                          )} style={{ minWidth: '80px' }}>
+                          )} style={{ minWidth: '45px' }}>
                             {formatMetric(row[dataPeriod], row.label, row.isHeaderRow)}
                           </td>
                         );
@@ -646,36 +647,36 @@ export function HistoricalFinancials() {
                           
                         return (
                           <td key={`${year}-${period}`} className={cn(
-                            "text-right py-1.5 px-4 text-sm tabular-nums relative z-10",
+                            "text-right py-1.5 px-1 md:px-4 text-xs md:text-sm tabular-nums relative z-10",
                             row.isImportant ? "font-semibold" : "",
                             row.isMargin ? "text-slate-500 dark:text-slate-400" : ""
-                          )} style={{ minWidth: '80px' }}>
+                          )} style={{ minWidth: '45px' }}>
                             {formatMetric(row[dataPeriod], row.label, row.isHeaderRow)}
                           </td>
                         );
                       })), 
                       <td key="ltm" className={cn(
-                        "text-right py-1.5 px-4 text-sm tabular-nums font-medium bg-blue-50 dark:bg-blue-900/30 relative z-10",
+                        "text-right py-1.5 px-1 md:px-4 text-xs md:text-sm tabular-nums font-medium bg-blue-50 dark:bg-blue-900/30 relative z-10",
                         row.isImportant ? "font-semibold" : "",
                         row.isMargin ? "text-slate-500 dark:text-slate-400" : "text-slate-900 dark:text-slate-100"
-                      )} style={{ minWidth: '100px' }}>
+                      )} style={{ minWidth: '60px' }}>
                         {formatMetric(row.ltm, row.label, row.isHeaderRow)}
                       </td>];
                     })()
                     : [...years.map(year => (
                         <td key={year} className={cn(
-                          "text-right py-1.5 px-4 text-sm tabular-nums relative z-10",
+                          "text-right py-1.5 px-1 md:px-4 text-xs md:text-sm tabular-nums relative z-10",
                           row.isImportant ? "font-semibold" : "",
                           row.isMargin ? "text-slate-500 dark:text-slate-400" : ""
-                        )} style={{ minWidth: '100px' }}>
+                        )} style={{ minWidth: '60px' }}>
                           {formatMetric(row[year], row.label, row.isHeaderRow)}
                         </td>
                       )),
                       <td key="ltm" className={cn(
-                        "text-right py-1.5 px-4 text-sm tabular-nums font-medium bg-blue-50 dark:bg-blue-900/30 relative z-10",
+                        "text-right py-1.5 px-1 md:px-4 text-xs md:text-sm tabular-nums font-medium bg-blue-50 dark:bg-blue-900/30 relative z-10",
                         row.isImportant ? "font-semibold" : "",
                         row.isMargin ? "text-slate-500 dark:text-slate-400" : "text-slate-900 dark:text-slate-100"
-                      )} style={{ minWidth: '100px' }}>
+                      )} style={{ minWidth: '60px' }}>
                         {formatMetric(row.ltm, row.label, row.isHeaderRow)}
                       </td>]}
                 </tr>
@@ -1787,6 +1788,7 @@ export function HistoricalFinancials() {
 
   return (
     <div className="space-y-6">
+      <TableScrollHint />
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
           <div>
@@ -1832,19 +1834,19 @@ export function HistoricalFinancials() {
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger 
                 value="income-statement"
-                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all "
+                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all"
               >
                 Income Statement
               </TabsTrigger>
               <TabsTrigger 
                 value="cash-flow"
-                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all "
+                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all"
               >
                 Cash Flow
               </TabsTrigger>
               <TabsTrigger 
                 value="balance-sheet"
-                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all "
+                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all"
               >
                 Balance Sheet
               </TabsTrigger>

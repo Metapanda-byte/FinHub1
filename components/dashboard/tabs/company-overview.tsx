@@ -464,7 +464,7 @@ export function CompanyOverview() {
 
   if (!currentSymbol || profileLoading || statementsLoading || pricesLoading || segmentsLoading || regionsLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="col-span-full">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div className="space-y-1">
@@ -487,7 +487,7 @@ export function CompanyOverview() {
 
   if (!revenueData || !ebitdaData || !ltmRefDate) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="col-span-full">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div className="space-y-1">
@@ -689,7 +689,7 @@ export function CompanyOverview() {
           </div>
           <div className="grid gap-3">
             {/* Share Price Performance and Capital Structure */}
-            <div className="grid md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
               {pricesLoading ? (
                 <ChartLoadingSkeleton />
               ) : (
@@ -813,7 +813,7 @@ export function CompanyOverview() {
                 </div>
               )}
             </div>
-            <div className="grid md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
               {segmentsLoading ? (
                 <ChartLoadingSkeleton />
               ) : (
@@ -909,7 +909,7 @@ export function CompanyOverview() {
             </div>
             
             {/* New cards section - Key Ratios, Analyst Sentiment, ESG, and Ownership */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
               {/* Key Financial Ratios Card */}
               <Card>
                 <CardHeader className="pb-3">

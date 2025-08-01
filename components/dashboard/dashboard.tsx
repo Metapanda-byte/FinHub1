@@ -92,8 +92,8 @@ export function Dashboard() {
 
   return (
     <>
-    <div data-dashboard>
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+    <div data-dashboard className="mobile-compact mobile-touch">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 md:space-y-4">
       <TabsList className="w-full justify-start overflow-x-auto py-2 px-0 h-auto bg-transparent scrollbar-hide flex-nowrap">
         <TabsTrigger 
           value="company-snapshot"
@@ -156,34 +156,34 @@ export function Dashboard() {
           Watchlist
         </TabsTrigger>
       </TabsList>
-      <TabsContent value="company-snapshot" className="space-y-4 mt-4">
+      <TabsContent value="company-snapshot" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
         <CompanyOverview />
       </TabsContent>
-      <TabsContent value="historical-financials" className="space-y-4 mt-4">
+      <TabsContent value="historical-financials" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
         <HistoricalFinancials />
       </TabsContent>
-      <TabsContent value="competitor-analysis" className="space-y-4 mt-4">
+      <TabsContent value="competitor-analysis" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
         <CompetitorAnalysis />
       </TabsContent>
-      <TabsContent value="dcf-analysis" className="space-y-4 mt-4">
+      <TabsContent value="dcf-analysis" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
         <DCFAnalysis symbol={currentSymbol} />
       </TabsContent>
-      <TabsContent value="credit-analysis" className="space-y-4 mt-4">
+      <TabsContent value="credit-analysis" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
         <CreditAnalysis />
       </TabsContent>
-      <TabsContent value="valuation-considerations" className="space-y-4 mt-4">
+      <TabsContent value="valuation-considerations" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
         <ValuationConsiderations />
       </TabsContent>
-      <TabsContent value="recent-news" className="space-y-4 mt-4">
+      <TabsContent value="recent-news" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
         <RecentNews />
       </TabsContent>
-      <TabsContent value="sec-filings" className="space-y-4 mt-4">
+      <TabsContent value="sec-filings" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
         <SECFilingsTranscripts ticker={currentSymbol} />
       </TabsContent>
-      <TabsContent value="idea-generation" className="space-y-4 mt-4">
+      <TabsContent value="idea-generation" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
         <IdeaGeneration />
       </TabsContent>
-      <TabsContent value="watchlist" className="space-y-4 mt-4">
+      <TabsContent value="watchlist" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
         <WatchlistTable />
       </TabsContent>
     </Tabs>
