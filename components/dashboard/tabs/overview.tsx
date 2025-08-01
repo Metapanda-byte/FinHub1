@@ -1,11 +1,11 @@
 "use client";
 
-import { CompanySnapshot } from "./company-snapshot";
+import { CompanyOverview } from "./company-overview";
 
 export function Overview() {
   return (
     <div className="space-y-6">
-      <CompanySnapshot />
+      <CompanyOverview />
     </div>
   );
 } 

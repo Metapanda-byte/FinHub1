@@ -22,7 +22,7 @@ export function IncomeStatementLine({
 
   return (
     <tr className={cn(
-      "border-b hover:bg-muted/50 transition-colors",
+      "hover:bg-muted/50 transition-colors",
       isSubtotal && "font-medium bg-muted/5",
       isExpense && !isSubtotal && "text-muted-foreground"
     )}>

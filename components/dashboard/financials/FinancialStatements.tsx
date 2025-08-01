@@ -77,7 +77,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b">
+                <tr className="">
                   <th className="text-left py-3 px-4 font-medium text-sm">Metric</th>
                   {incomeStatements.map((statement) => (
                     <th key={statement.date} className="text-right py-3 px-4 font-medium text-sm">
@@ -223,7 +223,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b">
+                <tr className="">
                   <th className="text-left py-3 px-4 font-medium text-sm">Metric</th>
                   {balanceSheets.map((statement) => (
                     <th key={statement.date} className="text-right py-3 px-4 font-medium text-sm">
@@ -307,7 +307,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b">
+                <tr className="">
                   <th className="text-left py-3 px-4 font-medium text-sm">Metric</th>
                   {cashFlows.map((statement) => (
                     <th key={statement.date} className="text-right py-3 px-4 font-medium text-sm">
@@ -384,7 +384,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b">
+                      <tr className="">
                         <th className="text-left py-3 px-4 font-medium text-sm">Segment</th>
                         <th className="text-right py-3 px-4 font-medium text-sm">Revenue</th>
                         <th className="text-right py-3 px-4 font-medium text-sm">% of Total</th>
@@ -392,7 +392,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
                     </thead>
                     <tbody>
                       {segments.map((segment) => (
-                        <tr key={segment.name} className="border-b hover:bg-muted/50 transition-colors">
+                        <tr key={segment.name} className="hover:bg-muted/50 transition-colors">
                           <td className="py-3 px-4 text-sm">{segment.name}</td>
                           <td className="text-right py-3 px-4 text-sm">
                             {formatFinancialNumber(segment.value * 1e9)}
@@ -415,7 +415,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b">
+                      <tr className="">
                         <th className="text-left py-3 px-4 font-medium text-sm">Region</th>
                         <th className="text-right py-3 px-4 font-medium text-sm">Revenue</th>
                         <th className="text-right py-3 px-4 font-medium text-sm">% of Total</th>
@@ -423,7 +423,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
                     </thead>
                     <tbody>
                       {regions.map((region) => (
-                        <tr key={region.name} className="border-b hover:bg-muted/50 transition-colors">
+                        <tr key={region.name} className="hover:bg-muted/50 transition-colors">
                           <td className="py-3 px-4 text-sm">{region.name}</td>
                           <td className="text-right py-3 px-4 text-sm">
                             {formatFinancialNumber(region.value * 1e9)}

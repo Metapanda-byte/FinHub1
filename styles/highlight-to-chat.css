@@ -1,0 +1,38 @@
+/* Hover-to-analyze feature styles */
+
+/* Add subtle hover effect to financial data elements */
+[data-financial-item]:hover,
+td:hover,
+.financial-metric:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+  transition: background-color 0.2s ease;
+  cursor: help;
+}
+
+/* Enhanced hover effect for elements with financial data */
+td:has-text(/\d/):hover,
+*:hover:has([class*="financial"]) {
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+/* Style for table cells to make them more discoverable */
+table td,
+table th {
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+/* Subtle indicator for hoverable financial data */
+td:hover::after,
+.financial-metric:hover::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  background-color: rgba(59, 130, 246, 0.6);
+  border-radius: 50%;
+  pointer-events: none;
+}

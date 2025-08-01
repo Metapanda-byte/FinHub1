@@ -13,7 +13,7 @@ import { StockChart } from "@/components/dashboard/charts/stock-chart";
 import { ShareholdersTable } from "@/components/dashboard/tables/shareholders-table";
 import { useState, useMemo } from "react";
 import { useSearchStore } from "@/lib/store/search-store";
-import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegmentsTTM, useGeographicRevenueTTM, useEmployeeCount, useBalanceSheets } from "@/lib/api/financial";
+import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegmentsTTM, useGeographicRevenueTTM, useEmployeeCount, useBalanceSheets, useFinancialRatios, usePriceTarget, useAnalystRatings, useInstitutionalOwnership, useESGScore } from "@/lib/api/financial";
 import { formatFinancialNumber, formatLargeNumber } from "@/lib/utils/formatters";
 import { Star, StarOff } from "lucide-react";
 import { useWatchlistStore } from "@/lib/store/watchlist-store";
@@ -221,7 +221,7 @@ function getGeoLabel(region: string): string {
   return formatted || region;
 }
 
-export function CompanySnapshot() {
+export function CompanyOverview() {
   const [timeframe, setTimeframe] = useState<'YTD' | '1Y' | '5Y'>('YTD');
   const { hasStock, addStock, removeStock } = useWatchlistStore();
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
@@ -238,6 +238,13 @@ export function CompanySnapshot() {
   const [selectedPalette, setSelectedPalette] = useState<keyof typeof pieChartPalettes>('finhubBlues');
   const { ttmRevenue, isLoading: ttmRevenueLoading } = useTTMRevenue(currentSymbol || '');
   const { ttm, isLoading: ttmLoading } = useTTMIncomeStatement(currentSymbol || '');
+  
+  // New API hooks for additional data
+  const { ratios, isLoading: ratiosLoading } = useFinancialRatios(currentSymbol || '');
+  const { priceTarget, isLoading: priceTargetLoading } = usePriceTarget(currentSymbol || '');
+  const { ratings, isLoading: ratingsLoading } = useAnalystRatings(currentSymbol || '');
+  const { ownership, isLoading: ownershipLoading } = useInstitutionalOwnership(currentSymbol || '');
+  const { esgScore, isLoading: esgLoading } = useESGScore(currentSymbol || '');
 
   console.log('Debug:', {
     currentSymbol,
@@ -577,7 +584,7 @@ export function CompanySnapshot() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="space-y-1">
-          <CardTitle className="text-2xl font-bold" style={{ color: 'var(--finhub-title)' }}>Company Overview</CardTitle>
+                        <CardTitle className="text-2xl font-bold">Company Overview</CardTitle>
           <CardDescription>
             Key information about {profile?.companyName || 'the company'}
           </CardDescription>
@@ -628,8 +635,8 @@ export function CompanySnapshot() {
             ))}
           </div>
         </div>
-        <div className="grid gap-6">
-          <div className="flex items-start space-x-4 rounded-md border p-4">
+        <div className="grid gap-3">
+          <div className="flex items-start space-x-4 rounded-md border p-3">
             <Avatar className="h-12 w-12">
               <AvatarImage src={profile?.image} alt={profile?.companyName} />
               <AvatarFallback>{profile?.symbol}</AvatarFallback>
@@ -652,14 +659,14 @@ export function CompanySnapshot() {
                 </div>
               </div>
               <p className="text-sm">{profile?.description}</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Market Cap</p>
-                  <p className="text-sm font-medium">{formatMarketCapBillions(marketCap || 0)}</p>
+                  <p className="text-sm font-medium tabular-nums">{formatMarketCapBillions(marketCap || 0)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Employees</p>
-                  <p className="text-sm font-medium">
+                  <p className="text-sm font-medium tabular-nums">
                     {employeeCountLoading
                       ? <span className="animate-pulse text-muted-foreground">Loading...</span>
                       : (employeeCount !== null && employeeCount !== undefined)
@@ -680,9 +687,9 @@ export function CompanySnapshot() {
               </div>
             </div>
           </div>
-          <div className="grid gap-4 mt-6">
+          <div className="grid gap-3">
             {/* Share Price Performance and Capital Structure */}
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-3">
               {pricesLoading ? (
                 <ChartLoadingSkeleton />
               ) : (
@@ -702,65 +709,42 @@ export function CompanySnapshot() {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Capital Structure</CardTitle>
                   </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
+                <CardContent className="p-0">
+                  <div className="space-y-0">
+                    <div className="flex justify-between items-center py-1.5 px-6 text-sm">
                       <span>Market Cap</span>
-                      <span>{formatWithParens(marketCap)}</span>
+                      <span className="text-right tabular-nums">{formatWithParens(marketCap)}</span>
                     </div>
-                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
-                      <span>+ Total Debt</span>
-                      <span>{formatWithParens(totalDebt)}</span>
+                    <div className="flex justify-between items-center py-1.5 px-6 text-sm">
+                      <span>(+) Total Debt</span>
+                      <span className="text-right tabular-nums">{formatWithParens(totalDebt)}</span>
                     </div>
-                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
-                      <span>+ Minority Interest</span>
-                      <span>{formatWithParens(minorityInterest)}</span>
+                    <div className="flex justify-between items-center py-1.5 px-6 text-sm">
+                      <span>(+) Minority Interest</span>
+                      <span className="text-right tabular-nums">{formatWithParens(minorityInterest)}</span>
                     </div>
-                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm">
-                      <span>- Cash & Equivalents</span>
-                      <span>{formatWithParens(cash !== null ? -Math.abs(cash) : null)}</span>
+                    <div className="flex justify-between items-center py-1.5 px-6 text-sm">
+                      <span>(-) Cash & Equivalents</span>
+                      <span className="text-right tabular-nums">{formatWithParens(cash !== null ? -Math.abs(cash) : null)}</span>
                     </div>
-                    <div style={{ padding: '0.25rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="text-sm font-semibold border-t pt-2 mt-2">
+                    <div className="flex justify-between items-center py-1.5 px-6 text-sm font-semibold border-t border-slate-200 dark:border-slate-700">
                       <span>Enterprise Value</span>
-                      <span>{formatWithParens(enterpriseValue)}</span>
+                      <span className="text-right tabular-nums">{formatWithParens(enterpriseValue)}</span>
                     </div>
                   </div>
-                  <div style={{ marginTop: '1.5rem' }} />
-                  <div className="text-sm font-semibold mb-1 underline" style={{ color: highlightTextColor }}>Key Metrics</div>
-                  <div className="mt-4 space-y-0">
-                    <div
-                      style={{
-                        background: highlightColor,
-                        color: highlightTextColor,
-                        fontWeight: 600,
-                        padding: '0.25rem 1rem',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderBottom: 'none',
-                        borderRadius: '4px 4px 0 0',
-                      }}
-                      className={clsx('text-sm font-semibold border', borderColorClass)}
-                    >
-                      <span>P/E Ratio</span>
-                      <span>{formatRatio(quote && quote.pe ? quote.pe : null)}</span>
+                  <div className="border-t border-slate-200 dark:border-slate-700 mt-6">
+                    <div className="py-3 px-6 bg-slate-50 dark:bg-slate-900/50">
+                      <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">Key Metrics</div>
                     </div>
-                    <div
-                      style={{
-                        background: highlightColor,
-                        color: highlightTextColor,
-                        fontWeight: 600,
-                        padding: '0.25rem 1rem',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderTop: 'none',
-                        borderRadius: '0 0 4px 4px',
-                      }}
-                      className={clsx('text-sm font-semibold border', borderColorClass)}
-                    >
-                      <span>EV / EBITDA</span>
-                      <span>{formatRatio(evToEbitda)}</span>
+                    <div className="space-y-0">
+                      <div className="flex justify-between items-center py-1.5 px-6 text-sm">
+                        <span>P/E Ratio</span>
+                        <span className="text-right tabular-nums">{formatRatio(quote && quote.pe ? quote.pe : null)}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1.5 px-6 text-sm">
+                        <span>EV / EBITDA</span>
+                        <span className="text-right tabular-nums">{formatRatio(evToEbitda)}</span>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -769,7 +753,7 @@ export function CompanySnapshot() {
             </div>
             
             {/* Historical Financial Charts */}
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-3" style={{ position: 'relative' }}>
               {statementsLoading ? (
                 <ChartLoadingSkeleton />
               ) : (
@@ -812,14 +796,24 @@ export function CompanySnapshot() {
                   </CardContent>
                 </Card>
               )}
+              {/* FYE Note positioned at bottom right of the charts container */}
+              {fyeNote && (
+                <div style={{ 
+                  position: 'absolute', 
+                  bottom: '4px', 
+                  right: '16px', 
+                  fontSize: '11px', 
+                  color: 'var(--muted-foreground)',
+                  zIndex: 10,
+                  backgroundColor: 'var(--background)',
+                  padding: '2px 4px',
+                  borderRadius: '2px'
+                }}>
+                  Note: {fyeNote}
+                </div>
+              )}
             </div>
-            {/* FYE Note below both charts */}
-            {fyeNote && (
-              <div className="text-xs text-muted-foreground mt-2" style={{ gridColumn: '1 / -1' }}>
-                Note: {fyeNote}
-              </div>
-            )}
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-3">
               {segmentsLoading ? (
                 <ChartLoadingSkeleton />
               ) : (
@@ -912,6 +906,203 @@ export function CompanySnapshot() {
                   </CardContent>
                 </Card>
               )}
+            </div>
+            
+            {/* New cards section - Key Ratios, Analyst Sentiment, ESG, and Ownership */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Key Financial Ratios Card */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-bold" style={{ color: 'var(--finhub-title)' }}>Key Ratios</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {ratiosLoading ? (
+                    <div className="space-y-2">
+                      <div className="h-4 bg-muted rounded animate-pulse"></div>
+                      <div className="h-4 bg-muted rounded animate-pulse"></div>
+                      <div className="h-4 bg-muted rounded animate-pulse"></div>
+                    </div>
+                  ) : ratios ? (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>P/E Ratio:</span>
+                        <span className="font-medium tabular-nums">{ratios.peRatio?.toFixed(1) || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>P/B Ratio:</span>
+                        <span className="font-medium tabular-nums">{ratios.priceToBookRatio?.toFixed(1) || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>ROE:</span>
+                        <span className="font-medium tabular-nums">{ratios.returnOnEquity ? `${(ratios.returnOnEquity * 100).toFixed(1)}%` : 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Debt/Equity:</span>
+                        <span className="font-medium tabular-nums">{ratios.debtEquityRatio?.toFixed(2) || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Current Ratio:</span>
+                        <span className="font-medium tabular-nums">{ratios.currentRatio?.toFixed(1) || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Gross Margin:</span>
+                        <span className="font-medium tabular-nums">{ratios.grossProfitMargin ? `${(ratios.grossProfitMargin * 100).toFixed(1)}%` : 'N/A'}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      No ratio data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Analyst Sentiment Card */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-bold" style={{ color: 'var(--finhub-title)' }}>Analyst Sentiment</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {ratingsLoading || priceTargetLoading ? (
+                    <div className="space-y-2">
+                      <div className="h-4 bg-muted rounded animate-pulse"></div>
+                      <div className="h-4 bg-muted rounded animate-pulse"></div>
+                      <div className="h-4 bg-muted rounded animate-pulse"></div>
+                    </div>
+                  ) : (ratings || priceTarget) ? (
+                    <div className="space-y-2 text-sm">
+                      {ratings && (
+                        <>
+                          <div className="flex justify-between">
+                            <span>Rating:</span>
+                            <Badge variant="outline" className="text-xs">
+                              {ratings.ratingRecommendation || 'N/A'}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Buy: {ratings.ratingDetailsBuy || 0} | 
+                            Hold: {ratings.ratingDetailsHold || 0} | 
+                            Sell: {ratings.ratingDetailsSell || 0}
+                          </div>
+                        </>
+                      )}
+                      {priceTarget && (
+                        <>
+                          <div className="flex justify-between">
+                            <span>Target High:</span>
+                            <span className="font-medium tabular-nums">${priceTarget.targetHigh?.toFixed(2) || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Target Low:</span>
+                            <span className="font-medium tabular-nums">${priceTarget.targetLow?.toFixed(2) || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Consensus:</span>
+                            <span className="font-medium tabular-nums">${priceTarget.targetConsensus?.toFixed(2) || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Analysts:</span>
+                            <span className="font-medium tabular-nums">{priceTarget.numberOfAnalysts || 'N/A'}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      No analyst data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* ESG Scores Card */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-bold" style={{ color: 'var(--finhub-title)' }}>ESG Scores</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {esgLoading ? (
+                    <div className="space-y-2">
+                      <div className="h-4 bg-muted rounded animate-pulse"></div>
+                      <div className="h-4 bg-muted rounded animate-pulse"></div>
+                      <div className="h-4 bg-muted rounded animate-pulse"></div>
+                    </div>
+                  ) : esgScore ? (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Overall ESG:</span>
+                        <span className="font-medium tabular-nums">{esgScore.ESGScore?.toFixed(1) || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Environmental:</span>
+                        <span className="font-medium tabular-nums">{esgScore.environmentalScore?.toFixed(1) || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Social:</span>
+                        <span className="font-medium tabular-nums">{esgScore.socialScore?.toFixed(1) || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Governance:</span>
+                        <span className="font-medium tabular-nums">{esgScore.governanceScore?.toFixed(1) || 'N/A'}</span>
+                      </div>
+                      {esgScore.date && (
+                        <div className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                          As of: {format(new Date(esgScore.date), 'MMM yyyy')}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      No ESG data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Ownership Structure Card */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-bold" style={{ color: 'var(--finhub-title)' }}>Ownership</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {ownershipLoading ? (
+                    <div className="space-y-2">
+                      <div className="h-4 bg-muted rounded animate-pulse"></div>
+                      <div className="h-4 bg-muted rounded animate-pulse"></div>
+                      <div className="h-4 bg-muted rounded animate-pulse"></div>
+                    </div>
+                  ) : ownership ? (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Institutional:</span>
+                        <span className="font-medium tabular-nums">{ownership.percentageOfSharesOutstanding?.toFixed(1)}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Holders:</span>
+                        <span className="font-medium tabular-nums">{ownership.investorsHolding?.toLocaleString() || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Shares Held:</span>
+                        <span className="font-medium tabular-nums">{ownership.sharesHeld ? formatLargeNumber(ownership.sharesHeld) : 'N/A'}</span>
+                      </div>
+                      {ownership.holders && ownership.holders.length > 0 && (
+                        <div className="mt-3 pt-2 border-t">
+                          <div className="text-xs font-medium mb-1">Top Holders:</div>
+                          {ownership.holders.slice(0, 3).map((holder, idx) => (
+                            <div key={idx} className="text-xs text-muted-foreground truncate">
+                              {holder.holder}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      No ownership data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>

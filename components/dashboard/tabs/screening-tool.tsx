@@ -211,7 +211,7 @@ export function ScreeningTool() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b">
+                <tr className="">
                   <th 
                     className="text-left py-3 px-4 font-medium text-sm cursor-pointer"
                     onClick={() => handleSort('ticker')}
@@ -288,7 +288,7 @@ export function ScreeningTool() {
               </thead>
               <tbody>
                 {paginatedResults.map((company) => (
-                  <tr key={company.ticker} className="border-b hover:bg-muted/50 transition-colors">
+                  <tr key={company.ticker} className="hover:bg-muted/50 transition-colors">
                     <td className="py-3 px-4 text-sm font-medium">{company.ticker}</td>
                     <td className="py-3 px-4 text-sm">{company.company}</td>
                     <td className="py-3 px-4 text-sm">{company.sector}</td>

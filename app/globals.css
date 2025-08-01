@@ -43,6 +43,8 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    --finhub-orange: 25 100% 48%;
+    --finhub-orange-foreground: 0 0% 98%;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -69,14 +71,27 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --finhub-orange: 25 100% 48%;
+    --finhub-orange-foreground: 0 0% 98%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Remove default table borders */
+  table, th, td {
+  @apply border-0;
+}
+
+/* Hide scrollbars for horizontal scrolling tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar { 
+  display: none;  /* Safari and Chrome */
+}
 }

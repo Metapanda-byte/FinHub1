@@ -50,99 +50,6 @@ const formatPercent = (value: number) => {
   return value < 0 ? `(${formattedValue}%)` : `${formattedValue}%`;
 };
 
-// Function to get currency display text based on actual reported currency from financial statements
-const getCurrencyDisplayText = (statements: any[]) => {
-  // Get the reported currency from the most recent financial statement
-  const reportedCurrency = statements?.[0]?.reportedCurrency;
-  
-  if (!reportedCurrency) return 'In $m unless otherwise specified';
-  
-  const currency = reportedCurrency.toLowerCase();
-  
-  const currencyMap: { [key: string]: string } = {
-    'usd': '$m',
-    'eur': '€m',
-    'gbp': '£m',
-    'jpy': '¥m',
-    'cad': 'C$m',
-    'aud': 'A$m',
-    'chf': 'CHFm',
-    'cny': '¥m',
-    'krw': '₩m',
-    'inr': '₹m',
-    'brl': 'R$m',
-    'rub': '₽m',
-    'mxn': 'MX$m'
-  };
-  
-  const currencySymbol = currencyMap[currency] || `${reportedCurrency}m`;
-  return `In ${currencySymbol} unless otherwise specified`;
-};
-
-// Function to detect if a company reports semi-annually (only H1 and H2)
-const isSemiAnnualReporter = (statements: any[]) => {
-  if (!statements || statements.length < 4) return false;
-  
-  // Check the pattern of reporting dates - semi-annual reporters typically have:
-  // - June 30 (H1) 
-  // - December 31 (H2/Full Year)
-  
-  // Look at more recent data first, but also check historical pattern
-  const recentStatements = statements.slice(0, 8); // Last 8 reports
-  const allStatements = statements.slice(0, 12); // Last 12 reports for broader pattern
-  
-  const checkSemiAnnualPattern = (stmts: any[]) => {
-    const dates = stmts.map(s => new Date(s.date));
-    const months = dates.map(d => d.getMonth() + 1); // getMonth() is 0-indexed
-    
-    // Count occurrences of each month
-    const monthCounts = months.reduce((acc, month) => {
-      acc[month] = (acc[month] || 0) + 1;
-      return acc;
-    }, {} as { [key: number]: number });
-    
-    // Semi-annual reporters should primarily have June (6) and December (12)
-    const june = monthCounts[6] || 0;
-    const december = monthCounts[12] || 0;
-    const totalJuneDec = june + december;
-    const totalReports = dates.length;
-    
-    return totalReports > 0 ? (totalJuneDec / totalReports) : 0;
-  };
-  
-  // Check recent pattern first
-  const recentRatio = checkSemiAnnualPattern(recentStatements);
-  const overallRatio = checkSemiAnnualPattern(allStatements);
-  
-  // If recent pattern shows quarterly (low ratio) but historical shows semi-annual, 
-  // company may have switched - use quarterly
-  if (recentRatio < 0.5 && overallRatio >= 0.8) {
-    console.log('📊 Company appears to have switched from semi-annual to quarterly reporting');
-    return false;
-  }
-  
-  // If 70%+ of reports are in June/December, likely semi-annual
-  // Lowered threshold slightly to account for data inconsistencies
-  return recentRatio >= 0.7 || overallRatio >= 0.8;
-};
-
-// Function to get the correct period label for semi-annual reporters
-const getPeriodLabel = (date: string, isSemiAnnual: boolean) => {
-  if (!isSemiAnnual) {
-    const dateObj = new Date(date);
-    const month = dateObj.getMonth() + 1;
-    if (month <= 3) return 'Q1';
-    else if (month <= 6) return 'Q2';
-    else if (month <= 9) return 'Q3';
-    else return 'Q4';
-  }
-  
-  // For semi-annual reporters
-  const dateObj = new Date(date);
-  const month = dateObj.getMonth() + 1;
-  return month <= 6 ? 'H1' : 'H2';
-};
-
 const formatRatio = (value: number) => {
   return formatFinancialNumber(value, {
     decimals: 0,
@@ -219,83 +126,33 @@ function getLTMReferenceDate(quarterlyMap: Record<string, any>): string {
 }
 
 // Helper to calculate LTM (Last Twelve Months) value from quarterly periodMap
-function calculateLTM(quarterlyMap: Record<string, any>, field: string, periodType: 'annual' | 'semi-annual' | 'quarter'): number | null {
+function calculateLTMFromQuarterly(quarterlyMap: Record<string, any>, field: string): number | null {
   if (!quarterlyMap || Object.keys(quarterlyMap).length === 0) return null;
   
-  // Get all periods and sort them chronologically
+  // Get all periods and sort them
   const periods = Object.keys(quarterlyMap).sort();
+  if (periods.length < 4) return null; // Need at least 4 quarters
   
-  if (periodType === 'semi-annual') {
-    // For semi-annual view, we need the last 2 half-year periods
-    // Look for the most recent H1 (Q2/June) and H2 (Q4/December) periods
-    
-    const h2Periods = periods.filter(p => {
-      const statement = quarterlyMap[p];
-      if (!statement?.date) return false;
-      const month = new Date(statement.date).getMonth() + 1;
-      return month === 12; // December (H2)
-    }).sort();
-    
-    const h1Periods = periods.filter(p => {
-      const statement = quarterlyMap[p];
-      if (!statement?.date) return false;
-      const month = new Date(statement.date).getMonth() + 1;
-      return month === 6; // June (H1)
-    }).sort();
-    
-    if (h2Periods.length === 0) return null;
-    
-    // Get the most recent H2 (December)
-    const mostRecentH2 = h2Periods[h2Periods.length - 1];
-    const h2Value = quarterlyMap[mostRecentH2]?.[field];
-    
-    // For semi-annual companies, H2 often contains the full year total
-    // But if we have H1 from the same year, sum them for accuracy
-    const h2Year = new Date(quarterlyMap[mostRecentH2]?.date).getFullYear();
-    const matchingH1 = h1Periods.find(p => {
-      const h1Year = new Date(quarterlyMap[p]?.date).getFullYear();
-      return h1Year === h2Year;
-    });
-    
-    if (matchingH1) {
-      const h1Value = quarterlyMap[matchingH1]?.[field];
-      if (h1Value !== null && h1Value !== undefined && !isNaN(h1Value) &&
-          h2Value !== null && h2Value !== undefined && !isNaN(h2Value)) {
-        return h1Value + h2Value;
-      }
+  // Get the 4 most recent quarters
+  const recentPeriods = periods.slice(-4);
+  
+  let values: number[] = [];
+  for (const period of recentPeriods) {
+    const value = quarterlyMap[period]?.[field];
+    if (value !== null && value !== undefined && !isNaN(value)) {
+      values.push(value);
     }
-    
-    // Fallback: use H2 value if it's available (often represents full year)
-    if (h2Value !== null && h2Value !== undefined && !isNaN(h2Value)) {
-      return h2Value;
-    }
-    
-    return null;
-  } else {
-    // For quarterly and annual views, use standard 4-quarter LTM
-    if (periods.length < 4) return null;
-    
-    // Get the 4 most recent quarters
-    const recentPeriods = periods.slice(-4);
-    
-    let values: number[] = [];
-    for (const period of recentPeriods) {
-      const value = quarterlyMap[period]?.[field];
-      if (value !== null && value !== undefined && !isNaN(value)) {
-        values.push(value);
-      }
-    }
-    
-    // Need exactly 4 quarters for LTM calculation
-    if (values.length !== 4) return null;
-    
-    // Sum the 4 quarters
-    return values.reduce((sum, val) => sum + val, 0);
   }
+  
+  // Need exactly 4 quarters for LTM calculation
+  if (values.length !== 4) return null;
+  
+  // Sum the 4 quarters
+  return values.reduce((sum, val) => sum + val, 0);
 }
 
 // Helper to normalize period keys
-function normalizePeriod(period: string, type: 'annual' | 'semi-annual' | 'quarter', calendarYear?: string, date?: string): string | null {
+function normalizePeriod(period: string, type: 'annual' | 'quarter', calendarYear?: string, date?: string): string | null {
   if (!period && !date) return null;
   
   if (type === 'annual') {
@@ -306,7 +163,7 @@ function normalizePeriod(period: string, type: 'annual' | 'semi-annual' | 'quart
     const yearMatch = period?.match(/(\d{4})/);
     if (!yearMatch) return null;
     return yearMatch[1];
-  } else if (type === 'semi-annual' || type === 'quarter') {
+  } else {
     // For quarterly data, we need to determine the quarter from the date
     // API might provide date like "2024-03-31" for Q1, "2024-06-30" for Q2, etc.
     if (date) {
@@ -350,25 +207,20 @@ function normalizePeriod(period: string, type: 'annual' | 'semi-annual' | 'quart
     const result = `${year}-Q${quarterMatch[1]}`;
     return result;
   }
-  
-  return null;
 }
 
 export function HistoricalFinancials() {
   const [activeFinancialTab, setActiveFinancialTab] = useState('income-statement');
-  const [selectedPeriod, setSelectedPeriod] = useState<'annual' | 'semi-annual' | 'quarter'>('annual');
+  const [selectedPeriod, setSelectedPeriod] = useState<'annual' | 'quarter'>('annual');
   const [showSubscriptionWarning, setShowSubscriptionWarning] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
   const { toast } = useToast();
   const tableContainerRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
-  // Map our new period types to API period types
-  const apiPeriod = selectedPeriod === 'semi-annual' ? 'quarter' : selectedPeriod;
-  
-  const { statements: incomeStatements, isLoading: incomeLoading } = useIncomeStatements(currentSymbol || '', apiPeriod);
-  const { statements: cashFlowStatements, isLoading: cashFlowLoading } = useCashFlows(currentSymbol || '', apiPeriod);
-  const { statements: balanceSheets, isLoading: balanceSheetLoading } = useBalanceSheets(currentSymbol || '', apiPeriod);
+  const { statements: incomeStatements, isLoading: incomeLoading } = useIncomeStatements(currentSymbol || '', selectedPeriod);
+  const { statements: cashFlowStatements, isLoading: cashFlowLoading } = useCashFlows(currentSymbol || '', selectedPeriod);
+  const { statements: balanceSheets, isLoading: balanceSheetLoading } = useBalanceSheets(currentSymbol || '', selectedPeriod);
   
   // Always fetch quarterly data for LTM calculations
   const { statements: incomeStatementsQuarterly } = useIncomeStatements(currentSymbol || '', 'quarter');
@@ -377,11 +229,11 @@ export function HistoricalFinancials() {
 
 
 
-  // Check if quarterly/semi-annual data is actually annual data (indicating fallback)
+  // Check if quarterly data is actually annual data (indicating fallback)
   useEffect(() => {
-    if ((selectedPeriod === 'quarter' || selectedPeriod === 'semi-annual') && incomeStatements && incomeStatements.length > 0) {
+    if (selectedPeriod === 'quarter' && incomeStatements && incomeStatements.length > 0) {
       const firstStatement = incomeStatements[0];
-      // Check if the period is actually annual (FY) instead of quarterly/semi-annual
+      // Check if the period is actually annual (FY) instead of quarterly
       if (firstStatement.period === 'FY' || firstStatement.period?.includes('FY')) {
         setShowSubscriptionWarning(true);
       } else {
@@ -408,30 +260,8 @@ export function HistoricalFinancials() {
     }
   }, [incomeLoading, cashFlowLoading, balanceSheetLoading, selectedPeriod, activeFinancialTab, currentSymbol]);
 
-  // Debug: Log reporting pattern analysis for investigation
-  if (incomeStatements && incomeStatements.length > 0 && currentSymbol?.includes('RIO')) {
-    const recentStatements = incomeStatements.slice(0, 8);
-    const dates = recentStatements.map(s => new Date(s.date));
-    const months = dates.map(d => d.getMonth() + 1);
-    const monthCounts = months.reduce((acc, month) => {
-      acc[month] = (acc[month] || 0) + 1;
-      return acc;
-    }, {} as { [key: number]: number });
-    
-    console.log('🔍 Rio Tinto Reporting Analysis:', {
-      symbol: currentSymbol,
-      selectedPeriod,
-      totalReports: incomeStatements.length,
-      recentDates: recentStatements.map(s => ({ 
-        date: s.date, 
-        period: s.period, 
-        calendarYear: s.calendarYear,
-        month: new Date(s.date).getMonth() + 1
-      })),
-      monthDistribution: monthCounts,
-      june_december_ratio: ((monthCounts[6] || 0) + (monthCounts[12] || 0)) / recentStatements.length,
-      isSemiAnnual: isSemiAnnualReporter(incomeStatements)
-    });
+  // Debug: Log the structure of the first two income statements
+  if (incomeStatements && incomeStatements.length > 0) {
   }
 
   if (!currentSymbol || incomeLoading || cashFlowLoading || balanceSheetLoading) {
@@ -472,16 +302,14 @@ export function HistoricalFinancials() {
   // Build periods for table columns
   let years: string[] = [];
   let periodsByYear: Record<string, string[]> = {};
-  
-  if (selectedPeriod === 'quarter' || selectedPeriod === 'semi-annual') {
+  if (selectedPeriod === 'quarter') {
     periodsByYear = getPeriodsByYear(incomeStatements);
-    // Only include years that have at least one valid period, limit to 5 most recent fiscal years
+    // Only include years that have at least one valid quarter, limit to 5 most recent fiscal years
     years = Object.keys(periodsByYear)
       .filter(year => /\d{4}/.test(year) && periodsByYear[year].length > 0)
       .sort((a, b) => Number(a) - Number(b))
       .slice(-5);
   } else {
-    // Annual
     years = Array.from(new Set(incomeStatements.map(s => s.calendarYear)))
       .filter(y => y)
       .sort((a, b) => Number(a) - Number(b))
@@ -537,11 +365,11 @@ export function HistoricalFinancials() {
     return (
       <div 
         ref={(el) => { tableContainerRefs.current[title] = el; }}
-        className="overflow-x-auto rounded-lg shadow-sm"
+        className="overflow-x-auto rounded-lg border-2 border-slate-200 dark:border-slate-700 shadow-sm"
       >
         <table className="w-full border-collapse">
           <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur">
-            <tr className="">
+            <tr className="border-b border-slate-800 dark:border-slate-200">
               <th className={cn(
                 "text-left py-3 px-6 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom",
                 "min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90"
@@ -552,40 +380,26 @@ export function HistoricalFinancials() {
                 ? years.map(year => (
                     <th key={year} colSpan={4} className="text-center py-3 px-6 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
                   ))
-                : selectedPeriod === 'semi-annual'
-                ? [...years.map(year => (
-                    <th key={year} colSpan={2} className="text-center py-3 px-6 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
-                  )), 
-                  <th key="ltm" className="text-center py-3 px-4 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '100px' }}>LTM</th>]
                 : [...years.map(year => (
-                    <th key={year} className="text-center py-3 px-4 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '100px' }}>{`FY ${year}`}</th>
+                    <th key={year} className="text-right py-3 px-4 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '100px' }}>{`FY ${year}`}</th>
                   )), 
-                  <th key="ltm" className="text-center py-3 px-4 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '100px' }}>LTM</th>]}
+                  <th key="ltm" className="text-center py-3 px-4 font-bold text-sm text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '100px' }}>LTM</th>]}
             </tr>
-{(selectedPeriod === 'quarter' || selectedPeriod === 'semi-annual') && (() => {
-              const periods = selectedPeriod === 'semi-annual' ? ["H1", "H2"] : ["Q1","Q2","Q3","Q4"];
-              
-              return (
-                <tr>
-                  <th className="text-left py-1.5 px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90">{getCurrencyDisplayText(incomeStatements)}</th>
-                  {years.map(year => periods.map(period => (
-                    <th key={year+period} className="text-center py-1.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom" style={{ minWidth: '80px' }}>{period}</th>
-                  ))).flat()}
-                  {selectedPeriod === 'semi-annual' && (
-                    <th key="ltm-sub" className="text-center py-1.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '100px' }}>
-                      {quarterlyMap ? getLTMReferenceDate(quarterlyMap) : 'LTM'}
-                    </th>
-                  )}
-                </tr>
-              );
-            })()}
+            {selectedPeriod === 'quarter' && (
+              <tr className="border-none !bg-transparent" style={{ backgroundColor: 'transparent !important' }}>
+                <th className="text-left py-1.5 px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none !bg-transparent min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90" style={{ backgroundColor: 'transparent !important' }}>In $m unless otherwise specified</th>
+                {years.map(year => ["Q1","Q2","Q3","Q4"].map(q => (
+                  <th key={year+q} className="text-right py-1.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none !bg-transparent" style={{ backgroundColor: 'transparent !important', minWidth: '80px' }}>{q}</th>
+                ))).flat()}
+              </tr>
+            )}
             {selectedPeriod === 'annual' && (
-              <tr>
-                <th className="text-left py-1.5 px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90">{getCurrencyDisplayText(incomeStatements)}</th>
+              <tr className="border-none !bg-transparent" style={{ backgroundColor: 'transparent !important' }}>
+                <th className="text-left py-1.5 px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none !bg-transparent min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90" style={{ backgroundColor: 'transparent !important' }}>In $m unless otherwise specified</th>
                 {years.map(year => (
-                  <th key={year} className="text-center py-1.5 px-4 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom" style={{ minWidth: '100px' }}></th>
+                  <th key={year} className="text-right py-1.5 px-4 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none !bg-transparent" style={{ backgroundColor: 'transparent !important', minWidth: '100px' }}></th>
                 ))}
-                <th key="ltm-sub" className="text-center py-1.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '100px' }}>
+                <th key="ltm-sub" className="text-right py-1.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none !bg-transparent" style={{ backgroundColor: 'transparent !important', minWidth: '100px' }}>
                   {quarterlyMap ? getLTMReferenceDate(quarterlyMap) : 'LTM'}
                 </th>
               </tr>
@@ -605,7 +419,7 @@ export function HistoricalFinancials() {
                     "group transition-colors relative",
                     row.isImportant && !row.isEBITDA ? "before:absolute before:inset-y-0 before:left-6 before:right-6 before:bg-slate-50 dark:before:bg-slate-900/50 before:-z-10" : "",
                     row.isEBITDA ? "before:absolute before:inset-y-0 before:left-6 before:right-6 before:bg-blue-50/80 dark:before:bg-blue-950/30 before:-z-10" : "",
-                    row.hasBorderTop ? "after:absolute after:top-0 after:left-6 after:right-4 after:h-px after:bg-slate-800 dark:after:bg-slate-200" : "",
+                    row.hasBorderTop ? "after:absolute after:top-0 after:left-6 after:right-6 after:h-px after:bg-slate-800 dark:after:bg-slate-200" : "",
                     row.isMargin ? "text-slate-500 dark:text-slate-400" : "",
                     "hover:bg-slate-25 dark:hover:bg-slate-900/25"
                   )}
@@ -621,47 +435,18 @@ export function HistoricalFinancials() {
                     {row.label}
                   </td>
                   {selectedPeriod === 'quarter'
-                    ? (() => {
-                        const periods = ["Q1","Q2","Q3","Q4"];
-                        return years.flatMap(year => periods.map(period => {
-                          const dataPeriod = `${year}-${period}`;
-                          
+                    ? years.flatMap(year => ["Q1","Q2","Q3","Q4"].map(q => {
+                        const period = `${year}-${q}`;
                         return (
-                          <td key={`${year}-${period}`} className={cn(
+                          <td key={period} className={cn(
                             "text-right py-1.5 px-4 text-sm tabular-nums relative z-10",
                             row.isImportant ? "font-semibold" : "",
                             row.isMargin ? "text-slate-500 dark:text-slate-400" : ""
                           )} style={{ minWidth: '80px' }}>
-                            {formatMetric(row[dataPeriod], row.label, row.isHeaderRow)}
+                            {formatMetric(row[period], row.label, row.isHeaderRow)}
                           </td>
                         );
-                      }));
-                    })()
-                    : selectedPeriod === 'semi-annual'
-                    ? (() => {
-                        const periods = ["H1", "H2"];
-                        return [...years.flatMap(year => periods.map(period => {
-                          // For semi-annual, we'll map H1->Q2 and H2->Q4 data, or use calculated H1/H2 values
-                          const dataPeriod = period === "H1" ? `${year}-Q2` : `${year}-Q4`;
-                          
-                        return (
-                          <td key={`${year}-${period}`} className={cn(
-                            "text-right py-1.5 px-4 text-sm tabular-nums relative z-10",
-                            row.isImportant ? "font-semibold" : "",
-                            row.isMargin ? "text-slate-500 dark:text-slate-400" : ""
-                          )} style={{ minWidth: '80px' }}>
-                            {formatMetric(row[dataPeriod], row.label, row.isHeaderRow)}
-                          </td>
-                        );
-                      })), 
-                      <td key="ltm" className={cn(
-                        "text-right py-1.5 px-4 text-sm tabular-nums font-medium bg-blue-50 dark:bg-blue-900/30 relative z-10",
-                        row.isImportant ? "font-semibold" : "",
-                        row.isMargin ? "text-slate-500 dark:text-slate-400" : "text-slate-900 dark:text-slate-100"
-                      )} style={{ minWidth: '100px' }}>
-                        {formatMetric(row.ltm, row.label, row.isHeaderRow)}
-                      </td>];
-                    })()
+                      }))
                     : [...years.map(year => (
                         <td key={year} className={cn(
                           "text-right py-1.5 px-4 text-sm tabular-nums relative z-10",
@@ -672,9 +457,9 @@ export function HistoricalFinancials() {
                         </td>
                       )),
                       <td key="ltm" className={cn(
-                        "text-right py-1.5 px-4 text-sm tabular-nums font-medium bg-blue-50 dark:bg-blue-900/30 relative z-10",
+                        "text-right py-1.5 px-4 text-sm tabular-nums font-medium bg-muted/20 relative z-10",
                         row.isImportant ? "font-semibold" : "",
-                        row.isMargin ? "text-slate-500 dark:text-slate-400" : "text-slate-900 dark:text-slate-100"
+                        row.isMargin ? "text-slate-500 dark:text-slate-400" : ""
                       )} style={{ minWidth: '100px' }}>
                         {formatMetric(row.ltm, row.label, row.isHeaderRow)}
                       </td>]}
@@ -689,85 +474,33 @@ export function HistoricalFinancials() {
 
   const processIncomeStatements = (quarterlyMap?: Record<string, any>) => {
     const type = selectedPeriod;
-    // For LTM calculations, determine the appropriate period type
-    const ltmPeriodType = selectedPeriod === 'annual' ? 'quarter' : selectedPeriod;
     
     // Build a map of normalized period -> statement
-    // For semi-annual mode, we need to use quarterly data (since apiPeriod='quarter')
     const periodMap: Record<string, any> = {};
-    const statementData = selectedPeriod === 'semi-annual' ? incomeStatements : incomeStatements;
-    statementData.forEach(s => {
-      const norm = normalizePeriod(s.period, selectedPeriod === 'semi-annual' ? 'quarter' : type, s.calendarYear, s.date);
+    incomeStatements.forEach(s => {
+      const norm = normalizePeriod(s.period, type, s.calendarYear, s.date);
       if (norm) periodMap[norm] = s;
     });
     
-    // Helper function to get quarterly data for semi-annual calculations
-    const getQuarterlyData = (year: string, quarter: string, field: string): number | null => {
-      const quarterKey = `${year}-${quarter}`;
-      
-      // In semi-annual mode, the quarterly data is in periodMap (built from quarterly API data)
-      // In other modes, use the passed quarterlyMap for LTM calculations
-      const quarterData = type === 'semi-annual' ? periodMap[quarterKey] : quarterlyMap?.[quarterKey];
-      
-      // Debug logging for semi-annual mode
-      if (type === 'semi-annual' && field === 'revenue' && year === '2024') {
-        console.log(`🔍 Semi-annual debug: ${quarterKey} -> ${quarterData?.[field]} (Available keys: ${Object.keys(periodMap).slice(0, 8).join(', ')})`);
-      }
-      
-      return quarterData?.[field] ?? null;
-    };
-    
-    // Helper function to calculate semi-annual values from quarters
-    const getSemiAnnualValue = (period: string, field: string, isNegative: boolean = false): number | null => {
-      if (type !== 'semi-annual' || !period.includes('-H')) {
-        const value = periodMap[period]?.[field] ?? null;
-        return value !== null && isNegative ? -value : value;
-      }
-      
-      const [year, half] = period.split('-');
-      let q1Value, q2Value, q3Value, q4Value;
-      
-      if (half === 'H1') {
-        // H1 = Q1 + Q2
-        q1Value = getQuarterlyData(year, 'Q1', field) || 0;
-        q2Value = getQuarterlyData(year, 'Q2', field) || 0;
-        const sum = q1Value + q2Value;
-        return sum === 0 ? null : (isNegative ? -sum : sum);
-      } else {
-        // H2 = Q3 + Q4
-        q3Value = getQuarterlyData(year, 'Q3', field) || 0;
-        q4Value = getQuarterlyData(year, 'Q4', field) || 0;
-        const sum = q3Value + q4Value;
-        return sum === 0 ? null : (isNegative ? -sum : sum);
-      }
-    };
-    
-    // Generate periods based on selected period type
-    let periods: string[];
-    if (type === 'annual') {
-      periods = years;
-    } else if (type === 'semi-annual') {
-      // For semi-annual view, generate H1 and H2 periods (calculated from quarters)
-      periods = years.flatMap(year => ['H1','H2'].map(h => `${year}-${h}`));
-    } else {
-      // For quarterly view, generate all quarters
-      periods = years.flatMap(year => ['Q1','Q2','Q3','Q4'].map(q => `${year}-${q}`));
-    }
+    // For annual, use years; for quarter, use all year-Qx in periodsByYear
+    const periods = type === 'annual'
+      ? years
+      : years.flatMap(year => ['Q1','Q2','Q3','Q4'].map(q => `${year}-${q}`));
     const data = [
       {
         label: "Revenue",
         isImportant: true,
         isBold: true,
-        ...Object.fromEntries(periods.map(p => [p, getSemiAnnualValue(p, 'revenue')])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'revenue', ltmPeriodType) : null,
+        ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.revenue ?? null])),
+        ltm: quarterlyMap ? calculateLTMFromQuarterly(quarterlyMap, 'revenue') : null,
         unit: 'millions'
       },
       {
         label: "(-) COGS",
         isIndented: true,
-        ...Object.fromEntries(periods.map(p => [p, getSemiAnnualValue(p, 'costOfRevenue', true)])),
+        ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.costOfRevenue ? -periodMap[p].costOfRevenue : null])),
         ltm: quarterlyMap ? (() => {
-          const ltmValue = calculateLTM(quarterlyMap, 'costOfRevenue', ltmPeriodType);
+          const ltmValue = calculateLTMFromQuarterly(quarterlyMap, 'costOfRevenue');
           return ltmValue ? -ltmValue : null;
         })() : null,
         unit: 'millions'
@@ -776,8 +509,8 @@ export function HistoricalFinancials() {
         label: "Gross Profit",
         isImportant: true,
         hasBorderTop: true,
-        ...Object.fromEntries(periods.map(p => [p, getSemiAnnualValue(p, 'grossProfit')])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'grossProfit', ltmPeriodType) : null,
+        ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.grossProfit ?? null])),
+        ltm: quarterlyMap ? calculateLTMFromQuarterly(quarterlyMap, 'grossProfit') : null,
         unit: 'millions'
       },
       {
@@ -786,8 +519,8 @@ export function HistoricalFinancials() {
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.grossProfit && periodMap[p]?.revenue ? (periodMap[p].grossProfit / periodMap[p].revenue) * 100 : null])),
         ltm: quarterlyMap ? (() => {
-          const ltmGross = calculateLTM(quarterlyMap, 'grossProfit', ltmPeriodType);
-          const ltmRevenue = calculateLTM(quarterlyMap, 'revenue', ltmPeriodType);
+          const ltmGross = calculateLTMFromQuarterly(quarterlyMap, 'grossProfit');
+          const ltmRevenue = calculateLTMFromQuarterly(quarterlyMap, 'revenue');
           return ltmGross && ltmRevenue ? (ltmGross / ltmRevenue) * 100 : null;
         })() : null,
         unit: 'millions'
@@ -795,9 +528,9 @@ export function HistoricalFinancials() {
       {
         label: "(-) R&D",
         isIndented: true,
-        ...Object.fromEntries(periods.map(p => [p, getSemiAnnualValue(p, 'researchAndDevelopmentExpenses', true)])),
+        ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.researchAndDevelopmentExpenses ? -periodMap[p].researchAndDevelopmentExpenses : null])),
         ltm: quarterlyMap ? (() => {
-          const ltmValue = calculateLTM(quarterlyMap, 'researchAndDevelopmentExpenses', ltmPeriodType);
+          const ltmValue = calculateLTMFromQuarterly(quarterlyMap, 'researchAndDevelopmentExpenses');
           return ltmValue ? -ltmValue : null;
         })() : null,
         unit: 'millions'
@@ -821,9 +554,9 @@ export function HistoricalFinancials() {
           return combinedSGA > 0 ? -combinedSGA : null;
         })()])),
         ltm: quarterlyMap ? (() => {
-          const salesLTM = calculateLTM(quarterlyMap, 'salesAndMarketingExpenses', ltmPeriodType) || 0;
-          const gaLTM = calculateLTM(quarterlyMap, 'generalAndAdministrativeExpenses', ltmPeriodType) || 0;
-          const combinedLTM = calculateLTM(quarterlyMap, 'sellingGeneralAndAdministrativeExpenses', ltmPeriodType) || 0;
+          const salesLTM = calculateLTMFromQuarterly(quarterlyMap, 'salesAndMarketingExpenses') || 0;
+          const gaLTM = calculateLTMFromQuarterly(quarterlyMap, 'generalAndAdministrativeExpenses') || 0;
+          const combinedLTM = calculateLTMFromQuarterly(quarterlyMap, 'sellingGeneralAndAdministrativeExpenses') || 0;
           
           if (salesLTM > 0 || gaLTM > 0) {
             const total = salesLTM + gaLTM;
@@ -839,7 +572,7 @@ export function HistoricalFinancials() {
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.otherExpenses ? -periodMap[p].otherExpenses : null])),
         ltm: quarterlyMap ? (() => {
-          const ltmValue = calculateLTM(quarterlyMap, 'otherExpenses', ltmPeriodType);
+          const ltmValue = calculateLTMFromQuarterly(quarterlyMap, 'otherExpenses');
           return ltmValue ? -ltmValue : null;
         })() : null,
         unit: 'millions'
@@ -863,11 +596,11 @@ export function HistoricalFinancials() {
           return total > 0 ? -total : null;
         })()])),
         ltm: quarterlyMap ? (() => {
-          const rdLTM = calculateLTM(quarterlyMap, 'researchAndDevelopmentExpenses', ltmPeriodType) || 0;
-          const salesLTM = calculateLTM(quarterlyMap, 'salesAndMarketingExpenses', ltmPeriodType) || 0;
-          const gaLTM = calculateLTM(quarterlyMap, 'generalAndAdministrativeExpenses', ltmPeriodType) || 0;
-          const combinedSGALTM = calculateLTM(quarterlyMap, 'sellingGeneralAndAdministrativeExpenses', ltmPeriodType) || 0;
-          const otherLTM = calculateLTM(quarterlyMap, 'otherExpenses', ltmPeriodType) || 0;
+          const rdLTM = calculateLTMFromQuarterly(quarterlyMap, 'researchAndDevelopmentExpenses') || 0;
+          const salesLTM = calculateLTMFromQuarterly(quarterlyMap, 'salesAndMarketingExpenses') || 0;
+          const gaLTM = calculateLTMFromQuarterly(quarterlyMap, 'generalAndAdministrativeExpenses') || 0;
+          const combinedSGALTM = calculateLTMFromQuarterly(quarterlyMap, 'sellingGeneralAndAdministrativeExpenses') || 0;
+          const otherLTM = calculateLTMFromQuarterly(quarterlyMap, 'otherExpenses') || 0;
           
           const sgaTotalLTM = (salesLTM > 0 || gaLTM > 0) ? (salesLTM + gaLTM) : combinedSGALTM;
           const totalLTM = rdLTM + sgaTotalLTM + otherLTM;
@@ -880,7 +613,7 @@ export function HistoricalFinancials() {
         label: "(+) D&A",
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.depreciationAndAmortization ?? null])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'depreciationAndAmortization', ltmPeriodType) : null,
+        ltm: quarterlyMap ? calculateLTMFromQuarterly(quarterlyMap, 'depreciationAndAmortization') : null,
         unit: 'millions'
       },
       {
@@ -889,8 +622,8 @@ export function HistoricalFinancials() {
         isBold: true,
         isEBITDA: true,
         hasBorderTop: true,
-        ...Object.fromEntries(periods.map(p => [p, getSemiAnnualValue(p, 'ebitda')])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'ebitda', ltmPeriodType) : null,
+        ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.ebitda ?? null])),
+        ltm: type === 'annual' ? periodMap[years[years.length - 1]]?.ebitda ?? null : calculateLTM(periodMap, 'ebitda', years),
         unit: 'millions'
       },
       {
@@ -898,29 +631,25 @@ export function HistoricalFinancials() {
         isMargin: true,
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.ebitda && periodMap[p]?.revenue ? (periodMap[p].ebitda / periodMap[p].revenue) * 100 : null])),
-        ltm: quarterlyMap ? (() => {
-          const ltmNum = calculateLTM(quarterlyMap, 'ebitda', ltmPeriodType);
-          const ltmDen = calculateLTM(quarterlyMap, 'revenue', ltmPeriodType);
-          return ltmNum && ltmDen ? (ltmNum / ltmDen) * 100 : null;
-        })() : null,
+        ltm: type === 'annual' ? (periodMap[years[years.length - 1]]?.ebitda && periodMap[years[years.length - 1]]?.revenue ? (periodMap[years[years.length - 1]].ebitda / periodMap[years[years.length - 1]].revenue) * 100 : null) : (calculateLTM(periodMap, 'ebitda', years) && calculateLTM(periodMap, 'revenue', years) ? (calculateLTM(periodMap, 'ebitda', years)! / calculateLTM(periodMap, 'revenue', years)!) * 100 : null),
         unit: 'millions'
       },
       {
         label: "(-) D&A",
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.depreciationAndAmortization ? -periodMap[p].depreciationAndAmortization : null])),
-        ltm: quarterlyMap ? (() => {
-          const ltmValue = calculateLTM(quarterlyMap, 'depreciationAndAmortization', ltmPeriodType);
+        ltm: type === 'annual' ? (periodMap[years[years.length - 1]]?.depreciationAndAmortization ? -periodMap[years[years.length - 1]].depreciationAndAmortization : null) : (() => {
+          const ltmValue = calculateLTM(periodMap, 'depreciationAndAmortization', years);
           return ltmValue ? -ltmValue : null;
-        })() : null,
+        })(),
         unit: 'millions'
       },
       {
         label: "Operating Income",
         isImportant: true,
         hasBorderTop: true,
-        ...Object.fromEntries(periods.map(p => [p, getSemiAnnualValue(p, 'operatingIncome')])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'operatingIncome', ltmPeriodType) : null,
+        ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.operatingIncome ?? null])),
+        ltm: type === 'annual' ? periodMap[years[years.length - 1]]?.operatingIncome ?? null : calculateLTM(periodMap, 'operatingIncome', years),
         unit: 'millions'
       },
       {
@@ -928,42 +657,38 @@ export function HistoricalFinancials() {
         isMargin: true,
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.operatingIncome && periodMap[p]?.revenue ? (periodMap[p].operatingIncome / periodMap[p].revenue) * 100 : null])),
-        ltm: quarterlyMap ? (() => {
-          const ltmNum = calculateLTM(quarterlyMap, 'operatingIncome', ltmPeriodType);
-          const ltmDen = calculateLTM(quarterlyMap, 'revenue', ltmPeriodType);
-          return ltmNum && ltmDen ? (ltmNum / ltmDen) * 100 : null;
-        })() : null,
+        ltm: type === 'annual' ? (periodMap[years[years.length - 1]]?.operatingIncome && periodMap[years[years.length - 1]]?.revenue ? (periodMap[years[years.length - 1]].operatingIncome / periodMap[years[years.length - 1]].revenue) * 100 : null) : (calculateLTM(periodMap, 'operatingIncome', years) && calculateLTM(periodMap, 'revenue', years) ? (calculateLTM(periodMap, 'operatingIncome', years)! / calculateLTM(periodMap, 'revenue', years)!) * 100 : null),
         unit: 'millions'
       },
       {
         label: "(+) Interest Income",
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.interestIncome ?? null])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'interestIncome', ltmPeriodType) : null,
+        ltm: type === 'annual' ? periodMap[years[years.length - 1]]?.interestIncome ?? null : calculateLTM(periodMap, 'interestIncome', years),
         unit: 'millions'
       },
       {
         label: "(-) Interest Expense",
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.interestExpense ? -periodMap[p].interestExpense : null])),
-        ltm: quarterlyMap ? (() => {
-          const ltmValue = calculateLTM(quarterlyMap, 'interestExpense', ltmPeriodType);
+        ltm: type === 'annual' ? (periodMap[years[years.length - 1]]?.interestExpense ? -periodMap[years[years.length - 1]].interestExpense : null) : (() => {
+          const ltmValue = calculateLTM(periodMap, 'interestExpense', years);
           return ltmValue ? -ltmValue : null;
-        })() : null,
+        })(),
         unit: 'millions'
       },
       {
         label: "(+/-) Other Non-Op Income",
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.totalOtherIncomeExpensesNet ?? null])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'totalOtherIncomeExpensesNet', ltmPeriodType) : null,
+        ltm: type === 'annual' ? periodMap[years[years.length - 1]]?.totalOtherIncomeExpensesNet ?? null : calculateLTM(periodMap, 'totalOtherIncomeExpensesNet', years),
         unit: 'millions'
       },
       {
         label: "(+/-) Extraordinary Items",
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.extraordinaryItems ?? null])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'extraordinaryItems', ltmPeriodType) : null,
+        ltm: type === 'annual' ? periodMap[years[years.length - 1]]?.extraordinaryItems ?? null : calculateLTM(periodMap, 'extraordinaryItems', years),
         unit: 'millions'
       },
       {
@@ -971,17 +696,17 @@ export function HistoricalFinancials() {
         isImportant: true,
         hasBorderTop: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.incomeBeforeTax ?? null])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'incomeBeforeTax', ltmPeriodType) : null,
+        ltm: type === 'annual' ? periodMap[years[years.length - 1]]?.incomeBeforeTax ?? null : calculateLTM(periodMap, 'incomeBeforeTax', years),
         unit: 'millions'
       },
       {
         label: "(-) Income Tax Expense",
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.incomeTaxExpense ? -periodMap[p].incomeTaxExpense : null])),
-        ltm: quarterlyMap ? (() => {
-          const ltmValue = calculateLTM(quarterlyMap, 'incomeTaxExpense', ltmPeriodType);
+        ltm: type === 'annual' ? (periodMap[years[years.length - 1]]?.incomeTaxExpense ? -periodMap[years[years.length - 1]].incomeTaxExpense : null) : (() => {
+          const ltmValue = calculateLTM(periodMap, 'incomeTaxExpense', years);
           return ltmValue ? -ltmValue : null;
-        })() : null,
+        })(),
         unit: 'millions'
       },
       {
@@ -989,8 +714,8 @@ export function HistoricalFinancials() {
         isImportant: true,
         isBold: true,
         hasBorderTop: true,
-        ...Object.fromEntries(periods.map(p => [p, getSemiAnnualValue(p, 'netIncome')])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'netIncome', ltmPeriodType) : null,
+        ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.netIncome ?? null])),
+        ltm: type === 'annual' ? periodMap[years[years.length - 1]]?.netIncome ?? null : calculateLTM(periodMap, 'netIncome', years),
         unit: 'millions'
       },
       {
@@ -998,11 +723,7 @@ export function HistoricalFinancials() {
         isMargin: true,
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.netIncome && periodMap[p]?.revenue ? (periodMap[p].netIncome / periodMap[p].revenue) * 100 : null])),
-        ltm: quarterlyMap ? (() => {
-          const ltmNum = calculateLTM(quarterlyMap, 'netIncome', ltmPeriodType);
-          const ltmDen = calculateLTM(quarterlyMap, 'revenue', ltmPeriodType);
-          return ltmNum && ltmDen ? (ltmNum / ltmDen) * 100 : null;
-        })() : null,
+        ltm: type === 'annual' ? (periodMap[years[years.length - 1]]?.netIncome && periodMap[years[years.length - 1]]?.revenue ? (periodMap[years[years.length - 1]].netIncome / periodMap[years[years.length - 1]].revenue) * 100 : null) : (calculateLTM(periodMap, 'netIncome', years) && calculateLTM(periodMap, 'revenue', years) ? (calculateLTM(periodMap, 'netIncome', years)! / calculateLTM(periodMap, 'revenue', years)!) * 100 : null),
         unit: 'millions'
       },
       {
@@ -1042,19 +763,19 @@ export function HistoricalFinancials() {
             return netIncomeMillions / sharesInMillions;
           }
           return last.eps ?? null;
-        })() : (quarterlyMap ? (() => {
-          const ltmNetIncomeMillions = calculateLTM(quarterlyMap, 'netIncome', ltmPeriodType);
-          let ltmRawShares = calculateLTM(quarterlyMap, 'weightedAverageShsOutDil', ltmPeriodType);
-          if (!ltmRawShares) ltmRawShares = calculateLTM(quarterlyMap, 'weightedAverageShsOut', ltmPeriodType);
-          if (!ltmRawShares) ltmRawShares = calculateLTM(quarterlyMap, 'weightedAverageSharesOutstandingDiluted', ltmPeriodType);
-          if (!ltmRawShares) ltmRawShares = calculateLTM(quarterlyMap, 'dilutedAverageShares', ltmPeriodType);
+        })() : (() => {
+          const ltmNetIncomeMillions = calculateLTM(periodMap, 'netIncome', years);
+          let ltmRawShares = calculateLTM(periodMap, 'weightedAverageShsOutDil', years);
+          if (!ltmRawShares) ltmRawShares = calculateLTM(periodMap, 'weightedAverageShsOut', years);
+          if (!ltmRawShares) ltmRawShares = calculateLTM(periodMap, 'weightedAverageSharesOutstandingDiluted', years);
+          if (!ltmRawShares) ltmRawShares = calculateLTM(periodMap, 'dilutedAverageShares', years);
           
           if (ltmNetIncomeMillions && ltmRawShares && ltmRawShares !== 0) {
             const ltmSharesInMillions = ltmRawShares / 1000000;
             return ltmNetIncomeMillions / ltmSharesInMillions;
           }
-          return calculateLTM(quarterlyMap, 'epsDiluted', ltmPeriodType) || calculateLTM(quarterlyMap, 'eps', ltmPeriodType);
-        })() : null),
+          return calculateLTM(periodMap, 'epsDiluted', years) || calculateLTM(periodMap, 'eps', years);
+        })(),
         unit: 'dollars'
       }
     ];
@@ -1062,91 +783,46 @@ export function HistoricalFinancials() {
     return data;
   };
 
-  const processCashFlowStatements = (quarterlyMap?: Record<string, any>) => {
+  const processCashFlowStatements = () => {
     const type = selectedPeriod;
-    // For LTM calculations, determine the appropriate period type
-    const ltmPeriodType = selectedPeriod === 'annual' ? 'quarter' : selectedPeriod;
     // Build a map of normalized period -> statement
     const periodMap: Record<string, any> = {};
     cashFlowStatements.forEach(s => {
-      const norm = normalizePeriod(s.period, selectedPeriod === 'semi-annual' ? 'quarter' : type, s.calendarYear, s.date);
+      const norm = normalizePeriod(s.period, type, s.calendarYear, s.date);
       if (norm) periodMap[norm] = s;
     });
-    
-    // Helper function to get quarterly data for semi-annual calculations
-    const getQuarterlyData = (year: string, quarter: string, field: string): number | null => {
-      const quarterKey = `${year}-${quarter}`;
-      
-      // In semi-annual mode, the quarterly data is in periodMap (built from quarterly API data)
-      // In other modes, use the passed quarterlyMap for LTM calculations
-      const quarterData = type === 'semi-annual' ? periodMap[quarterKey] : quarterlyMap?.[quarterKey];
-      
-      return quarterData?.[field] ?? null;
-    };
-    
-    // Helper function to calculate semi-annual values from quarters
-    const getSemiAnnualValue = (period: string, field: string, isNegative: boolean = false): number | null => {
-      if (type !== 'semi-annual' || !period.includes('-H')) {
-        const value = periodMap[period]?.[field] ?? null;
-        return value !== null && isNegative ? -value : value;
-      }
-      
-      const [year, half] = period.split('-');
-      
-      if (half === 'H1') {
-        // H1 = Q1 + Q2
-        const q1Value = getQuarterlyData(year, 'Q1', field) || 0;
-        const q2Value = getQuarterlyData(year, 'Q2', field) || 0;
-        const sum = q1Value + q2Value;
-        return sum === 0 ? null : (isNegative ? -sum : sum);
-      } else {
-        // H2 = Q3 + Q4
-        const q3Value = getQuarterlyData(year, 'Q3', field) || 0;
-        const q4Value = getQuarterlyData(year, 'Q4', field) || 0;
-        const sum = q3Value + q4Value;
-        return sum === 0 ? null : (isNegative ? -sum : sum);
-      }
-    };
-    
-    // Generate periods based on selected period type
-    let periods: string[];
-    if (type === 'annual') {
-      periods = years;
-    } else if (type === 'semi-annual') {
-      // For semi-annual view, generate H1 and H2 periods (calculated from quarters)
-      periods = years.flatMap(year => ['H1','H2'].map(h => `${year}-${h}`));
-    } else {
-      // For quarterly view, generate all quarters
-      periods = years.flatMap(year => ['Q1','Q2','Q3','Q4'].map(q => `${year}-${q}`));
-    }
+    // For annual, use years; for quarter, use all year-Qx in periodsByYear
+    const periods = type === 'annual'
+      ? years
+      : years.flatMap(year => ['Q1','Q2','Q3','Q4'].map(q => `${year}-${q}`));
     const data = [
       {
         label: "Net Income",
         isImportant: true,
         isBold: true,
-        ...Object.fromEntries(periods.map(p => [p, getSemiAnnualValue(p, 'netIncome')])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'netIncome', ltmPeriodType) : null,
+        ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.netIncome ?? null])),
+        ltm: type === 'annual' ? periodMap[years[years.length - 1]]?.netIncome ?? null : calculateLTM(periodMap, 'netIncome', years),
         unit: 'millions'
       },
       {
         label: "(+) D&A",
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.depreciationAndAmortization ?? null])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'depreciationAndAmortization', ltmPeriodType) : null,
+        ltm: quarterlyMap ? calculateLTMFromQuarterly(quarterlyMap, 'depreciationAndAmortization') : null,
         unit: 'millions'
       },
       {
         label: "(+) Stock-Based Comp",
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.stockBasedCompensation ?? null])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'stockBasedCompensation', ltmPeriodType) : null,
+        ltm: type === 'annual' ? periodMap[years[years.length - 1]]?.stockBasedCompensation ?? null : calculateLTM(periodMap, 'stockBasedCompensation', years),
         unit: 'millions'
       },
       {
         label: "(+/-) Working Capital",
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.changeInWorkingCapital ?? null])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'changeInWorkingCapital', ltmPeriodType) : null,
+        ltm: type === 'annual' ? periodMap[years[years.length - 1]]?.changeInWorkingCapital ?? null : calculateLTM(periodMap, 'changeInWorkingCapital', years),
         unit: 'millions'
       },
       {
@@ -1163,22 +839,22 @@ export function HistoricalFinancials() {
         isImportant: true,
         isBold: true,
         hasBorderTop: true,
-        ...Object.fromEntries(periods.map(p => [p, getSemiAnnualValue(p, 'operatingCashFlow')])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'operatingCashFlow', ltmPeriodType) : null,
+        ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.operatingCashFlow ?? null])),
+        ltm: type === 'annual' ? periodMap[years[years.length - 1]]?.operatingCashFlow ?? null : calculateLTM(periodMap, 'operatingCashFlow', years),
         unit: 'millions'
       },
       {
         label: "(-) Capital Expenditure",
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.capitalExpenditure ?? null])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'capitalExpenditure', ltmPeriodType) : null,
+        ltm: type === 'annual' ? periodMap[years[years.length - 1]]?.capitalExpenditure ?? null : calculateLTM(periodMap, 'capitalExpenditure', years),
         unit: 'millions'
       },
       {
         label: "(-) Acquisitions",
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.acquisitionsNet ?? null])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'acquisitionsNet', ltmPeriodType) : null,
+        ltm: type === 'annual' ? periodMap[years[years.length - 1]]?.acquisitionsNet ?? null : calculateLTM(periodMap, 'acquisitionsNet', years),
         unit: 'millions'
       },
       {
@@ -1214,7 +890,7 @@ export function HistoricalFinancials() {
         isImportant: true,
         hasBorderTop: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.netCashUsedForInvestingActivites ?? periodMap[p]?.investingCashFlow ?? null])),
-        ltm: quarterlyMap ? (calculateLTM(quarterlyMap, 'netCashUsedForInvestingActivites', ltmPeriodType) ?? calculateLTM(quarterlyMap, 'investingCashFlow', ltmPeriodType)) : null,
+        ltm: type === 'quarter' ? (calculateLTM(periodMap, 'netCashUsedForInvestingActivites', years) ?? calculateLTM(periodMap, 'investingCashFlow', years)) : null,
         unit: 'millions'
       },
       {
@@ -1255,7 +931,7 @@ export function HistoricalFinancials() {
         isImportant: true,
         hasBorderTop: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.netCashUsedProvidedByFinancingActivities ?? periodMap[p]?.financingCashFlow ?? null])),
-        ltm: quarterlyMap ? (calculateLTM(quarterlyMap, 'netCashUsedProvidedByFinancingActivities', ltmPeriodType) ?? calculateLTM(quarterlyMap, 'financingCashFlow', ltmPeriodType)) : null,
+        ltm: type === 'quarter' ? (calculateLTM(periodMap, 'netCashUsedProvidedByFinancingActivities', years) ?? calculateLTM(periodMap, 'financingCashFlow', years)) : null,
         unit: 'millions'
       },
       {
@@ -1264,14 +940,14 @@ export function HistoricalFinancials() {
         isBold: true,
         hasBorderTop: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.netChangeInCash ?? null])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'netChangeInCash', ltmPeriodType) : null,
+        ltm: type === 'quarter' ? calculateLTM(periodMap, 'netChangeInCash', years) : null,
         unit: 'millions'
       },
       {
         label: "Cash at Beginning of Period",
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.cashAtBeginningOfPeriod ?? null])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'cashAtBeginningOfPeriod', ltmPeriodType) : null,
+        ltm: type === 'quarter' ? calculateLTM(periodMap, 'cashAtBeginningOfPeriod', years) : null,
         unit: 'millions'
       },
       {
@@ -1279,7 +955,7 @@ export function HistoricalFinancials() {
         isIndented: true,
         isBold: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.cashAtEndOfPeriod ?? null])),
-        ltm: quarterlyMap ? calculateLTM(quarterlyMap, 'cashAtEndOfPeriod', ltmPeriodType) : null,
+        ltm: type === 'quarter' ? calculateLTM(periodMap, 'cashAtEndOfPeriod', years) : null,
         unit: 'millions'
       }
     ];
@@ -1287,27 +963,18 @@ export function HistoricalFinancials() {
     return data;
   };
 
-  const processBalanceSheets = (quarterlyMap?: Record<string, any>) => {
+  const processBalanceSheets = () => {
     const type = selectedPeriod;
-    // For LTM calculations, determine the appropriate period type (balance sheets typically don't need LTM)
-    const ltmPeriodType = selectedPeriod === 'annual' ? 'quarter' : selectedPeriod;
     // Build a map of normalized period -> statement
     const periodMap: Record<string, any> = {};
     balanceSheets.forEach(s => {
-      const norm = normalizePeriod(s.period, selectedPeriod === 'semi-annual' ? 'quarter' : type, s.calendarYear, s.date);
+      const norm = normalizePeriod(s.period, type, s.calendarYear, s.date);
       if (norm) periodMap[norm] = s;
     });
-    // Generate periods based on selected period type
-    let periods: string[];
-    if (type === 'annual') {
-      periods = years;
-    } else if (type === 'semi-annual') {
-      // For semi-annual view, generate Q2 and Q4 periods (H1->Q2, H2->Q4)
-      periods = years.flatMap(year => ['Q2','Q4'].map(q => `${year}-${q}`));
-    } else {
-      // For quarterly view, generate all quarters
-      periods = years.flatMap(year => ['Q1','Q2','Q3','Q4'].map(q => `${year}-${q}`));
-    }
+    // For annual, use years; for quarter, use all year-Qx in periodsByYear
+    const periods = type === 'annual'
+      ? years
+      : years.flatMap(year => ['Q1','Q2','Q3','Q4'].map(q => `${year}-${q}`));
     const data = [
       // ASSETS SECTION
       {
@@ -1796,13 +1463,12 @@ export function HistoricalFinancials() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-4">
-            <Select value={selectedPeriod} onValueChange={(value: 'annual' | 'semi-annual' | 'quarter') => setSelectedPeriod(value)}>
-              <SelectTrigger className="w-40">
+            <Select value={selectedPeriod} onValueChange={(value: 'annual' | 'quarter') => setSelectedPeriod(value)}>
+              <SelectTrigger className="w-32">
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="annual">Annual</SelectItem>
-                <SelectItem value="semi-annual">Semi-Annual</SelectItem>
                 <SelectItem value="quarter">Quarterly</SelectItem>
               </SelectContent>
             </Select>
@@ -1822,8 +1488,8 @@ export function HistoricalFinancials() {
             <Alert className="border-amber-200 bg-amber-50 mb-6">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-800">
-                <strong>{selectedPeriod === 'quarter' ? 'Quarterly' : 'Semi-annual'} data not available:</strong> Your current API subscription doesn&apos;t include {selectedPeriod} financial data. 
-                Showing annual data instead. To access {selectedPeriod} data, please upgrade your Financial Modeling Prep subscription.
+                <strong>Quarterly data not available:</strong> Your current API subscription doesn&apos;t include quarterly financial data. 
+                Showing annual data instead. To access quarterly data, please upgrade your Financial Modeling Prep subscription.
               </AlertDescription>
             </Alert>
           )}
@@ -1832,19 +1498,19 @@ export function HistoricalFinancials() {
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger 
                 value="income-statement"
-                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all "
+                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all"
               >
                 Income Statement
               </TabsTrigger>
               <TabsTrigger 
                 value="cash-flow"
-                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all "
+                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all"
               >
                 Cash Flow
               </TabsTrigger>
               <TabsTrigger 
                 value="balance-sheet"
-                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all "
+                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all"
               >
                 Balance Sheet
               </TabsTrigger>
@@ -1854,7 +1520,7 @@ export function HistoricalFinancials() {
               {incomeLoading ? (
                 <TableLoadingSkeleton rows={12} />
               ) : (
-                renderFinancialTable(processIncomeStatements(incomeQuarterlyMap), "Income Statement", incomePeriodMap, incomeQuarterlyMap)
+                renderFinancialTable(processIncomeStatements(), "Income Statement", incomePeriodMap)
               )}
             </TabsContent>
             
@@ -1862,7 +1528,7 @@ export function HistoricalFinancials() {
               {cashFlowLoading ? (
                 <TableLoadingSkeleton rows={8} />
               ) : (
-                renderFinancialTable(processCashFlowStatements(cashFlowQuarterlyMap), "Cash Flow Statement", cashFlowPeriodMap, cashFlowQuarterlyMap)
+                renderFinancialTable(processCashFlowStatements(), "Cash Flow Statement", cashFlowPeriodMap)
               )}
             </TabsContent>
             
@@ -1870,7 +1536,7 @@ export function HistoricalFinancials() {
               {balanceSheetLoading ? (
                 <TableLoadingSkeleton rows={10} />
               ) : (
-                renderFinancialTable(processBalanceSheets(balanceQuarterlyMap), "Balance Sheet", balancePeriodMap, balanceQuarterlyMap)
+                renderFinancialTable(processBalanceSheets(), "Balance Sheet", balancePeriodMap)
               )}
             </TabsContent>
           </Tabs>

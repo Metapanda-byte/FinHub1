@@ -114,5 +114,10 @@ export interface CashFlowItem {
   financingCashFlow: number;
   freeCashFlow: number;
   netCashFlow: number;
+  netChangeInCash: number;
+  cashAtBeginningOfPeriod: number;
+  cashAtEndOfPeriod: number;
+  netCashUsedForInvestingActivites: number;
+  netCashUsedProvidedByFinancingActivities: number;
   [key: string]: any;
 }

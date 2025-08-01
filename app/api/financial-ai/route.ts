@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 
 function generateMockResponse(prompt: string, financialData: any, symbol: string | null): string {
   // Basic analysis of financial data for mock responses
   const incomeStatements = financialData.incomeStatements || [];
   const newsData = financialData.news || [];
+  const secFilings = financialData.secFilings || [];
+  const earningsTranscripts = financialData.earningsTranscriptDates || [];
   
   if (incomeStatements.length >= 2) {
     const latest = incomeStatements[0];
@@ -20,72 +22,111 @@ function generateMockResponse(prompt: string, financialData: any, symbol: string
       ? ((latest.operatingIncome / latest.revenue) - (previous.operatingIncome / previous.revenue)) * 100
       : 0;
     
-    // Generate contextual response based on the prompt
+    // Generate contextual response based on the prompt that demonstrates proactive multi-source analysis
     if (prompt.toLowerCase().includes('revenue')) {
-      let newsContext = '';
+      let additionalContext = '';
+      
+      // Proactively include news context
       if (newsData.length > 0) {
-        const recentNews = newsData.slice(0, 3);
-        newsContext = `\n\n📰 **Recent News Context:**\n${recentNews.map((article: any) => 
+        const recentNews = newsData.slice(0, 2);
+        additionalContext += `\n\n📰 **Market Context (from recent news):**\n${recentNews.map((article: any) => 
           `• ${article.title} (${article.source})`
         ).join('\n')}`;
       }
       
-      return `Based on the financial data for ${symbol || 'this company'}:
+      // Proactively mention SEC filings
+      if (secFilings.length > 0) {
+        const recentFilings = secFilings.slice(0, 2);
+        additionalContext += `\n\n📋 **Regulatory Context (from SEC filings):**\n${recentFilings.map((filing: any) => 
+          `• ${filing.type} filed ${filing.fillingDate} - May contain revenue guidance or explanations`
+        ).join('\n')}`;
+      }
+      
+      // Proactively mention earnings calls
+      if (earningsTranscripts.length > 0) {
+        const recentCall = earningsTranscripts[0];
+        additionalContext += `\n\n🎙️ **Management Commentary:**\n• Q${recentCall.quarter} ${recentCall.year} earnings call (${recentCall.date}) - Likely discussed revenue performance and outlook`;
+      }
+      
+      return `**Multi-Source Revenue Analysis for ${symbol || 'this company'}:**
 
+📊 **Financial Performance:**
 Revenue ${revenueChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(revenueChange).toFixed(1)}% year-over-year.
+• Latest: $${(latest.revenue / 1e9).toFixed(2)}B (${new Date(latest.date).getFullYear()})
+• Previous: $${(previous.revenue / 1e9).toFixed(2)}B (${new Date(previous.date).getFullYear()})
 
-Latest revenue: $${(latest.revenue / 1e9).toFixed(2)}B (${new Date(latest.date).getFullYear()})
-Previous revenue: $${(previous.revenue / 1e9).toFixed(2)}B (${new Date(previous.date).getFullYear()})
+🔍 **Cross-Source Analysis:**
+This ${Math.abs(revenueChange) > 10 ? 'significant' : 'moderate'} revenue change should be analyzed alongside regulatory filings, management commentary, and market news for complete context.${additionalContext}
 
-This ${Math.abs(revenueChange) > 10 ? 'significant' : 'moderate'} change could be attributed to various factors including market conditions, product launches, or strategic initiatives.${newsContext}
-
-To get AI-powered analysis that examines news reports and SEC filings for deeper insights, please configure an OpenAI API key.`;
+💡 **Note:** This is a basic multi-source analysis. For full AI-powered cross-referencing of SEC filings content, earnings transcript highlights, and automated news correlation, configure a Perplexity API key.`;
     }
     
     if (prompt.toLowerCase().includes('margin')) {
-      let newsContext = '';
+      let additionalContext = '';
+      
+      // Proactively include multi-source context
       if (newsData.length > 0) {
-        const recentNews = newsData.slice(0, 3);
-        newsContext = `\n\n📰 **Recent News Context:**\n${recentNews.map((article: any) => 
-          `• ${article.title} (${article.source})`
-        ).join('\n')}`;
+        additionalContext += `\n\n📰 **Market Sentiment:** Recent news may explain margin pressures or improvements`;
       }
       
-      return `Operating margin analysis for ${symbol || 'this company'}:
+      if (secFilings.length > 0) {
+        additionalContext += `\n\n📋 **Regulatory Insights:** Recent SEC filings likely discuss cost structure changes and operational efficiency initiatives`;
+      }
+      
+      if (earningsTranscripts.length > 0) {
+        const recentCall = earningsTranscripts[0];
+        additionalContext += `\n\n🎙️ **Management Perspective:** Q${recentCall.quarter} ${recentCall.year} earnings call would have addressed margin performance and cost management strategies`;
+      }
+      
+      return `**Comprehensive Margin Analysis for ${symbol || 'this company'}:**
 
-Current operating margin: ${((latest.operatingIncome / latest.revenue) * 100).toFixed(1)}%
-Previous operating margin: ${((previous.operatingIncome / previous.revenue) * 100).toFixed(1)}%
-Change: ${marginChange > 0 ? '+' : ''}${marginChange.toFixed(1)} percentage points
+📊 **Margin Performance:**
+• Current operating margin: ${((latest.operatingIncome / latest.revenue) * 100).toFixed(1)}%
+• Previous operating margin: ${((previous.operatingIncome / previous.revenue) * 100).toFixed(1)}%
+• Change: ${marginChange > 0 ? '+' : ''}${marginChange.toFixed(1)} percentage points
 
-The margin ${marginChange > 0 ? 'expansion' : 'compression'} indicates ${marginChange > 0 ? 'improved operational efficiency' : 'increased cost pressures or competitive challenges'}.${newsContext}
+🔍 **Analysis:**
+The margin ${marginChange > 0 ? 'expansion' : 'compression'} indicates ${marginChange > 0 ? 'improved operational efficiency' : 'increased cost pressures or competitive challenges'}. This should be cross-referenced with:${additionalContext}
 
-For AI-powered analysis that examines news reports and SEC filings for deeper insights, please configure an OpenAI API key.`;
+💡 **Note:** For complete analysis that automatically extracts margin explanations from SEC filings, management commentary from earnings calls, and correlates with market news, configure a Perplexity API key.`;
     }
   }
   
   // Default response
-  let newsContext = '';
+  let contextSummary = '';
   if (newsData.length > 0) {
-    newsContext = `\n\n📰 **Recent News Available:** ${newsData.length} articles found`;
+    contextSummary += `\n📰 **Recent News:** ${newsData.length} articles available`;
+  }
+  if (secFilings.length > 0) {
+    contextSummary += `\n📋 **SEC Filings:** ${secFilings.length} recent filings (3-year history)`;
+  }
+  if (earningsTranscripts.length > 0) {
+    contextSummary += `\n🎙️ **Earnings Calls:** ${earningsTranscripts.length} transcript dates available`;
   }
   
-  return `I can help analyze ${symbol || 'this company'}'s financial performance. I can see ${incomeStatements.length} years of financial data available.${newsContext}
+  return `I can help analyze ${symbol || 'this company'}'s financial performance. I have access to:
+- ${incomeStatements.length} years of financial statements
+- Recent SEC filings and regulatory documents
+- Earnings call transcript dates and content
+- Recent news articles and market updates${contextSummary}
 
 Some areas I can help with:
-- Revenue growth trends
-- Margin analysis
-- Cash flow patterns
-- Year-over-year comparisons
-- News-driven insights
+- Revenue growth trends and drivers
+- Margin analysis and operational efficiency
+- Cash flow patterns and capital allocation
+- Year-over-year comparisons and trends
+- SEC filing insights and regulatory updates
+- Earnings call highlights and guidance
+- News-driven market sentiment analysis
 
-Please ask a specific question about the financials. For AI-powered analysis that examines news reports and SEC filings, configure an OpenAI API key.`;
+Please ask a specific question about the financials. For full AI-powered analysis of SEC filings and earnings transcripts, configure a Perplexity API key.`;
 }
 
 export async function POST(req: NextRequest) {
   try {
     const { prompt, financialData, symbol } = await req.json();
 
-    if (!OPENAI_API_KEY) {
+    if (!PERPLEXITY_API_KEY) {
       // Provide a mock response when API key is not configured
       const mockResponse = generateMockResponse(prompt, financialData, symbol);
       return NextResponse.json({ response: mockResponse });
@@ -98,61 +139,61 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create a system prompt that understands financial analysis
-    const systemPrompt = `You are an expert financial analyst AI assistant. Your role is to help users understand company financials, particularly year-over-year changes and trends, using both financial statements and recent news reports.
+    // Create a system prompt for fast, concise analysis
+    const systemPrompt = `Financial analyst. Be concise and direct. 
 
-When analyzing financial data:
-1. Be specific and cite exact numbers from the data
-2. Calculate percentage changes when relevant
-3. Identify potential causes for significant changes using news context
-4. Consider industry context and external factors mentioned in news
-5. Connect financial performance to recent news events and developments
-6. Analyze sentiment from news articles to provide context
-7. Be concise but thorough in explanations
+- Lead with key insight
+- Use bullets and percentages  
+- Reference trends from data
+- Skip introductions
 
-You have access to:
-- Historical financial statements (income, cash flow, balance sheet)
-- Recent news articles with titles, summaries, sources, and sentiment
-- Company-specific context and market developments
+Analyze ${symbol || 'this company'} using available data.`;
 
-The user is analyzing ${symbol || 'a company'}'s financial data.`;
-
-    // Format the financial data for the AI
-    const newsContext = financialData.news && financialData.news.length > 0 
-      ? `\n\n📰 RECENT NEWS ANALYSIS:\n${financialData.news.map((article: any, index: number) => 
-          `${index + 1}. Title: ${article.title}\n   Source: ${article.source} | Date: ${article.date}\n   Summary: ${article.summary}\n   Sentiment: ${article.sentiment > 0 ? 'Positive' : article.sentiment < 0 ? 'Negative' : 'Neutral'}\n   URL: ${article.url}`
-        ).join('\n\n')}`
-      : '';
+    // Streamlined financial data context
+    const newsContext = financialData.news?.slice(0, 3).map((article: any) => 
+      `${article.title} (${article.source})`).join('; ') || '';
     
-    const dataContext = `Here is the financial and news data available for analysis:
+    const secFilingsContext = financialData.secFilings?.slice(0, 3).map((filing: any) => 
+      `${filing.type} ${filing.fillingDate}`).join('; ') || '';
+    
+    const earningsContext = financialData.earningsTranscriptDates?.slice(0, 2).map((transcript: any) => 
+      `Q${transcript.quarter} ${transcript.year}`).join('; ') || '';
+    
+    const dataContext = `Financial Data for ${symbol}:
 
-📊 FINANCIAL STATEMENTS:
 ${JSON.stringify({
-  incomeStatements: financialData.incomeStatements,
-  cashFlows: financialData.cashFlows,
-  balanceSheets: financialData.balanceSheets
-}, null, 2)}${newsContext}`;
+  incomeStatements: financialData.incomeStatements?.slice(0, 3),
+  balanceSheets: financialData.balanceSheets?.slice(0, 3)
+}, null, 2)}
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+News: ${newsContext}
+Filings: ${secFilingsContext}  
+Earnings: ${earningsContext}`;
+
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4-turbo-preview',
+        model: 'sonar',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `${dataContext}\n\nUser question: ${prompt}` }
+          { 
+            role: 'user', 
+            content: `${dataContext}\n\nUser question: ${prompt}` 
+          }
         ],
-        temperature: 0.7,
-        max_tokens: 800,
+        temperature: 0.3,
+        max_tokens: 500,
+        stream: false,
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('OpenAI API error:', error);
+      console.error('Perplexity API error:', error);
       return NextResponse.json(
         { error: 'Failed to get AI response' },
         { status: 500 }

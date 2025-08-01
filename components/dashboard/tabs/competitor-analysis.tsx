@@ -533,7 +533,7 @@ export function CompetitorAnalysis() {
         <CardHeader className="pb-2">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <CardTitle className="text-xl font-bold">Valuation Comparables</CardTitle>
+              <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Valuation Comparables</CardTitle>
               <CardDescription>Compare key valuation metrics with industry peers</CardDescription>
             </div>
             <div className="flex flex-col gap-4 w-full md:w-auto">
@@ -623,7 +623,7 @@ export function CompetitorAnalysis() {
               </div>
               <table className="w-full">
                 <thead>
-                  <tr className="border-b">
+                  <tr className="">
                     <th className="text-left py-3 px-4 font-medium text-sm">Company</th>
                     <th className="text-right py-3 px-4 font-medium text-sm">
                       Market Cap
@@ -654,7 +654,7 @@ export function CompetitorAnalysis() {
                 <tbody>
                   {/* Peer companies */}
                   {filteredValuationData.map((company) => (
-                    <tr key={company.ticker} className="border-b hover:bg-muted/50 transition-colors">
+                    <tr key={company.ticker} className="hover:bg-muted/50 transition-colors">
                       <td className="py-3 px-4 text-sm font-medium">{company.company} ({company.ticker})</td>
                       <td className="text-right py-3 px-4 text-sm">{getValuationMetric(company, 'marketCap')}</td>
                       <td className="text-right py-3 px-4 text-sm">{getValuationMetric(company, 'evToEbitda')}</td>
@@ -671,7 +671,7 @@ export function CompetitorAnalysis() {
                   {/* Median row */}
                   {filteredValuationData.length > 0 && (
                     <>
-                      <tr className="border-t-2 border-black border-b bg-muted/30 font-bold">
+                      <tr className="bg-muted/30 font-bold">
                         <td className="py-3 px-4 text-sm">Median</td>
                         <td className="text-right py-3 px-4 text-sm">
                           {formatMarketCap(calculateMetrics(filteredValuationData).median.marketCap)}
@@ -692,7 +692,7 @@ export function CompetitorAnalysis() {
                           {formatPercentage(calculateMetrics(filteredValuationData).median.dividendYield)}
                         </td>
                       </tr>
-                      <tr className="border-b-2 border-black bg-muted/30 font-bold">
+                      <tr className="bg-muted/30 font-bold">
                         <td className="py-3 px-4 text-sm">Average</td>
                         <td className="text-right py-3 px-4 text-sm">
                           {formatMarketCap(calculateMetrics(filteredValuationData).average.marketCap)}
@@ -721,7 +721,7 @@ export function CompetitorAnalysis() {
                   
                   {/* Subject company row */}
                   {data?.peerValuationData.find(company => company.ticker === currentSymbol) && (
-                    <tr className="bg-[rgb(0,187,255)]/50 font-medium">
+                    <tr className="bg-[#2563eb]/20 font-medium">
                       <td className="py-3 px-4 text-sm">
                         {data.peerValuationData.find(company => company.ticker === currentSymbol)?.company} ({currentSymbol})
                       </td>
@@ -755,14 +755,14 @@ export function CompetitorAnalysis() {
       {/* Performance Table (separate, below valuation) */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl font-bold">Benchmark Analysis</CardTitle>
+          <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Benchmark Analysis</CardTitle>
           <CardDescription>Compare key operating metrics with industry peers</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b">
+                <tr className="">
                   <th className="text-left py-3 px-4 font-medium text-sm">Company</th>
                   <th className="text-right py-3 px-4 font-medium text-sm">
                     Rev. Growth
@@ -793,7 +793,7 @@ export function CompetitorAnalysis() {
               <tbody>
                 {/* Peer companies */}
                 {filteredPerformanceData.map((company) => (
-                  <tr key={company.ticker} className="border-b hover:bg-muted/50 transition-colors">
+                  <tr key={company.ticker} className="hover:bg-muted/50 transition-colors">
                     <td className="py-3 px-4 text-sm font-medium">{company.company} ({company.ticker})</td>
                     <td className={cn(
                       "text-right py-3 px-4 text-sm",
@@ -813,7 +813,7 @@ export function CompetitorAnalysis() {
                 {/* Median row */}
                 {filteredPerformanceData.length > 0 && (
                   <>
-                    <tr className="border-t-2 border-black border-b bg-muted/30 font-bold">
+                                          <tr className="bg-muted/30 font-bold">
                       <td className="py-3 px-4 text-sm">Median</td>
                       <td className={cn(
                         "text-right py-3 px-4 text-sm",
@@ -837,7 +837,7 @@ export function CompetitorAnalysis() {
                         {formatPercentage(calculateMetrics(filteredPerformanceData).median.roe)}
                       </td>
                     </tr>
-                    <tr className="border-b-2 border-black bg-muted/30 font-bold">
+                                          <tr className="bg-muted/30 font-bold">
                       <td className="py-3 px-4 text-sm">Average</td>
                       <td className={cn(
                         "text-right py-3 px-4 text-sm",
@@ -869,7 +869,7 @@ export function CompetitorAnalysis() {
                 
                 {/* Subject company row */}
                 {data?.peerPerformanceData.find(company => company.ticker === currentSymbol) && (
-                  <tr className="bg-[rgb(0,187,255)]/50 font-medium">
+                  <tr className="bg-[#2563eb]/20 font-medium">
                     <td className="py-3 px-4 text-sm">
                       {data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.company} ({currentSymbol})
                     </td>
@@ -906,7 +906,7 @@ export function CompetitorAnalysis() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl font-bold">Metrics Calculator</CardTitle>
+          <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Metrics Calculator</CardTitle>
           <CardDescription>Automatically calculate derived financial metrics</CardDescription>
         </CardHeader>
         <CardContent>

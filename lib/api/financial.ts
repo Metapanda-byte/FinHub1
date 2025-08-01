@@ -460,6 +460,217 @@ export interface RevenueSegment {
   [key: string]: number | RevenueSegment;
 }
 
+// Financial Ratios interfaces
+export interface FinancialRatios {
+  peRatio: number;
+  pegRatio: number;
+  bookValuePerShare: number;
+  priceToBookRatio: number;
+  returnOnAssets: number;
+  returnOnEquity: number;
+  debtEquityRatio: number;
+  currentRatio: number;
+  quickRatio: number;
+  grossProfitMargin: number;
+  operatingProfitMargin: number;
+  netProfitMargin: number;
+  dividendYield: number;
+  payoutRatio: number;
+  
+  // Credit Analysis Ratios
+  debtRatio: number; // Total Liabilities / Total Assets
+  longTermDebtToCapitalization: number;
+  totalDebtToCapitalization: number;
+  interestCoverage: number; // EBIT / Interest Expense
+  cashFlowToDebtRatio: number; // Operating Cash Flow / Total Debt
+  cashRatio: number; // Cash / Current Liabilities
+  companyEquityMultiplier: number; // Total Assets / Total Equity
+  cashFlowCoverageRatios: number; // Operating Cash Flow / (Short Term Debt + Total Debt)
+  shortTermCoverageRatios: number; // Operating Cash Flow / Short Term Debt
+  capitalExpenditureCoverageRatio: number; // Operating Cash Flow / Capex
+  
+  date: string;
+}
+
+// Key Metrics interface for credit analysis
+export interface KeyMetrics {
+  revenuePerShare: number;
+  netIncomePerShare: number;
+  operatingCashFlowPerShare: number;
+  freeCashFlowPerShare: number;
+  cashPerShare: number;
+  bookValuePerShare: number;
+  tangibleBookValuePerShare: number;
+  shareholdersEquityPerShare: number;
+  interestDebtPerShare: number;
+  marketCap: number;
+  enterpriseValue: number;
+  peRatio: number;
+  priceToSalesRatio: number;
+  pocfratio: number; // Price to Operating Cash Flow
+  pfcfRatio: number; // Price to Free Cash Flow
+  pbRatio: number;
+  ptbRatio: number;
+  evToSales: number;
+  enterpriseValueOverEBITDA: number;
+  evToOperatingCashFlow: number;
+  evToFreeCashFlow: number;
+  earningsYield: number;
+  freeCashFlowYield: number;
+  debtToEquity: number;
+  debtToAssets: number;
+  netDebtToEBITDA: number;
+  currentRatio: number;
+  interestCoverage: number;
+  incomeQuality: number;
+  dividendYield: number;
+  payoutRatio: number;
+  salesGeneralAndAdministrativeToRevenue: number;
+  researchAndDevelopmentToRevenue: number;
+  intangiblesToTotalAssets: number;
+  capexToOperatingCashFlow: number;
+  capexToRevenue: number;
+  capexToDepreciation: number;
+  stockBasedCompensationToRevenue: number;
+  grahamNumber: number;
+  roic: number; // Return on Invested Capital
+  returnOnTangibleAssets: number;
+  grahamNetNet: number;
+  workingCapital: number;
+  tangibleAssetValue: number;
+  netCurrentAssetValue: number;
+  investedCapital: number;
+  averageReceivables: number;
+  averagePayables: number;
+  averageInventory: number;
+  daysSalesOutstanding: number;
+  daysPayablesOutstanding: number;
+  daysOfInventoryOnHand: number;
+  receivablesTurnover: number;
+  payablesTurnover: number;
+  inventoryTurnover: number;
+  roe: number;
+  capexPerShare: number;
+  date: string;
+}
+
+// Analyst data interfaces
+export interface PriceTarget {
+  symbol: string;
+  targetHigh: number;
+  targetLow: number;
+  targetConsensus: number;
+  targetMedian: number;
+  numberOfAnalysts: number;
+}
+
+export interface AnalystRating {
+  symbol: string;
+  date: string;
+  rating: string;
+  ratingRecommendation: string;
+  ratingDetailsBuy: number;
+  ratingDetailsOverweight: number;
+  ratingDetailsHold: number;
+  ratingDetailsUnderweight: number;
+  ratingDetailsSell: number;
+}
+
+// Ownership interfaces
+export interface InstitutionalOwnership {
+  symbol: string;
+  cik: string;
+  date: string;
+  investorsHolding: number;
+  sharesHeld: number;
+  reportedHolding: number;
+  percentageOfSharesOutstanding: number;
+  holders: Array<{
+    holder: string;
+    shares: number;
+    dateReported: string;
+    change: number;
+  }>;
+}
+
+export interface InsiderTrade {
+  symbol: string;
+  filingDate: string;
+  transactionDate: string;
+  reportingName: string;
+  transactionType: string;
+  securitiesOwned: number;
+  securitiesTransacted: number;
+  price: number;
+  typeOfSecurity: string;
+  acquistionOrDisposition: string;
+}
+
+// ESG interfaces
+export interface ESGScore {
+  symbol: string;
+  date: string;
+  environmentalScore: number;
+  socialScore: number;
+  governanceScore: number;
+  ESGScore: number;
+  companyName: string;
+  formType: string;
+  acceptedDate: string;
+  url: string;
+}
+
+// SEC Filings interfaces
+export interface SECFiling {
+  symbol: string;
+  fillingDate: string;
+  acceptedDate: string;
+  cik: string;
+  type: string; // 10-K, 10-Q, 8-K, etc.
+  link: string;
+  finalLink: string;
+}
+
+// Earnings Transcript interfaces
+export interface EarningsTranscript {
+  symbol: string;
+  quarter: number;
+  year: number;
+  date: string;
+  content: string;
+}
+
+export interface TranscriptAnalysis {
+  success: boolean;
+  symbol: string;
+  quarter: number;
+  year: number;
+  date: string;
+  analysis: {
+    managementHighlights: string[];
+    guidance: string[];
+    qaInsights: string[];
+    riskDiscussions: string[];
+    strategicUpdates: string[];
+  };
+  analyzedAt: string;
+}
+
+export interface FilingContent {
+  success: boolean;
+  filingType: string;
+  url: string;
+  extractedSections: Record<string, string>;
+  extractedAt: string;
+}
+
+export interface EarningsTranscriptDate {
+  symbol: string;
+  quarter: number;
+  year: number;
+  date: string;
+}
+
 export interface ProcessedSegment {
   name: string;
   value: number;
@@ -849,6 +1060,538 @@ export function useEmployeeCount(symbol: string) {
 
   return {
     employeeCount,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for financial ratios
+export function useFinancialRatios(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `ratios/${symbol}` : null,
+    () => fetchWithCache<FinancialRatios[]>('ratios', symbol, 'v3', 'annual', CACHE_DURATIONS.FINANCIAL_STATEMENTS),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.FINANCIAL_STATEMENTS,
+      shouldRetryOnError: false
+    }
+  );
+
+  const ratios = React.useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return null;
+    return data[0]; // Return most recent ratios
+  }, [data]);
+
+  return {
+    ratios,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for key metrics (credit analysis)
+export function useKeyMetrics(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `key-metrics/${symbol}` : null,
+    () => fetchWithCache<KeyMetrics[]>('key-metrics', symbol, 'v3', 'annual', CACHE_DURATIONS.FINANCIAL_STATEMENTS),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.FINANCIAL_STATEMENTS,
+      shouldRetryOnError: false
+    }
+  );
+
+  const metrics = React.useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return null;
+    return data[0]; // Return most recent key metrics
+  }, [data]);
+
+  return {
+    metrics,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for price target
+export function usePriceTarget(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `price-target/${symbol}` : null,
+    () => fetchWithCache<PriceTarget[]>('price-target', symbol, 'v4', 'annual', CACHE_DURATIONS.STOCK_PRICE),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.STOCK_PRICE,
+      shouldRetryOnError: false
+    }
+  );
+
+  const priceTarget = React.useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return null;
+    return data[0];
+  }, [data]);
+
+  return {
+    priceTarget,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for analyst ratings
+export function useAnalystRatings(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `rating/${symbol}` : null,
+    () => fetchWithCache<AnalystRating[]>('rating', symbol, 'v3', 'annual', CACHE_DURATIONS.STOCK_PRICE),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.STOCK_PRICE,
+      shouldRetryOnError: false
+    }
+  );
+
+  const ratings = React.useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return null;
+    return data[0];
+  }, [data]);
+
+  return {
+    ratings,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for institutional ownership
+export function useInstitutionalOwnership(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `institutional-ownership/${symbol}` : null,
+    () => fetchWithCache<InstitutionalOwnership[]>('institutional-ownership', symbol, 'v4', 'annual', CACHE_DURATIONS.SEGMENTS),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.SEGMENTS,
+      shouldRetryOnError: false
+    }
+  );
+
+  const ownership = React.useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return null;
+    return data[0];
+  }, [data]);
+
+  return {
+    ownership,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for insider trading
+export function useInsiderTrading(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `insider-trading/${symbol}` : null,
+    () => fetchWithCache<InsiderTrade[]>('insider-trading', symbol, 'v4', 'annual', CACHE_DURATIONS.SEGMENTS),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.SEGMENTS,
+      shouldRetryOnError: false
+    }
+  );
+
+  const trades = React.useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return [];
+    // Return recent trades
+    return data.slice(0, 10);
+  }, [data]);
+
+  return {
+    trades,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for ESG scores
+export function useESGScore(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `esg-score/${symbol}` : null,
+    () => fetchWithCache<ESGScore[]>('esg-environmental-social-governance-data', symbol, 'v4', 'annual', CACHE_DURATIONS.SEGMENTS),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.SEGMENTS,
+      shouldRetryOnError: false
+    }
+  );
+
+  const esgScore = React.useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return null;
+    return data[0];
+  }, [data]);
+
+  return {
+    esgScore,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for SEC filings with 3-year history
+export function useSECFilings(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `sec-filings/${symbol}` : null,
+    async () => {
+      if (!API_KEY) {
+        console.log(`[useSECFilings] No API key available for ${symbol}`);
+        throw new Error('API key not configured');
+      }
+      
+      try {
+        const baseUrl = `https://financialmodelingprep.com/api/v3`;
+        // Get 3 years of data (approximately 100-150 filings should cover 3 years)
+        const url = `${baseUrl}/sec_filings/${symbol}?apikey=${API_KEY}&limit=150`;
+        
+        console.log(`[API Request] sec_filings/${symbol}`);
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.error(`SEC filings API request failed: ${response.status}`);
+          return [];
+        }
+
+        const result = await response.json();
+        if (!result || (Array.isArray(result) && result.length === 0)) {
+          console.warn(`No SEC filings data for ${symbol}`);
+          return [];
+        }
+
+        if (result.error || result["Error Message"]) {
+          console.warn(`API Error: ${result.error || result["Error Message"]}`);
+          return [];
+        }
+
+        const filings = Array.isArray(result) ? result : [];
+        
+        // Filter to last 3 years
+        const threeYearsAgo = new Date();
+        threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+        
+        const filteredFilings = filings.filter(filing => {
+          const filingDate = new Date(filing.fillingDate);
+          return filingDate >= threeYearsAgo;
+        });
+
+        return filteredFilings.sort((a, b) => 
+          new Date(b.fillingDate).getTime() - new Date(a.fillingDate).getTime()
+        );
+      } catch (err) {
+        console.error(`Error fetching SEC filings for ${symbol}:`, err);
+        return [];
+      }
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.SEGMENTS,
+      shouldRetryOnError: false
+    }
+  );
+
+  return {
+    data: Array.isArray(data) ? data : [],
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for earnings transcript dates
+export function useEarningsTranscriptDates(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `earnings-transcript-dates/${symbol}` : null,
+    async () => {
+      if (!API_KEY) {
+        console.log(`[useEarningsTranscriptDates] No API key available for ${symbol}`);
+        throw new Error('API key not configured');
+      }
+      
+      try {
+        const baseUrl = `https://financialmodelingprep.com/api/v4`;
+        const url = `${baseUrl}/earning_call_transcript?symbol=${symbol}&apikey=${API_KEY}&limit=10`;
+        
+        console.log(`[API Request] earning_call_transcript dates/${symbol}`);
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.error(`Earnings transcript dates API request failed: ${response.status}`);
+          return [];
+        }
+
+        const result = await response.json();
+        if (!result || (Array.isArray(result) && result.length === 0)) {
+          console.warn(`No earnings transcript dates for ${symbol}`);
+          return [];
+        }
+
+        if (result.error || result["Error Message"]) {
+          console.warn(`API Error: ${result.error || result["Error Message"]}`);
+          return [];
+        }
+
+        // Transform the API response format [quarter, year, date] to our interface
+        const transformed = Array.isArray(result) ? result.map((item: any) => {
+          if (Array.isArray(item) && item.length >= 3) {
+            return {
+              quarter: item[0],
+              year: item[1], 
+              date: item[2],
+              symbol
+            };
+          }
+          return null;
+        }).filter(Boolean) : [];
+
+        return transformed;
+      } catch (err) {
+        console.error(`Error fetching earnings transcript dates for ${symbol}:`, err);
+        return [];
+      }
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.SEGMENTS,
+      shouldRetryOnError: false
+    }
+  );
+
+  return {
+    data: Array.isArray(data) ? data : [],
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for analyzed transcript content with key insights
+export function useTranscriptAnalysis(symbol: string, quarter: number, year: number) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol && quarter && year ? `transcript-analysis/${symbol}/${quarter}/${year}` : null,
+    async (): Promise<TranscriptAnalysis | null> => {
+      try {
+        const response = await fetch('/api/analyze-transcript', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol, quarter, year })
+        });
+        
+        if (!response.ok) return null;
+        const result = await response.json();
+        return result.success ? result : null;
+      } catch (error) {
+        console.error(`Error analyzing transcript for ${symbol} Q${quarter} ${year}:`, error);
+        return null;
+      }
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.SEGMENTS,
+      shouldRetryOnError: false
+    }
+  );
+
+  return {
+    analysis: data,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for SEC filing content extraction
+export function useFilingContent(symbol: string, filingUrl: string, filingType: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol && filingUrl && filingType ? `filing-content/${symbol}/${encodeURIComponent(filingUrl)}` : null,
+    async (): Promise<FilingContent | null> => {
+      try {
+        const response = await fetch('/api/extract-filing-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol, filingUrl, filingType })
+        });
+        
+        if (!response.ok) return null;
+        const result = await response.json();
+        return result.success ? result : null;
+      } catch (error) {
+        console.error(`Error extracting filing content for ${symbol}:`, error);
+        return null;
+      }
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.SEGMENTS,
+      shouldRetryOnError: false
+    }
+  );
+
+  return {
+    content: data,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for specific earnings transcript content (original)
+export function useEarningsTranscript(symbol: string, quarter: number, year: number) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol && quarter && year ? `earnings-transcript/${symbol}/${quarter}/${year}` : null,
+    async () => {
+      if (!API_KEY) {
+        console.log(`[useEarningsTranscript] No API key available for ${symbol}`);
+        throw new Error('API key not configured');
+      }
+      
+      try {
+        const baseUrl = `https://financialmodelingprep.com/api/v3`;
+        const url = `${baseUrl}/earning_call_transcript/${symbol}?quarter=${quarter}&year=${year}&apikey=${API_KEY}`;
+        
+        console.log(`[API Request] earnings-transcript/${symbol}/${quarter}/${year}`);
+        console.log(`[API URL] ${url}`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout for transcripts
+        
+        const response = await fetch(url, {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          console.error(`[API Error] earnings-transcript/${symbol}/${quarter}/${year} - Status: ${response.status}`);
+          return null;
+        }
+
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error(`[Error] earnings-transcript/${symbol}/${quarter}/${year}:`, error);
+        return null;
+      }
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.SEGMENTS,
+      shouldRetryOnError: false
+    }
+  );
+
+  return {
+    transcript: data,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// DCF Analysis interfaces
+export interface DCFData {
+  symbol: string;
+  date: string;
+  dcf: number;
+  Stock_Price: number;
+  revenue: number;
+  revenueGrowth: number;
+  operatingCashFlow: number;
+  operatingCashFlowGrowth: number;
+  freeCashFlow: number;
+  freeCashFlowGrowth: number;
+  terminalValue: number;
+  presentValueOfTerminalValue: number;
+  sumOfPresentValueOfFreeCashFlow: number;
+  enterpriseValue: number;
+  netDebt: number;
+  equityValue: number;
+  equityValuePerShare: number;
+  freeCashFlowT1: number;
+  freeCashFlowT2: number;
+  freeCashFlowT3: number;
+  freeCashFlowT4: number;
+  freeCashFlowT5: number;
+  discountRate: number;
+  longTermGrowthRate: number;
+}
+
+export interface CustomDCFAssumptions {
+  discountRate: number; // WACC
+  longTermGrowthRate: number; // Terminal growth rate
+  projectionYears: number; // Usually 5 years
+  revenueGrowthRates: number[]; // Array of 5 year growth rates
+  operatingMarginTarget: number; // Target operating margin
+  taxRate: number; // Corporate tax rate
+  capexAsPercentOfRevenue: number; // Capex as % of revenue
+  workingCapitalChangeAsPercentOfRevenue: number; // Working capital change as % of revenue
+}
+
+// Hook for DCF analysis
+export function useDCFAnalysis(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `dcf/${symbol}` : null,
+    () => fetchWithCache<DCFData[]>('dcf', symbol, 'v3', 'annual', CACHE_DURATIONS.FINANCIAL_STATEMENTS),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.FINANCIAL_STATEMENTS,
+      shouldRetryOnError: false
+    }
+  );
+
+  const dcfData = React.useMemo(() => {
+    if (!Array.isArray(data) || data.length === 0) return null;
+    return data[0]; // Return most recent DCF data
+  }, [data]);
+
+  return {
+    dcfData,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for advanced DCF analysis (custom endpoint that might provide more detailed projections)
+export function useAdvancedDCF(symbol: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `advanced-dcf/${symbol}` : null,
+    () => fetchWithCache<any>('advanced-dcf', symbol, 'v4', 'annual', CACHE_DURATIONS.FINANCIAL_STATEMENTS),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.FINANCIAL_STATEMENTS,
+      shouldRetryOnError: false
+    }
+  );
+
+  return {
+    advancedDcfData: data,
     isLoading,
     error,
     mutate

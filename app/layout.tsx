@@ -1,4 +1,6 @@
 import './globals.css';
+import '../styles/highlight-to-chat.css';
+import '../styles/analysis-popup.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -15,6 +17,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'FinHubIQ | Financial Dashboard',
   description: 'Modern SAAS financial dashboard for comprehensive financial analysis',
+  viewport: 'width=device-width, initial-scale=1',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: 'white' },
+    { media: '(prefers-color-scheme: dark)', color: 'black' },
+  ],
 };
 
 export default function RootLayout({

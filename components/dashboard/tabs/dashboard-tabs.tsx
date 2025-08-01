@@ -13,9 +13,10 @@ import { useIncomeStatements, useCashFlows, useBalanceSheets } from "@/lib/api/f
 // Lazy load tab components to improve initial load time
 const Overview = lazy(() => import("./overview").then(m => ({ default: m.Overview })));
 const Financials = lazy(() => import("./financials").then(m => ({ default: m.Financials })));
+const CreditAnalysis = lazy(() => import("./credit-analysis"));
 const ValuationConsiderations = lazy(() => import("./valuation-considerations").then(m => ({ default: m.ValuationConsiderations })));
 const RecentNews = lazy(() => import("./recent-news").then(m => ({ default: m.RecentNews })));
-const ScreeningTool = lazy(() => import("./screening-tool").then(m => ({ default: m.ScreeningTool })));
+const IdeaGeneration = lazy(() => import("./idea-generation"));
 const CompetitorAnalysis = lazy(() => import("./competitor-analysis").then(m => ({ default: m.CompetitorAnalysis })));
 
 // Tab-specific loading skeletons
@@ -97,13 +98,14 @@ export function DashboardTabs() {
     <>
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <div className="flex items-center justify-between gap-4 mb-4">
-        <TabsList className="grid grid-cols-6 flex-1">
+        <TabsList className="grid grid-cols-7 flex-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="financials">Financials</TabsTrigger>
+          <TabsTrigger value="credit-analysis">Credit</TabsTrigger>
           <TabsTrigger value="valuation">Valuation</TabsTrigger>
           <TabsTrigger value="competitors">Competitors</TabsTrigger>
+          <TabsTrigger value="idea-generation">Idea Generation</TabsTrigger>
           <TabsTrigger value="recent-news">Recent News</TabsTrigger>
-          <TabsTrigger value="screening">Screening Tool</TabsTrigger>
         </TabsList>
         <PDFExportButton 
           targetId={`tab-content-${activeTab}`}
@@ -129,6 +131,14 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
+      <TabsContent value="credit-analysis">
+        <div id="tab-content-credit-analysis">
+          <Suspense fallback={<FinancialsLoadingSkeleton />}>
+            <CreditAnalysis />
+          </Suspense>
+        </div>
+      </TabsContent>
+      
       <TabsContent value="valuation">
         <div id="tab-content-valuation">
           <Suspense fallback={<ValuationLoadingSkeleton />}>
@@ -145,10 +155,10 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
-      <TabsContent value="screening">
-        <div id="tab-content-screening">
+      <TabsContent value="idea-generation">
+        <div id="tab-content-idea-generation">
           <Suspense fallback={<CardLoadingSkeleton />}>
-            <ScreeningTool />
+            <IdeaGeneration />
           </Suspense>
         </div>
       </TabsContent>

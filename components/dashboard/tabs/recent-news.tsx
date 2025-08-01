@@ -102,7 +102,7 @@ export function RecentNews() {
         <CardContent>
           <div className="space-y-6">
             {news.map((article, index) => (
-              <div key={index} className="border-b pb-4 last:border-b-0">
+              <div key={index} className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold">{article.title}</h3>

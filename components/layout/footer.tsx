@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BarChartBig } from "lucide-react";
+import { FinHubLogo } from "@/components/ui/finhub-logo";
 
 export default function Footer() {
   return (
@@ -8,8 +9,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <BarChartBig className="h-5 w-5 text-primary" />
-              <span className="font-bold text-lg">FinHubIQ</span>
+              <FinHubLogo size="sm" />
+              <span className="font-bold text-lg">FinHub<span className="text-finhub-orange">IQ</span></span>
             </div>
             <p className="text-sm text-muted-foreground">
               Comprehensive financial analysis and visualization platform for
@@ -18,12 +19,7 @@ export default function Footer() {
           </div>
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Resources</h3>
-            <ul className="space-y-3 text-sm">
-              <li>
-                <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Documentation
-                </Link>
-              </li>
+                        <ul className="space-y-3 text-sm">
               <li>
                 <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                   API Reference

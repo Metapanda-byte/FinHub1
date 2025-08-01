@@ -67,6 +67,10 @@ const config: Config = {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
+        'finhub-orange': {
+          DEFAULT: 'hsl(var(--finhub-orange))',
+          foreground: 'hsl(var(--finhub-orange-foreground))',
+        },
       },
       keyframes: {
         'accordion-down': {
