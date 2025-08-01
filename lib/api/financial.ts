@@ -215,6 +215,32 @@ function isValidCompanyProfile(data: any): data is CompanyProfile {
     }
   }
 
+  // Range validation for logical consistency
+  if (data.price && (data.price < 0 || data.price > 100000)) {
+    console.warn(`[Validation] Price out of reasonable range: ${data.price}`);
+  }
+  
+  if (data.beta && (data.beta < -5 || data.beta > 5)) {
+    console.warn(`[Validation] Beta out of reasonable range: ${data.beta}`);
+  }
+  
+  if (data.mktCap && data.mktCap < 0) {
+    console.warn(`[Validation] Market cap cannot be negative: ${data.mktCap}`);
+    data.mktCap = null;
+  }
+  
+  if (data.fullTimeEmployees && (data.fullTimeEmployees < 0 || data.fullTimeEmployees > 10000000)) {
+    console.warn(`[Validation] Employee count out of reasonable range: ${data.fullTimeEmployees}`);
+  }
+
+  // Cross-field validation for consistency
+  if (data.mktCap && data.price && data.mktCap > 0 && data.price > 0) {
+    const impliedShares = data.mktCap / data.price;
+    if (impliedShares < 1000 || impliedShares > 50000000000) {
+      console.warn(`[Validation] Implied shares outstanding seems unreasonable: ${impliedShares.toLocaleString()}`);
+    }
+  }
+
   // Boolean fields that should be booleans if present
   const booleanFields = ['defaultImage', 'isEtf', 'isActivelyTrading', 'isAdr', 'isFund'];
   
