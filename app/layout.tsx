@@ -54,7 +54,7 @@ export default function RootLayout({
                 <main className="flex-1 overflow-hidden animate-fade-in w-full">
                   {children}
                 </main>
-                <div className="hidden sm:block shrink-0">
+                <div className="hidden sm:block shrink-0 sticky bottom-0 z-40">
                   <Footer />
                 </div>
                 <MobileNav />

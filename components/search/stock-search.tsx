@@ -18,7 +18,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useSearchStore } from "@/lib/store/search-store";
-import useSWR from 'swr';
+import { useWatchlistStore } from "@/lib/store/watchlist-store";
+import useSWR from "swr";
+
+interface StockSearchProps {
+  className?: string;
+  placeholder?: string;
+  showSelectedTicker?: boolean;
+}
 
 interface SearchResult {
   symbol: string;
@@ -28,218 +35,309 @@ interface SearchResult {
   exchangeShortName: string;
 }
 
-type Exchange = 'NASDAQ' | 'NYSE' | 'AMEX' | 'TSX' | 'LSE' | 'FRA' | 'XETRA' | 'ASX' | 'NSE' | 'BSE' | 'SSE' | 'SZSE' | 'HKEX' | 'TSE';
-
-const API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
-const BASE_URL = 'https://financialmodelingprep.com/api/v3';
-
-interface StockSearchProps {
-  className?: string;
+interface SearchHistory {
+  symbol: string;
+  name: string;
+  timestamp: number;
 }
 
-export function StockSearch({ className }: StockSearchProps) {
-  const [open, setOpen] = React.useState(false);
+interface FavoriteStock {
+  symbol: string;
+  name: string;
+  addedAt: number;
+}
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+export function StockSearch({ className, placeholder = "Search companies...", showSelectedTicker = true }: StockSearchProps) {
   const [search, setSearch] = React.useState("");
-
-  const {
-    recentSearches,
-    favorites,
-    addToRecent,
-    toggleFavorite,
-    isFavorite,
+  const [open, setOpen] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState("");
+  
+  const { 
+    currentSymbol, 
+    setCurrentSymbol, 
     setCurrentCompany,
-    currentSymbol
+    recentSearches, 
+    addToRecent,
+    favorites,
+    toggleFavorite,
+    isFavorite
   } = useSearchStore();
+  
+  const { 
+    stocks: watchlistStocks, 
+    addStock, 
+    removeStock, 
+    hasStock 
+  } = useWatchlistStore();
 
-  const exchanges: Exchange[] = [
-    'NASDAQ', 'NYSE', 'AMEX',  // US exchanges
-    'TSX', 'LSE', 'FRA', 'XETRA',  // European exchanges
-    'ASX',  // Australian exchange
-    'NSE', 'BSE',  // Indian exchanges
-    'SSE', 'SZSE',  // Chinese exchanges
-    'HKEX',  // Hong Kong exchange
-    'TSE'  // Tokyo exchange
-  ];
+  const toggleWatchlist = React.useCallback(
+    (symbol: string, name: string) => {
+      if (hasStock(symbol)) {
+        removeStock(symbol);
+      } else {
+        // Add minimal stock data - will be updated with real data later
+        addStock({ 
+          symbol, 
+          name, 
+          lastPrice: 0, 
+          change: 0, 
+          changePercent: 0, 
+          marketCap: 0, 
+          peRatio: 0 
+        });
+      }
+    },
+    [hasStock, addStock, removeStock]
+  );
 
-  const { data: searchResults, error } = useSWR<SearchResult[]>(
-    search.length >= 2 
-      ? `${BASE_URL}/search?query=${encodeURIComponent(search)}&limit=10&exchange=${exchanges.join(',')}&apikey=${API_KEY}`
-      : null,
-    async (url: string) => {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch');
-      return response.json();
+  const isInWatchlist = React.useCallback(
+    (symbol: string) => hasStock(symbol),
+    [hasStock]
+  );
+
+  // Only fetch when user is actively searching
+  const shouldFetch = search.length >= 2;
+  const { data: searchResults, error } = useSWR(
+    shouldFetch ? `/api/stock/search?query=${encodeURIComponent(search)}` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 1000,
     }
   );
 
+  // Update input value when current symbol changes (if showing selected ticker)
+  React.useEffect(() => {
+    if (showSelectedTicker && currentSymbol) {
+      setInputValue(currentSymbol);
+    } else if (!showSelectedTicker) {
+      setInputValue("");
+    }
+  }, [currentSymbol, showSelectedTicker]);
+
   const onSelect = React.useCallback(
     (symbol: string) => {
-      console.log('onSelect triggered with symbol:', symbol);
-      
-      // Convert the input symbol to uppercase for comparison
-      const upperSymbol = symbol.toUpperCase();
-
-      // Find company details from all possible sources using case-insensitive comparison
-      const companyFromSearch = searchResults?.find(
-        (c) => c.symbol.toUpperCase() === upperSymbol
-      );
-      const companyFromRecent = recentSearches.find(
-        (c) => c.symbol.toUpperCase() === upperSymbol
-      );
-      const companyFromFavorites = favorites.find(
-        (c) => c.symbol.toUpperCase() === upperSymbol
-      );
-      
-      console.log('Search results:', searchResults);
-      console.log('Company from search:', companyFromSearch);
-      console.log('Company from recent:', companyFromRecent);
-      console.log('Company from favorites:', companyFromFavorites);
-
-      const company = companyFromSearch || companyFromRecent || companyFromFavorites;
-      
-      if (company) {
-        console.log('Company found:', company);
-        console.log('Updating state with symbol:', company.symbol);
-        
-        setOpen(false);
+      // First try to find from search results
+      const selectedResult = searchResults?.find((r: SearchResult) => r.symbol === symbol);
+      if (selectedResult) {
+        setCurrentSymbol(symbol);
+        setCurrentCompany(symbol, selectedResult.name);
+        addToRecent(symbol, selectedResult.name);
+        setInputValue(showSelectedTicker ? symbol : "");
         setSearch("");
-        addToRecent(company.symbol, company.name);
-        setCurrentCompany(company.symbol, company.name);
+        setOpen(false);
         
-        console.log('StockSearch - Setting company:', company.symbol, company.name);
-        console.log('State updates completed');
-      } else {
-        console.warn('No company found for symbol:', symbol);
+        // Dispatch custom event for navigation
+        window.dispatchEvent(new CustomEvent('stockSelected', { 
+          detail: { symbol } 
+        }));
+        return;
+      }
+
+      // If not found in search results, try recent searches or favorites
+      const recentItem = recentSearches.find((r: SearchHistory) => r.symbol === symbol);
+      const favoriteItem = favorites.find((f: FavoriteStock) => f.symbol === symbol);
+      const item = recentItem || favoriteItem;
+
+      if (item) {
+        setCurrentSymbol(symbol);
+        setCurrentCompany(symbol, item.name);
+        addToRecent(symbol, item.name);
+        setInputValue(showSelectedTicker ? symbol : "");
+        setSearch("");
+        setOpen(false);
+        
+        // Dispatch custom event for navigation
+        window.dispatchEvent(new CustomEvent('stockSelected', { 
+          detail: { symbol } 
+        }));
       }
     },
-    [searchResults, recentSearches, favorites, addToRecent, setCurrentCompany]
+    [searchResults, recentSearches, favorites, setCurrentSymbol, setCurrentCompany, addToRecent, showSelectedTicker]
   );
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn(
-            "w-[200px] justify-between bg-muted/30 hover:bg-muted transition-all duration-200",
-            !currentSymbol && "ring-1 ring-muted-foreground/20 hover:ring-muted-foreground/40",
-            className
-          )}
-        >
-          <Search className="mr-2 h-4 w-4" />
-          {currentSymbol ? (
-            <span className="font-semibold">{currentSymbol}</span>
-          ) : (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Select Company</span>
-              </div>
-              <span className="text-xs text-muted-foreground/60">or ticker symbol</span>
-            </div>
-          )}
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
-        <div className="border-b px-3 py-2">
-          <div className="text-sm font-medium text-foreground">Select Company</div>
-          <div className="text-xs text-muted-foreground">Search by company name or ticker symbol</div>
-        </div>
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder="Type company name or ticker symbol..."
-            value={search}
-            onValueChange={setSearch}
-            className="h-9"
-          />
-          <CommandList>
-            <CommandEmpty>
-              {error ? "Error fetching results." : "No results found."}
-            </CommandEmpty>
-            {searchResults && searchResults.length > 0 && (
-              <CommandGroup heading="Search Results">
-                {searchResults.map((company) => (
-                  <CommandItem
-                    key={company.symbol}
-                    value={company.symbol}
-                    onSelect={onSelect}
-                    className="flex items-center justify-between"
-                  >
-                    <div>
-                      <span className="font-medium">{company.symbol}</span>
-                      <span className="ml-2 text-muted-foreground">
-                        {company.name}
-                      </span>
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {company.exchangeShortName}
-                      </span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-4 w-4"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(company.symbol, company.name);
-                      }}
-                    >
-                      <Star
-                        className={cn(
-                          "h-3 w-3",
-                          isFavorite(company.symbol)
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "text-muted-foreground"
-                        )}
-                      />
-                    </Button>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-            {search.length === 0 && (
-              <>
-                {favorites.length > 0 && (
-                  <CommandGroup heading="Favorites">
-                    {favorites.map((item) => (
-                      <CommandItem
-                        key={item.symbol}
-                        value={item.symbol}
-                        onSelect={onSelect}
-                      >
-                        <Star className="mr-2 h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="font-medium">{item.symbol}</span>
-                        <span className="ml-2 text-muted-foreground">
-                          {item.name}
-                        </span>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                )}
-                {recentSearches.length > 0 && (
-                  <CommandGroup heading="Recent Searches">
-                    {recentSearches.map((item) => (
-                      <CommandItem
-                        key={item.symbol}
-                        value={item.symbol}
-                        onSelect={onSelect}
-                      >
-                        <span className="font-medium">{item.symbol}</span>
-                        <span className="ml-2 text-muted-foreground">
-                          {item.name}
-                        </span>
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    setSearch(value);
+    
+    // Open dropdown when user starts typing
+    if (value.length >= 1) {
+      setOpen(true);
+    } else {
+      setOpen(false);
+    }
+  };
 
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                )}
-              </>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+  const handleInputFocus = () => {
+    // Only show dropdown if there's content to show
+    if (inputValue.length >= 1 || recentSearches.length > 0 || favorites.length > 0) {
+      setOpen(true);
+    }
+  };
+
+  const handleClearInput = () => {
+    setInputValue("");
+    setSearch("");
+    setOpen(false);
+    if (!showSelectedTicker) {
+      setCurrentSymbol(null);
+    }
+  };
+
+  const showClearButton = inputValue.length > 0;
+  const showSuggestions = search.length >= 2 && searchResults && searchResults.length > 0;
+  const showRecentsAndFavorites = search.length === 0 && (recentSearches.length > 0 || favorites.length > 0);
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        placeholder={`${placeholder}...`}
+        value={inputValue}
+        onChange={(e) => handleInputChange(e.target.value)}
+        onFocus={handleInputFocus}
+        onBlur={() => setTimeout(() => setOpen(false), 200)} // Delay to allow clicking on dropdown items
+        className={cn(
+          "w-full h-10 px-3 py-2 pr-20 text-sm bg-transparent rounded-md",
+          "placeholder:text-muted-foreground placeholder:italic",
+          "focus:outline-none",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+      />
+      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+        {showClearButton && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearInput}
+            className="h-6 w-6 p-0 hover:bg-muted/50"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        )}
+        <Search className="h-4 w-4 text-muted-foreground" />
+      </div>
+      
+      {/* Dropdown Results */}
+      {open && (showSuggestions || showRecentsAndFavorites) && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-md shadow-lg z-50 max-h-96 overflow-y-auto">
+          <Command shouldFilter={false}>
+            <CommandList>
+              {search.length >= 2 && !searchResults && !error && (
+                <CommandEmpty>Searching...</CommandEmpty>
+              )}
+              
+              {search.length >= 2 && error && (
+                <CommandEmpty>Error searching. Please try again.</CommandEmpty>
+              )}
+              
+              {search.length >= 2 && searchResults && searchResults.length === 0 && (
+                <CommandEmpty>No companies found for "{search}"</CommandEmpty>
+              )}
+
+              {/* Search Results - Only show when actively searching */}
+              {showSuggestions && (
+                <CommandGroup heading={`Results for "${search}"`}>
+                  {searchResults.slice(0, 8).map((result: SearchResult) => (
+                    <CommandItem
+                      key={result.symbol}
+                      value={result.symbol}
+                      onSelect={() => onSelect(result.symbol)}
+                      className="flex items-center justify-between cursor-pointer"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">{result.symbol}</span>
+                        <span className="text-xs text-muted-foreground truncate">
+                          {result.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">
+                          {result.exchangeShortName}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleWatchlist(result.symbol, result.name);
+                          }}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Star
+                            className={cn(
+                              "h-3 w-3",
+                              isInWatchlist(result.symbol) 
+                                ? "fill-yellow-400 text-yellow-400" 
+                                : "text-muted-foreground"
+                            )}
+                          />
+                        </Button>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {/* Recent Searches - Only show when not actively searching */}
+              {showRecentsAndFavorites && recentSearches.length > 0 && (
+                <CommandGroup heading="Recent">
+                  {recentSearches.slice(0, 5).map((item: SearchHistory) => (
+                    <CommandItem
+                      key={item.symbol}
+                      value={item.symbol}
+                      onSelect={() => onSelect(item.symbol)}
+                      className="flex items-center justify-between cursor-pointer"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">{item.symbol}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {item.name}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {/* Favorites - Only show when not actively searching */}
+              {showRecentsAndFavorites && favorites.length > 0 && (
+                <CommandGroup heading="Favorites">
+                  {favorites.slice(0, 5).map((item: FavoriteStock) => (
+                    <CommandItem
+                      key={item.symbol}
+                      value={item.symbol}
+                      onSelect={() => onSelect(item.symbol)}
+                      className="flex items-center justify-between cursor-pointer"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">{item.symbol}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {item.name}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(item.symbol, item.name);
+                        }}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      </Button>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+            </CommandList>
+          </Command>
+        </div>
+      )}
+    </div>
   );
 }

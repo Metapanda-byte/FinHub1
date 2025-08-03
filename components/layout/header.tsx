@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChartBig, Menu, X, BarChart3 } from "lucide-react";
+import { BarChartBig, Menu, X } from "lucide-react";
 import { FinHubIQLogo } from "@/components/ui/finhubiq-logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { StockSearch } from "@/components/search/stock-search";
 import { usePathname } from "next/navigation";
-import { AuthButton } from "@/components/auth/auth-button";
+
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -36,71 +36,79 @@ export default function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-200 safe-top",
+        "w-full transition-all duration-200 safe-top border-b border-border/30",
         isScrolled
-          ? "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm border-b border-border/40"
+          ? "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm"
           : "bg-transparent"
       )}
     >
-      <div className="container-wide h-14 sm:h-16 flex items-center justify-between px-mobile">
-        {/* Logo */}
-        <div className="flex items-center gap-2 sm:gap-4 flex-1">
-          <Link href="/" className="flex items-center flex-shrink-0 group">
-            <FinHubIQLogo variant={theme === 'light' ? 'black' : 'primary'} size="small" />
-          </Link>
-        </div>
-
-        {/* Right Actions */}
-        <div className="flex items-center gap-1 sm:gap-2">
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-2">
-            <Button 
-              variant="ghost" 
-              asChild 
-              className={cn(
-                "touch-target relative",
-                pathname === '/dashboard' && "bg-accent"
-              )}
-            >
-              <Link href="/dashboard">
-                Dashboard
-              </Link>
-            </Button>
-            <Button 
-              variant="ghost" 
-              asChild 
-              className={cn(
-                "touch-target relative",
-                pathname === '/plans' && "bg-accent"
-              )}
-            >
-              <Link href="/plans">
-                Plans
-              </Link>
-            </Button>
-          </nav>
-
-          <ThemeToggle />
-          
-          <div className="hidden sm:block">
-            <AuthButton />
+      <div className="container-wide px-mobile">
+        {/* Main Header Row */}
+        <div className="h-12 flex items-center justify-between">
+          {/* Left: Logo */}
+          <div className="flex items-center gap-4 flex-1">
+            <Link href="/" className="flex items-center flex-shrink-0 group">
+              <FinHubIQLogo variant={theme === 'light' ? 'black' : 'primary'} size="small" />
+            </Link>
           </div>
 
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden touch-target"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </Button>
+          {/* Center: Ticker Search */}
+          <div className="flex-1 flex justify-center max-w-lg mx-8">
+            <div className="w-full max-w-md">
+              <StockSearch 
+                className="border-0 bg-muted/30 hover:bg-muted/40 focus-within:bg-muted/50 transition-colors duration-200 shadow-sm" 
+                placeholder="Search Company or Ticker"
+                showSelectedTicker={false}
+              />
+            </div>
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
+            <ThemeToggle />
+            
+            {/* Log In Button - No outline */}
+            <Button 
+              variant="ghost" 
+              className="hidden sm:flex items-center justify-center h-8 px-3 text-xs m-0 p-0 px-3 hover:bg-muted/50"
+            >
+              Log In
+            </Button>
+
+            {/* Upgrade Button - McLaren Orange */}
+            <Button 
+              className="hidden sm:flex items-center justify-center h-8 px-3 text-xs m-0 p-0 px-3 bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white"
+            >
+              Upgrade
+            </Button>
+
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden touch-target"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle mobile menu"
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
         </div>
+
+        {/* Mobile Ticker Search Row - Below main header */}
+        {isDashboard && (
+          <div className="sm:hidden">
+            <StockSearch 
+              className="w-full border-0 bg-muted/30 hover:bg-muted/40 focus-within:bg-muted/50 transition-colors duration-200 shadow-sm" 
+              placeholder="Search Company or Ticker"
+              showSelectedTicker={false}
+            />
+          </div>
+        )}
       </div>
 
       {/* Mobile Slide-out Menu */}
@@ -127,33 +135,17 @@ export default function Header() {
             
             <div className="p-4 space-y-2">
               <Button 
-                variant={pathname === '/dashboard' ? 'secondary' : 'ghost'} 
-                asChild 
-                className="w-full justify-start touch-target"
+                variant="outline" 
+                className="w-full touch-target"
               >
-                <Link href="/dashboard">
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Dashboard
-                </Link>
+                Log In
               </Button>
               
               <Button 
-                variant={pathname === '/plans' ? 'secondary' : 'ghost'} 
-                asChild 
-                className="w-full justify-start touch-target"
+                className="w-full touch-target bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white"
               >
-                <Link href="/plans">
-                  Plans
-                </Link>
+                Upgrade
               </Button>
-              
-              <div className="pt-4 border-t">
-                <div className="space-y-2">
-                  <div className="pt-2">
-                    <AuthButton />
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
