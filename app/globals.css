@@ -422,6 +422,28 @@
     scroll-snap-align: start;
   }
   
+  /* Enhanced tab styling for better aesthetics */
+  .tabs-scroll-container .tabs-trigger {
+    flex-shrink: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .tabs-scroll-container .tabs-trigger:hover {
+    transform: translateY(-1px);
+  }
+  
+  .tabs-scroll-container .tabs-trigger[data-state="active"] {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Ensure single row layout for tabs */
+  .tabs-scroll-container {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+  }
+  
   /* Financial Table Specific Optimizations */
   .financial-table-wrapper {
     @apply relative;
@@ -442,11 +464,39 @@
   .financial-table-wrapper thead th {
     white-space: nowrap;
     min-width: 80px;
+    max-width: none;
+    width: auto;
   }
   
   .financial-table-wrapper tbody td {
     white-space: nowrap;
     min-width: 80px;
+    max-width: none;
+    width: auto;
+  }
+  
+  /* Ensure consistent column widths across all financial tables */
+  .financial-table-wrapper th,
+  .financial-table-wrapper td {
+    box-sizing: border-box;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Optimize for different screen sizes */
+  @media (min-width: 768px) {
+    .financial-table-wrapper th,
+    .financial-table-wrapper td {
+      min-width: 100px;
+      padding: 0.75rem 1rem;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .financial-table-wrapper th,
+    .financial-table-wrapper td {
+      min-width: 120px;
+      padding: 0.75rem 1.25rem;
+    }
   }
   
   /* Ensure the sticky column doesn't interfere with scrolling */

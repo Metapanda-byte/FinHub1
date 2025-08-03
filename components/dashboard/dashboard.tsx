@@ -93,7 +93,7 @@ const tabConfig = [
   },
   { 
     id: "watchlist", 
-    label: "Watchlist", 
+    label: "Watch", 
     icon: Eye,
     description: "Your saved stocks"
   },
@@ -259,19 +259,19 @@ export function Dashboard() {
         <div className="w-full">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               {/* Tab Navigation - Full Width Toolbar */}
-              <div className="tabs-scroll-container rounded-xl bg-muted/30 backdrop-blur p-1">
-                <TabsList className="flex h-auto gap-1 w-max min-w-full md:grid md:grid-cols-8">
-                {tabConfig.map((tab) => (
-                  <TabsTrigger
-                    key={tab.id}
-                    value={tab.id}
-                    className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-border/50 transition-all duration-200"
-                  >
-                    <div className="flex flex-col items-center gap-1 py-2">
-                      <tab.icon className="h-4 w-4" />
-                      <span className="text-xs font-medium">{tab.label}</span>
-                    </div>
-                                      </TabsTrigger>
+              <div className="tabs-scroll-container rounded-xl bg-gradient-to-r from-muted/40 via-muted/30 to-muted/40 backdrop-blur-sm p-1 border border-border/30 shadow-sm">
+                <TabsList className="flex h-auto gap-1 w-max min-w-full bg-transparent">
+                  {tabConfig.map((tab) => (
+                    <TabsTrigger
+                      key={tab.id}
+                      value={tab.id}
+                      className="flex-shrink-0 px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md border border-transparent data-[state=active]:border-border/50 transition-all duration-300 hover:bg-muted/60 rounded-lg"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <tab.icon className="h-4 w-4 flex-shrink-0" />
+                        <span className="text-xs font-semibold whitespace-nowrap tracking-wide">{tab.label}</span>
+                      </div>
+                    </TabsTrigger>
                   ))}
                 </TabsList>
               </div>
