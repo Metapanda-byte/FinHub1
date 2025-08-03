@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChartBig, Menu, X, Bell, Grid3X3, BarChart3 } from "lucide-react";
+import { BarChartBig, Menu, X, BarChart3 } from "lucide-react";
 import { FinHubIQLogo } from "@/components/ui/finhubiq-logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -90,14 +90,6 @@ export default function Header() {
         {/* Right Actions */}
         <div className="flex items-center gap-1 sm:gap-2">
 
-          {/* Action Buttons */}
-          <Button variant="ghost" size="icon" className="hidden sm:flex touch-target">
-            <Bell className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="hidden sm:flex touch-target">
-            <Grid3X3 className="h-4 w-4" />
-          </Button>
-          
           <ThemeToggle />
           
           <div className="hidden sm:block">
@@ -160,18 +152,12 @@ export default function Header() {
                 className="w-full justify-start touch-target"
               >
                 <Link href="/plans">
-                  <Grid3X3 className="h-4 w-4 mr-2" />
                   Plans
                 </Link>
               </Button>
               
               <div className="pt-4 border-t">
                 <div className="space-y-2">
-                  <Button variant="ghost" className="w-full justify-start touch-target">
-                    <Bell className="h-4 w-4 mr-2" />
-                    Notifications
-                  </Button>
-                  
                   <div className="pt-2">
                     <AuthButton />
                   </div>
