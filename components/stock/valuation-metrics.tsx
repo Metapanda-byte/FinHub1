@@ -4,6 +4,8 @@ import { useBalanceSheets } from "@/lib/api/financial"
 import { useIncomeStatements } from "@/lib/api/financial"
 import { useStockQuote } from "@/lib/api/stock"
 import { formatCurrency, formatNumber } from "@/lib/utils"
+import { financialMonitor } from "@/lib/utils/financial-calculation-validator"
+import { useEffect } from "react"
 
 interface ValuationMetricsProps {
   symbol: string
@@ -69,6 +71,52 @@ export function ValuationMetrics({ symbol }: ValuationMetricsProps) {
   // P/S ratio should use revenue per share
   const revenuePerShare = sharesOutstanding > 0 ? (latestIncomeStatement?.revenue || 0) / sharesOutstanding : 0
   const psRatio = revenuePerShare > 0 ? currentPrice / revenuePerShare : null
+
+  // Validate financial calculations
+  useEffect(() => {
+    if (latestBalanceSheet && latestIncomeStatement && quote) {
+      const validationData = {
+        price: currentPrice,
+        earnings: latestIncomeStatement.netIncome || 0,
+        sharesOutstanding,
+        marketCap,
+        totalDebt: latestBalanceSheet.totalDebt || 0,
+        cashAndEquivalents: latestBalanceSheet.cashAndCashEquivalents || 0,
+        ratios: {
+          peRatio,
+          pbRatio,
+          psRatio,
+          currentRatio: latestBalanceSheet.currentAssets && latestBalanceSheet.currentLiabilities 
+            ? latestBalanceSheet.currentAssets / latestBalanceSheet.currentLiabilities 
+            : undefined,
+          debtToEquity: latestBalanceSheet.totalEquity 
+            ? (latestBalanceSheet.totalDebt || 0) / latestBalanceSheet.totalEquity 
+            : undefined,
+          roe: latestIncomeStatement.netIncome && latestBalanceSheet.totalEquity
+            ? (latestIncomeStatement.netIncome / latestBalanceSheet.totalEquity) * 100
+            : undefined,
+          grossMargin: latestIncomeStatement.revenue && latestIncomeStatement.grossProfit
+            ? (latestIncomeStatement.grossProfit / latestIncomeStatement.revenue) * 100
+            : undefined,
+          operatingMargin: latestIncomeStatement.revenue && latestIncomeStatement.operatingIncome
+            ? (latestIncomeStatement.operatingIncome / latestIncomeStatement.revenue) * 100
+            : undefined,
+          netMargin: latestIncomeStatement.revenue && latestIncomeStatement.netIncome
+            ? (latestIncomeStatement.netIncome / latestIncomeStatement.revenue) * 100
+            : undefined
+        },
+        balanceSheet: {
+          totalAssets: latestBalanceSheet.totalAssets || 0,
+          totalLiabilities: latestBalanceSheet.totalLiabilities || 0,
+          totalEquity: latestBalanceSheet.totalEquity || 0,
+          currentAssets: latestBalanceSheet.currentAssets || 0,
+          currentLiabilities: latestBalanceSheet.currentLiabilities || 0
+        }
+      };
+
+      financialMonitor.validateAndLog(validationData, `ValuationMetrics-${symbol}`);
+    }
+  }, [latestBalanceSheet, latestIncomeStatement, quote, symbol, currentPrice, sharesOutstanding, marketCap, peRatio, pbRatio, psRatio]);
 
   const metrics = [
     { label: "Market Cap", value: formatCurrency(marketCap) },

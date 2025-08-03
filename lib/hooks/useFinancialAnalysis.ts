@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { validateFinancialStatement, validateFinancialRatios, logValidationResults } from '@/lib/utils/financial-validators';
+import { financialMonitor } from '@/lib/utils/financial-calculation-validator';
 
 interface FinancialStatement {
   date: string;
@@ -67,6 +68,26 @@ export function useFinancialAnalysis(
         roe: analysis.keyMetrics.roe
       });
       logValidationResults(ratioValidation, 'Financial Ratios');
+    }
+
+    // Validate all financial calculations
+    if (analysis.keyMetrics) {
+      const validationData = {
+        ratios: {
+          currentRatio: analysis.keyMetrics.currentRatio,
+          roe: analysis.keyMetrics.roe,
+          peRatio: analysis.keyMetrics.currentPE
+        },
+        balanceSheet: latestBalance ? {
+          totalAssets: latestBalance.totalAssets || 0,
+          totalLiabilities: (latestBalance.totalAssets || 0) - (latestBalance.totalEquity || 0),
+          totalEquity: latestBalance.totalEquity || 0,
+          currentAssets: 0, // Not available in current interface
+          currentLiabilities: 0 // Not available in current interface
+        } : undefined
+      };
+
+      financialMonitor.validateAndLog(validationData, 'FinancialAnalysis');
     }
 
     return analysis;

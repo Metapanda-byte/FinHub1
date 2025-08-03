@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { formatFinancialNumber } from "@/lib/utils/formatters";
 import { useDCFAnalysis, useCompanyProfile, useIncomeStatements, useCashFlows, useBalanceSheets, CustomDCFAssumptions } from "@/lib/api/financial";
 import { TableLoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { financialMonitor } from "@/lib/utils/financial-calculation-validator";
 
 interface DCFCalculationResult {
   projectedFCF: number[];
@@ -154,7 +155,7 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
     const upside = impliedSharePrice - currentStockPrice;
     const upsidePercentage = currentStockPrice > 0 ? (upside / currentStockPrice) * 100 : 0;
 
-    return {
+    const result = {
       projectedFCF,
       terminalValue,
       presentValueOfProjectedFCF,
@@ -166,7 +167,27 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
       upside,
       upsidePercentage
     };
-  }, [assumptions, incomeStatements, cashFlowStatements, balanceSheets, profile]);
+
+    // Validate DCF calculations
+    if (result) {
+      const validationData = {
+        projectedFCF: result.projectedFCF,
+        discountRate: assumptions.discountRate,
+        terminalValue: result.terminalValue,
+        enterpriseValue: result.enterpriseValue,
+        price: currentStockPrice,
+        earnings: latestIncome?.netIncome || 0,
+        sharesOutstanding,
+        marketCap: profile?.mktCap || 0,
+        totalDebt: latestBalance?.totalDebt || 0,
+        cashAndEquivalents: latestBalance?.cashAndCashEquivalents || 0
+      };
+
+      financialMonitor.validateAndLog(validationData, `DCFAnalysis-${symbol}`);
+    }
+
+    return result;
+  }, [assumptions, incomeStatements, cashFlowStatements, balanceSheets, profile, symbol]);
 
   const isLoading = dcfLoading || profileLoading || incomeLoading || cashFlowLoading || balanceSheetLoading;
 
