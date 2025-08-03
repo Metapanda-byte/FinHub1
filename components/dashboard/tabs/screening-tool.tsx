@@ -731,9 +731,9 @@ export function ScreeningTool() {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse screening-table">
               <thead>
-                <tr className="border-b-2 border-border text-xs">
+                <tr className="border-b-2 border-black text-xs">
                   <th 
-                    className="text-left py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
+                    className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('ticker')}
                   >
                     <div className="flex items-center">
@@ -742,7 +742,7 @@ export function ScreeningTool() {
                     </div>
                   </th>
                   <th 
-                    className="text-left py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
+                    className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('company')}
                   >
                     <div className="flex items-center">
@@ -751,7 +751,7 @@ export function ScreeningTool() {
                     </div>
                   </th>
                   <th 
-                    className="text-left py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
+                    className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('sector')}
                   >
                     <div className="flex items-center">
@@ -760,7 +760,7 @@ export function ScreeningTool() {
                     </div>
                   </th>
                   <th 
-                    className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('marketCap')}
                   >
                     <div className="flex items-center justify-end">
@@ -769,7 +769,7 @@ export function ScreeningTool() {
                     </div>
                   </th>
                   <th 
-                    className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('peRatio')}
                   >
                     <div className="flex items-center justify-end">
@@ -778,7 +778,7 @@ export function ScreeningTool() {
                     </div>
                   </th>
                   <th 
-                    className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('dividendYield')}
                   >
                     <div className="flex items-center justify-end">
@@ -787,7 +787,7 @@ export function ScreeningTool() {
                     </div>
                   </th>
                   <th 
-                    className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('revenueGrowth')}
                   >
                     <div className="flex items-center justify-end">
@@ -796,7 +796,7 @@ export function ScreeningTool() {
                     </div>
                   </th>
                   <th 
-                    className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('priceChange1Y')}
                   >
                     <div className="flex items-center justify-end">
@@ -805,7 +805,7 @@ export function ScreeningTool() {
                     </div>
                   </th>
                   <th 
-                    className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('beta')}
                   >
                     <div className="flex items-center justify-end">
@@ -814,7 +814,7 @@ export function ScreeningTool() {
                     </div>
                   </th>
                   <th 
-                    className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('eps')}
                   >
                     <div className="flex items-center justify-end">
@@ -823,7 +823,7 @@ export function ScreeningTool() {
                     </div>
                   </th>
                   <th 
-                    className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('priceToBook')}
                   >
                     <div className="flex items-center justify-end">

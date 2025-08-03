@@ -262,9 +262,9 @@ export function WatchlistTable() {
                   <div className="overflow-x-auto">
             <table className="w-full border-collapse watchlist-table">
               <thead>
-                <tr className="border-b-2 border-border text-xs">
-                <th 
-                  className="text-left py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
+                                <tr className="border-b-2 border-black text-xs">
+                  <th 
+                    className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSort('symbol')}
                 >
                   <div className="flex items-center">
@@ -272,108 +272,108 @@ export function WatchlistTable() {
                     {renderSortIcon('symbol')}
                   </div>
                 </th>
-                <th 
-                  className="text-left py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('name')}
-                >
-                  <div className="flex items-center">
-                    Company
-                    {renderSortIcon('name')}
-                  </div>
-                </th>
-                <th 
-                  className="text-left py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('sector')}
-                >
-                  <div className="flex items-center">
-                    Sector
-                    {renderSortIcon('sector')}
-                  </div>
-                </th>
-                <th 
-                  className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('lastPrice')}
-                >
-                  <div className="flex items-center justify-end">
-                    Price
-                    {renderSortIcon('lastPrice')}
-                  </div>
-                </th>
-                <th 
-                  className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('changePercent')}
-                >
-                  <div className="flex items-center justify-end">
-                    Change
-                    {renderSortIcon('changePercent')}
-                  </div>
-                </th>
-                <th 
-                  className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('marketCap')}
-                >
-                  <div className="flex items-center justify-end">
-                    Mkt Cap
-                    {renderSortIcon('marketCap')}
-                  </div>
-                </th>
-                <th 
-                  className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('peRatio')}
-                >
-                  <div className="flex items-center justify-end">
-                    P/E
-                    {renderSortIcon('peRatio')}
-                  </div>
-                </th>
-                <th 
-                  className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('dividendYield')}
-                >
-                  <div className="flex items-center justify-end">
-                    Div %
-                    {renderSortIcon('dividendYield')}
-                  </div>
-                </th>
-                <th 
-                  className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('revenueGrowth')}
-                >
-                  <div className="flex items-center justify-end">
-                    Rev Growth
-                    {renderSortIcon('revenueGrowth')}
-                  </div>
-                </th>
-                <th 
-                  className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('priceChange1Y')}
-                >
-                  <div className="flex items-center justify-end">
-                    1Y Return
-                    {renderSortIcon('priceChange1Y')}
-                  </div>
-                </th>
-                <th 
-                  className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('beta')}
-                >
-                  <div className="flex items-center justify-end">
-                    Beta
-                    {renderSortIcon('beta')}
-                  </div>
-                </th>
-                <th 
-                  className="text-right py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('roe')}
-                >
-                  <div className="flex items-center justify-end">
-                    ROE %
-                    {renderSortIcon('roe')}
-                  </div>
-                </th>
-                <th className="text-center py-2 px-2 font-medium">
-                  Actions
-                </th>
+                                  <th 
+                    className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('name')}
+                  >
+                    <div className="flex items-center">
+                      Company
+                      {renderSortIcon('name')}
+                    </div>
+                  </th>
+                  <th 
+                    className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('sector')}
+                  >
+                    <div className="flex items-center">
+                      Sector
+                      {renderSortIcon('sector')}
+                    </div>
+                  </th>
+                  <th 
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('lastPrice')}
+                  >
+                    <div className="flex items-center justify-end">
+                      Price
+                      {renderSortIcon('lastPrice')}
+                    </div>
+                  </th>
+                  <th 
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('changePercent')}
+                  >
+                    <div className="flex items-center justify-end">
+                      Change
+                      {renderSortIcon('changePercent')}
+                    </div>
+                  </th>
+                  <th 
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('marketCap')}
+                  >
+                    <div className="flex items-center justify-end">
+                      Mkt Cap
+                      {renderSortIcon('marketCap')}
+                    </div>
+                  </th>
+                  <th 
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('peRatio')}
+                  >
+                    <div className="flex items-center justify-end">
+                      P/E
+                      {renderSortIcon('peRatio')}
+                    </div>
+                  </th>
+                  <th 
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('dividendYield')}
+                  >
+                    <div className="flex items-center justify-end">
+                      Div %
+                      {renderSortIcon('dividendYield')}
+                    </div>
+                  </th>
+                  <th 
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('revenueGrowth')}
+                  >
+                    <div className="flex items-center justify-end">
+                      Rev Growth
+                      {renderSortIcon('revenueGrowth')}
+                    </div>
+                  </th>
+                  <th 
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('priceChange1Y')}
+                  >
+                    <div className="flex items-center justify-end">
+                      1Y Return
+                      {renderSortIcon('priceChange1Y')}
+                    </div>
+                  </th>
+                  <th 
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('beta')}
+                  >
+                    <div className="flex items-center justify-end">
+                      Beta
+                      {renderSortIcon('beta')}
+                    </div>
+                  </th>
+                  <th 
+                    className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('roe')}
+                  >
+                    <div className="flex items-center justify-end">
+                      ROE %
+                      {renderSortIcon('roe')}
+                    </div>
+                  </th>
+                  <th className="text-center py-2 px-2 font-bold">
+                    Actions
+                  </th>
               </tr>
             </thead>
                           <tbody>
