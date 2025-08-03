@@ -20,9 +20,12 @@ export default function Home() {
              Seamless tools. Informed decisions.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-finhub-orange hover:bg-finhub-orange/90 text-white" asChild>
-                <Link href="/dashboard">Enter App for Free</Link>
-              </Button>
+              <div className="flex flex-col items-center">
+                <Button size="lg" className="bg-finhub-orange hover:bg-finhub-orange/90 text-white" asChild>
+                  <Link href="/dashboard">Launch Workstation</Link>
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">Free Access</p>
+              </div>
               <DemoButton 
                 videoUrl="https://okatwepzvilznkyspxlg.supabase.co/storage/v1/object/public/demo/Screen%20Recording%202025-08-02%20at%202.58.18%20AM.mov" 
                 title="FinHubIQ Platform Demo"
@@ -99,9 +102,12 @@ export default function Home() {
             <p className="text-muted-foreground mb-8">
               Join thousands of investors who trust FinHubIQ for their financial analysis needs
             </p>
-            <Button size="lg" className="bg-finhub-orange hover:bg-finhub-orange/90 text-white" asChild>
-              <Link href="/dashboard">Try Dashboard for Free</Link>
-            </Button>
+            <div className="flex flex-col items-center">
+              <Button size="lg" className="bg-finhub-orange hover:bg-finhub-orange/90 text-white" asChild>
+                <Link href="/dashboard">Launch Workstation</Link>
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2">Free Access</p>
+            </div>
           </div>
         </div>
       </section>
