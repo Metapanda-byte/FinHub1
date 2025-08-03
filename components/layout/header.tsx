@@ -1,15 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { BarChartBig, Menu, X, Sparkles } from "lucide-react";
-import { FinHubIQLogo } from "@/components/ui/finhubiq-logo";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { FinHubIQLogo } from "@/components/ui/finhubiq-logo";
+import { StockSearch } from "@/components/search/stock-search";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import { StockSearch } from "@/components/search/stock-search";
-import { usePathname } from "next/navigation";
 
 
 export default function Header() {
@@ -50,6 +56,110 @@ export default function Header() {
             <Link href="/" className="flex items-center flex-shrink-0 group">
               <FinHubIQLogo variant={theme === 'light' ? 'black' : 'primary'} size="small" />
             </Link>
+
+            {/* Navigation Menu - Desktop Only */}
+            <nav className="hidden lg:flex items-center gap-1">
+              {/* Company Research */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="h-7 px-3 text-xs font-medium hover:bg-muted/50 dark:text-white text-gray-900"
+                  >
+                    Company Research
+                    <ChevronDown className="ml-1 h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=company-snapshot" className="w-full text-xs">
+                      Company Overview
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=historical-financials" className="w-full text-xs">
+                      Financial Statements
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=historical-financials" className="w-full text-xs">
+                      Historical Financials
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=competitor-analysis" className="w-full text-xs">
+                      Competitor Analysis
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=dcf-analysis" className="w-full text-xs">
+                      DCF Analysis
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=lbo-analysis" className="w-full text-xs">
+                      LBO Analysis
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=credit-analysis" className="w-full text-xs">
+                      Credit Analysis
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=valuation-considerations" className="w-full text-xs">
+                      Valuation Considerations
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=sec-filings" className="w-full text-xs">
+                      SEC Filings & Transcripts
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=recent-news" className="w-full text-xs">
+                      Recent News
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Idea Generation */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="h-7 px-3 text-xs font-medium hover:bg-muted/50 dark:text-white text-gray-900"
+                  >
+                    Idea Generation
+                    <ChevronDown className="ml-1 h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=idea-generation" className="w-full text-xs">
+                      Stock Screener
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=idea-generation" className="w-full text-xs">
+                      AI Idea Generation
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Watchlist */}
+              <Button 
+                variant="ghost" 
+                asChild
+                className="h-7 px-3 text-xs font-medium hover:bg-muted/50 dark:text-white text-gray-900"
+              >
+                <Link href="/dashboard?tab=watchlist">
+                  Watchlist
+                </Link>
+              </Button>
+            </nav>
           </div>
 
           {/* Center: Ticker Search - Desktop Only */}
@@ -133,19 +243,107 @@ export default function Header() {
               </Button>
             </div>
             
-            <div className="p-4 space-y-2">
-              <Button 
-                variant="outline" 
-                className="w-full touch-target"
-              >
-                Log In
-              </Button>
-              
-              <Button 
-                className="w-full touch-target bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white"
-              >
-                Upgrade
-              </Button>
+            <div className="p-4 space-y-4">
+              {/* Navigation Section */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Navigation</h3>
+                
+                {/* Company Research Section */}
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground px-2">Company Research</p>
+                  <Link href="/dashboard?tab=company-snapshot" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      Company Overview
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard?tab=historical-financials" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      Financial Statements
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard?tab=historical-financials" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      Historical Financials
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard?tab=competitor-analysis" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      Competitor Analysis
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard?tab=dcf-analysis" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      DCF Analysis
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard?tab=lbo-analysis" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      LBO Analysis
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard?tab=credit-analysis" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      Credit Analysis
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard?tab=valuation-considerations" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      Valuation Considerations
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard?tab=sec-filings" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      SEC Filings & Transcripts
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard?tab=recent-news" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      Recent News
+                    </Button>
+                  </Link>
+                </div>
+
+                {/* Idea Generation Section */}
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground px-2">Idea Generation</p>
+                  <Link href="/dashboard?tab=idea-generation" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      Stock Screener
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard?tab=idea-generation" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      AI Idea Generation
+                    </Button>
+                  </Link>
+                </div>
+
+                {/* Portfolio Section */}
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground px-2">Portfolio</p>
+                  <Link href="/dashboard?tab=watchlist" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      Watchlist
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Auth Section */}
+              <div className="space-y-2 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  className="w-full touch-target"
+                >
+                  Log In
+                </Button>
+                
+                <Button 
+                  className="w-full touch-target bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white"
+                >
+                  Upgrade
+                </Button>
+              </div>
             </div>
           </div>
         </div>

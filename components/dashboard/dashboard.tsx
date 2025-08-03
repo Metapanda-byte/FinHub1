@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompanyOverview } from "@/components/dashboard/tabs/company-overview";
 import { HistoricalFinancials } from "@/components/dashboard/tabs/historical-financials";
@@ -13,9 +14,11 @@ import SECFilingsTranscripts from "@/components/dashboard/tabs/sec-filings-trans
 import { LBOAnalysis } from "@/components/dashboard/tabs/lbo-analysis";
 import { useSearchStore } from "@/lib/store/search-store";
 import { AnalystCopilot } from "@/components/ui/analyst-copilot";
+import { KeyMetricsPanel } from "@/components/ui/key-metrics-panel";
 import { HighlightToChat } from "@/components/ui/highlight-to-chat";
 import { AnalysisPopup } from "@/components/ui/analysis-popup";
-import { useIncomeStatements, useCashFlows, useBalanceSheets, useSECFilings, useEarningsTranscriptDates } from "@/lib/api/financial";
+import { useIncomeStatements, useCashFlows, useBalanceSheets, useSECFilings, useEarningsTranscriptDates, useCompanyProfile, useFinancialRatios, useKeyMetrics } from "@/lib/api/financial";
+import { useStockQuote } from "@/lib/api/stock";
 import useSWR from "swr";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -103,32 +106,44 @@ const tabConfig = [
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState("company-snapshot");
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [highlightQuery, setHighlightQuery] = useState('');
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
-  const [analysisData, setAnalysisData] = useState({ metric: '', context: '' });
+  const [highlightQuery, setHighlightQuery] = useState('');
+  const [analysisData, setAnalysisData] = useState({
+    metric: '',
+    context: '',
+    symbol: ''
+  });
+
+  const searchParams = useSearchParams();
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
   const currentCompanyName = useSearchStore((state) => state.currentCompanyName);
-  const recentSearches = useSearchStore((state) => state.recentSearches);
-  const favorites = useSearchStore((state) => state.favorites);
-  
-  // Try to find company name if not set
-  const resolvedCompanyName = currentCompanyName || 
-    (currentSymbol ? 
-      recentSearches.find(s => s.symbol === currentSymbol)?.name ||
-      favorites.find(f => f.symbol === currentSymbol)?.name ||
-      null
-    : null);
-  
-  // Debug logging
-  console.log('Dashboard - currentSymbol:', currentSymbol);
-  console.log('Dashboard - currentCompanyName:', currentCompanyName);
-  console.log('Dashboard - resolvedCompanyName:', resolvedCompanyName);
+  const resolvedCompanyName = currentCompanyName || currentSymbol;
+
+  // Handle URL parameter for tab switching
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      // Validate that the tab exists in our configuration
+      const validTab = tabConfig.find(tab => tab.id === tabParam);
+      if (validTab) {
+        setActiveTab(tabParam);
+      }
+    }
+  }, [searchParams]);
+
+  // Watchlist integration
   const stocks = useWatchlistStore((state) => state.stocks);
   const hasStock = useWatchlistStore((state) => state.hasStock);
   const addStock = useWatchlistStore((state) => state.addStock);
   const removeStock = useWatchlistStore((state) => state.removeStock);
   const isInWatchlist = currentSymbol ? hasStock(currentSymbol) : false;
   const watchlistSymbols = stocks.map(s => s.symbol);
+
+  // Fetch key financial data for metrics panel
+  const { profile } = useCompanyProfile(currentSymbol || '');
+  const { quote } = useStockQuote(currentSymbol || '');
+  const { ratios } = useFinancialRatios(currentSymbol || '');
+  const { metrics: keyMetrics } = useKeyMetrics(currentSymbol || '');
 
   const toggleWatchlist = () => {
     if (!currentSymbol) return;
@@ -193,7 +208,7 @@ export function Dashboard() {
 
   // Handle hover-to-analyze
   const handleHighlightAnalyze = (hoveredElement: string, context: string) => {
-    setAnalysisData({ metric: hoveredElement, context });
+    setAnalysisData({ metric: hoveredElement, context, symbol: currentSymbol || '' });
     setIsAnalysisOpen(true);
   };
 
@@ -247,7 +262,8 @@ export function Dashboard() {
         <div className="sticky top-10 z-40 bg-background/95 backdrop-blur-sm border-b border-border shrink-0 -mt-px">
           {/* Company Info Section */}
           <div className="px-mobile pt-0.5 pb-1 border-b border-border/30">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-4">
+              {/* Left: Company Name and Controls */}
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg font-bold leading-none">
@@ -281,6 +297,17 @@ export function Dashboard() {
                 <p className="text-xs text-muted-foreground leading-none mt-0.5">
                   FinHubIQ Workstation
                 </p>
+              </div>
+
+              {/* Right: Key Metrics Panel */}
+              <div className="hidden lg:block">
+                <KeyMetricsPanel
+                  symbol={currentSymbol}
+                  profile={profile}
+                  quote={quote}
+                  keyMetrics={keyMetrics}
+                  ratios={ratios}
+                />
               </div>
             </div>
           </div>
