@@ -34,7 +34,11 @@ type Exchange = 'NASDAQ' | 'NYSE' | 'AMEX' | 'TSX' | 'LSE' | 'FRA' | 'XETRA' | '
 const API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
-export function StockSearch() {
+interface StockSearchProps {
+  className?: string;
+}
+
+export function StockSearch({ className }: StockSearchProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
 
@@ -118,7 +122,10 @@ export function StockSearch() {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[300px] justify-between bg-muted/30 hover:bg-muted"
+          className={cn(
+            "w-[300px] justify-between bg-muted/30 hover:bg-muted",
+            className
+          )}
         >
           <Search className="mr-2 h-4 w-4" />
           {currentSymbol ? (

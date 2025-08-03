@@ -247,10 +247,8 @@ export function DashboardEnhanced() {
           
           {/* Inline Ticker Input */}
           <div className="flex items-center gap-2">
-            <div className="relative w-64 sm:w-80">
-              <div className="border-2 border-[hsl(var(--finhub-orange))] rounded-lg p-1">
-                <StockSearch />
-              </div>
+            <div className="w-64 sm:w-80">
+              <StockSearch className="border-2 border-[hsl(var(--finhub-orange))] rounded-lg" />
             </div>
           </div>
         </div>
