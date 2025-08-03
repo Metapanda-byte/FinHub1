@@ -265,7 +265,7 @@ export function Dashboard() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Financial Analysis Dashboard
+                FinHubIQ Workstation
               </p>
             </div>
           </div>
