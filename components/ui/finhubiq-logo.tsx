@@ -14,9 +14,9 @@ export interface FinHubIQLogoProps {
 }
 
 const iconSizes = {
-  small: 32,
-  medium: 40,
-  large: 48,
+  small: 24,
+  medium: 32,
+  large: 40,
 };
 
 const variantColors = {
@@ -117,12 +117,12 @@ export function FinHubIQLogo({
   const LogoText = () => (
     <div className={cn(
       'flex items-center', 
-      layout === 'stacked' ? 'flex-col' : 'space-x-1'
+      layout === 'stacked' ? 'flex-col' : 'space-x-0.5'
     )}>
-      <span className={cn('font-medium leading-none', colors.finhub, size === 'small' ? 'text-base' : size === 'medium' ? 'text-xl' : 'text-2xl')}>
+      <span className={cn('font-medium leading-none', colors.finhub, size === 'small' ? 'text-sm' : size === 'medium' ? 'text-lg' : 'text-xl')}>
         FinHub
       </span>
-      <span className={cn('font-bold leading-none', colors.iq, size === 'small' ? 'text-base' : size === 'medium' ? 'text-xl' : 'text-2xl', animated && 'animate-pulse')}>
+      <span className={cn('font-bold leading-none', colors.iq, size === 'small' ? 'text-sm' : size === 'medium' ? 'text-lg' : 'text-xl', animated && 'animate-pulse')}>
         IQ
       </span>
     </div>
@@ -142,7 +142,7 @@ export function FinHubIQLogo({
     <div
       className={cn(
         'flex items-center',
-        layout === 'stacked' ? 'flex-col space-y-2' : 'flex-row space-x-3',
+        layout === 'stacked' ? 'flex-col space-y-2' : 'flex-row space-x-2',
         className
       )}
     >
