@@ -837,51 +837,51 @@ export function CompetitorAnalysis() {
               <CardDescription>Compare key operating metrics with industry peers</CardDescription>
             </CardHeader>
         <CardContent>
-          <div className="financial-table-wrapper table-scroll-container rounded-lg">
-            <table className="w-full financial-table">
-              <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur">
-                <tr className="border-b-2 border-slate-200 dark:border-slate-700">
-                  <th className="text-left py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90">Company</th>
-                  <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
+          <div className="overflow-x-auto rounded-lg">
+            <table className="w-full border-collapse comps-table">
+              <thead>
+                <tr className="border-b-2 border-black dark:border-white text-xs">
+                  <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Company</th>
+                  <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                     Rev. Growth
                     {renderMetricTooltip("Revenue Growth", "Year-over-year percentage change in revenue.")}
                   </th>
-                  <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
+                  <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                     Gross Margin
                     {renderMetricTooltip("Gross Margin", "Gross profit divided by revenue, expressed as a percentage.")}
                   </th>
-                  <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
+                  <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                     Op. Margin
                     {renderMetricTooltip("Operating Margin", "Operating income divided by revenue, expressed as a percentage.")}
                   </th>
-                  <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
+                  <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                     Net Margin
                     {renderMetricTooltip("Net Margin", "Net income divided by revenue, expressed as a percentage.")}
                   </th>
-                  <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
+                  <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                     ROIC
                     {renderMetricTooltip("Return on Invested Capital", "Measures how efficiently a company uses capital to generate profits.")}
                   </th>
-                  <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
+                  <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                     ROE
                     {renderMetricTooltip("Return on Equity", "Net income divided by shareholders' equity, expressed as a percentage.")}
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-slate-950">
+              <tbody>
                 {/* Peer companies */}
                 {filteredPerformanceData.map((company) => (
-                  <tr key={company.ticker} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="py-2 px-4 text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300 sticky left-0 z-20 bg-white dark:bg-slate-950">{company.company} ({company.ticker})</td>
+                  <tr key={company.ticker} className="hover:bg-muted/50 transition-colors text-xs h-10 border-b border-border/30">
+                    <td className="py-2 px-2 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline align-middle">{company.ticker}</td>
                     <td className={cn(
-                      "text-right py-2 px-3 text-xs md:text-sm tabular-nums",
+                      "text-right py-2 px-2 tabular-nums align-middle",
                       company.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                     )}>{formatPercentage(company.revenueGrowth)}</td>
-                    <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{formatPercentage(company.grossMargin)}</td>
-                    <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{formatPercentage(company.operatingMargin)}</td>
-                    <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{formatPercentage(company.netMargin)}</td>
-                    <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{formatPercentage(company.roic)}</td>
-                    <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{formatPercentage(company.roe)}</td>
+                    <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.grossMargin)}</td>
+                    <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.operatingMargin)}</td>
+                    <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.netMargin)}</td>
+                    <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.roic)}</td>
+                    <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.roe)}</td>
                   </tr>
                 ))}
                 
@@ -891,51 +891,51 @@ export function CompetitorAnalysis() {
                 {/* Median row */}
                 {filteredPerformanceData.length > 0 && (
                   <>
-                    <tr className="border-b-2 border-slate-300 dark:border-slate-600 bg-blue-25 dark:bg-blue-900/20">
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-blue-25 dark:bg-blue-900/20">Median</td>
+                    <tr className="border-b-2 border-border bg-blue-25 dark:bg-blue-900/20">
+                      <td className="py-2 px-2 text-xs font-bold text-blue-600 dark:text-blue-400 align-middle">Median</td>
                       <td className={cn(
-                        "text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold",
+                        "text-right py-2 px-2 text-xs tabular-nums font-bold align-middle",
                         calculateMetrics(filteredPerformanceData).median.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                       )}>
                         {formatPercentage(calculateMetrics(filteredPerformanceData).median.revenueGrowth)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).median.grossMargin)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).median.operatingMargin)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).median.netMargin)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).median.roic)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).median.roe)}
                       </td>
                     </tr>
-                    <tr className="border-b-2 border-slate-300 dark:border-slate-600 bg-yellow-25 dark:bg-yellow-900/20">
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-yellow-25 dark:bg-yellow-900/20">Average</td>
+                    <tr className="border-b-2 border-border bg-yellow-25 dark:bg-yellow-900/20">
+                      <td className="py-2 px-2 text-xs font-bold text-yellow-600 dark:text-yellow-400 align-middle">Average</td>
                       <td className={cn(
-                        "text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold",
+                        "text-right py-2 px-2 text-xs tabular-nums font-bold align-middle",
                         calculateMetrics(filteredPerformanceData).average.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                       )}>
                         {formatPercentage(calculateMetrics(filteredPerformanceData).average.revenueGrowth)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).average.grossMargin)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).average.operatingMargin)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).average.netMargin)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).average.roic)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).average.roe)}
                       </td>
                     </tr>
