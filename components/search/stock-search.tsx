@@ -235,12 +235,12 @@ export function StockSearch({ className, placeholder = "Search companies...", sh
               )}
               
               {search.length >= 2 && searchResults && searchResults.length === 0 && (
-                <CommandEmpty>No companies found for "{search}"</CommandEmpty>
+                <CommandEmpty>No companies found for &quot;{search}&quot;</CommandEmpty>
               )}
 
               {/* Search Results - Only show when actively searching */}
               {showSuggestions && (
-                <CommandGroup heading={`Results for "${search}"`}>
+                <CommandGroup heading={`Results for &quot;${search}&quot;`}>
                   {searchResults.slice(0, 8).map((result: SearchResult) => (
                     <CommandItem
                       key={result.symbol}

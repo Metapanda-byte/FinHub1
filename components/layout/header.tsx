@@ -78,17 +78,17 @@ export default function Header() {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard?tab=historical-financials" className="w-full text-xs">
-                      Financial Statements
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=historical-financials" className="w-full text-xs">
                       Historical Financials
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard?tab=competitor-analysis" className="w-full text-xs">
-                      Competitor Analysis
+                      Valuation Comparables
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=competitor-analysis" className="w-full text-xs">
+                      Operating Benchmarks
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -99,16 +99,6 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard?tab=lbo-analysis" className="w-full text-xs">
                       LBO Analysis
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=credit-analysis" className="w-full text-xs">
-                      Credit Analysis
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=valuation-considerations" className="w-full text-xs">
-                      Valuation Considerations
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -258,17 +248,17 @@ export default function Header() {
                   </Link>
                   <Link href="/dashboard?tab=historical-financials" onClick={() => setIsMobileMenuOpen(false)}>
                     <Button variant="ghost" className="w-full justify-start touch-target text-sm">
-                      Financial Statements
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard?tab=historical-financials" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
                       Historical Financials
                     </Button>
                   </Link>
                   <Link href="/dashboard?tab=competitor-analysis" onClick={() => setIsMobileMenuOpen(false)}>
                     <Button variant="ghost" className="w-full justify-start touch-target text-sm">
-                      Competitor Analysis
+                      Valuation Comparables
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard?tab=competitor-analysis" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
+                      Operating Benchmarks
                     </Button>
                   </Link>
                   <Link href="/dashboard?tab=dcf-analysis" onClick={() => setIsMobileMenuOpen(false)}>
@@ -279,16 +269,6 @@ export default function Header() {
                   <Link href="/dashboard?tab=lbo-analysis" onClick={() => setIsMobileMenuOpen(false)}>
                     <Button variant="ghost" className="w-full justify-start touch-target text-sm">
                       LBO Analysis
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard?tab=credit-analysis" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
-                      Credit Analysis
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard?tab=valuation-considerations" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
-                      Valuation Considerations
                     </Button>
                   </Link>
                   <Link href="/dashboard?tab=sec-filings" onClick={() => setIsMobileMenuOpen(false)}>
