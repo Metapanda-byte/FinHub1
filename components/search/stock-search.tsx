@@ -48,7 +48,7 @@ export function StockSearch({ className }: StockSearchProps) {
     addToRecent,
     toggleFavorite,
     isFavorite,
-    setCurrentSymbol,
+    setCurrentCompany,
     currentSymbol
   } = useSearchStore();
 
@@ -105,14 +105,14 @@ export function StockSearch({ className }: StockSearchProps) {
         setOpen(false);
         setSearch("");
         addToRecent(company.symbol, company.name);
-        setCurrentSymbol(company.symbol);
+        setCurrentCompany(company.symbol, company.name);
         
         console.log('State updates completed');
       } else {
         console.warn('No company found for symbol:', symbol);
       }
     },
-    [searchResults, recentSearches, favorites, addToRecent, setCurrentSymbol]
+    [searchResults, recentSearches, favorites, addToRecent, setCurrentCompany]
   );
 
   return (

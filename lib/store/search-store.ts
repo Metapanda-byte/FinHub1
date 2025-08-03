@@ -17,10 +17,12 @@ interface SearchState {
   recentSearches: SearchHistory[];
   favorites: FavoriteStock[];
   currentSymbol: string | null;
+  currentCompanyName: string | null;
   addToRecent: (symbol: string, name: string) => void;
   toggleFavorite: (symbol: string, name: string) => void;
   isFavorite: (symbol: string) => boolean;
   setCurrentSymbol: (symbol: string | null) => void;
+  setCurrentCompany: (symbol: string | null, name: string | null) => void;
   clearHistory: () => void;
 }
 
@@ -30,6 +32,7 @@ export const useSearchStore = create<SearchState>()(
       recentSearches: [],
       favorites: [],
       currentSymbol: null,
+      currentCompanyName: null,
       addToRecent: (symbol, name) =>
         set((state) => ({
           recentSearches: [
@@ -47,6 +50,8 @@ export const useSearchStore = create<SearchState>()(
         get().favorites.some((f) => f.symbol === symbol),
       setCurrentSymbol: (symbol) =>
         set({ currentSymbol: symbol }),
+      setCurrentCompany: (symbol, name) =>
+        set({ currentSymbol: symbol, currentCompanyName: name }),
       clearHistory: () =>
         set({ recentSearches: [] }),
     }),

@@ -106,6 +106,7 @@ export function Dashboard() {
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [analysisData, setAnalysisData] = useState({ metric: '', context: '' });
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
+  const currentCompanyName = useSearchStore((state) => state.currentCompanyName);
   const stocks = useWatchlistStore((state) => state.stocks);
   const hasStock = useWatchlistStore((state) => state.hasStock);
   const addStock = useWatchlistStore((state) => state.addStock);
@@ -227,21 +228,31 @@ export function Dashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b">
           <div className="flex items-center gap-4">
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">{currentSymbol}</h1>
+              <div className="flex items-center gap-3">
+                <div>
+                  <h1 className="text-2xl font-bold">{currentSymbol}</h1>
+                  {currentCompanyName && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {currentCompanyName}
+                    </p>
+                  )}
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 hover:bg-muted/60 transition-colors group"
                   onClick={toggleWatchlist}
+                  title={isInWatchlist ? "Remove from watchlist" : "Add to watchlist"}
                 >
                   <Star className={cn(
-                    "h-4 w-4",
-                    isInWatchlist && "fill-current"
+                    "h-4 w-4 transition-all duration-200",
+                    isInWatchlist 
+                      ? "fill-yellow-400 text-yellow-400" 
+                      : "text-muted-foreground group-hover:text-foreground"
                   )} />
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mt-2">
                 Financial Analysis Dashboard
               </p>
             </div>
@@ -332,7 +343,10 @@ export function Dashboard() {
                             <Button
                               variant="outline"
                               className="w-full mt-3"
-                              onClick={() => useSearchStore.getState().setCurrentSymbol(symbol)}
+                              onClick={() => {
+                                const stock = stocks.find(s => s.symbol === symbol);
+                                useSearchStore.getState().setCurrentCompany(symbol, stock?.name || symbol);
+                              }}
                             >
                               View Analysis
                             </Button>
