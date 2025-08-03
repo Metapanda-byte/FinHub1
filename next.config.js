@@ -13,9 +13,7 @@ const nextConfig = {
   },
   // Fix serverActions configuration
   experimental: {
-    serverActions: {
-      allowedOrigins: ["localhost:3000", "localhost:3001"]
-    }
+    serverActions: true
   }
 }
 

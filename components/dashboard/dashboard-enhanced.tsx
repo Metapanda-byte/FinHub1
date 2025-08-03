@@ -42,8 +42,16 @@ import { StockSearch } from "@/components/search/stock-search";
 import { Card } from "@/components/ui/card";
 import { useWatchlistStore } from "@/lib/store/watchlist-store";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { ComponentType } from "react";
 
-const tabConfig = [
+interface TabConfig {
+  id: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  component: ComponentType<any> | null;
+}
+
+const tabConfig: TabConfig[] = [
   { 
     id: "company-snapshot", 
     label: "Overview", 
@@ -322,14 +330,16 @@ export function DashboardEnhanced() {
                 >
                   {tabConfig.map((tab) => {
                     const Component = tab.component;
+                    if (!Component) return null;
+                    const TypedComponent = Component as ComponentType<any>;
                     return (
                       <div key={tab.id} className="tab-content-enter-active">
                         {tab.id === 'dcf-analysis' || tab.id === 'lbo-analysis' ? (
-                          <Component symbol={currentSymbol} />
+                          <TypedComponent symbol={currentSymbol} />
                         ) : tab.id === 'sec-filings' ? (
-                          <Component ticker={currentSymbol} />
+                          <TypedComponent ticker={currentSymbol} />
                         ) : (
-                          <Component />
+                          <TypedComponent />
                         )}
                       </div>
                     );
@@ -368,14 +378,16 @@ export function DashboardEnhanced() {
                 <div className="mt-6 animate-fade-in">
                   {tabConfig.map((tab) => {
                     const Component = tab.component;
+                    if (!Component) return null;
+                    const TypedComponent = Component as ComponentType<any>;
                     return (
                       <TabsContent key={tab.id} value={tab.id} className="mt-0 space-y-4">
                         {tab.id === 'dcf-analysis' || tab.id === 'lbo-analysis' ? (
-                          <Component symbol={currentSymbol} />
+                          <TypedComponent symbol={currentSymbol} />
                         ) : tab.id === 'sec-filings' ? (
-                          <Component ticker={currentSymbol} />
+                          <TypedComponent ticker={currentSymbol} />
                         ) : (
-                          <Component />
+                          <TypedComponent />
                         )}
                       </TabsContent>
                     );
@@ -389,13 +401,28 @@ export function DashboardEnhanced() {
         {/* AI Analysis & Chat Components */}
         {currentSymbol && (
           <>
-            <HighlightToChat />
-            <AnalysisPopup />
+            <HighlightToChat 
+              onHighlightAnalyze={(element, context) => {
+                // Handle highlight analysis
+                console.log('Highlight analyze:', element, context);
+              }}
+              activeTab={activeTab}
+            />
+            <AnalysisPopup 
+              isOpen={false}
+              onClose={() => {}}
+              selectedMetric=""
+              context=""
+              symbol={currentSymbol}
+              financialData={{}}
+              onOpenChat={() => setIsChatOpen(true)}
+            />
             <ChatFAB onClick={() => setIsChatOpen(true)} />
             <FinancialChat
               isOpen={isChatOpen}
               onClose={() => setIsChatOpen(false)}
               symbol={currentSymbol}
+              financialData={{}}
             />
           </>
         )}
