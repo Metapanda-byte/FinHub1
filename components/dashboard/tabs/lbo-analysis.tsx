@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { TrendingUp, TrendingDown, Calculator, Info } from "lucide-react";
+import { TrendingUp, TrendingDown, Calculator } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFinancialNumber } from "@/lib/utils/formatters";
 import { useCompanyProfile, useIncomeStatements, useCashFlows, useBalanceSheets } from "@/lib/api/financial";
@@ -495,7 +495,6 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
   if (!lboCalculation) {
     return (
       <Alert>
-        <Info className="h-4 w-4" />
         <AlertDescription>
           Unable to calculate LBO analysis. Please ensure financial data is available for {symbol}.
         </AlertDescription>

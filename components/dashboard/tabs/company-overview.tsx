@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { useStockQuote } from "@/lib/api/stock";
 import { format } from "date-fns";
 import { useTheme } from 'next-themes';
-import { pieChartPalettes } from "@/components/dashboard/charts/pie-chart-palettes";
 import clsx from 'clsx';
 import useSWR from 'swr';
 import { ChartLoadingSkeleton, CardLoadingSkeleton } from "@/components/ui/loading-skeleton";
@@ -236,7 +235,6 @@ export function CompanyOverview() {
   const { statements: balanceSheets, isLoading: balanceSheetLoading } = useBalanceSheets(currentSymbol || '');
   const { resolvedTheme } = useTheme();
   const pieLabelColor = resolvedTheme === 'dark' ? '#fff' : '#111';
-  const [selectedPalette, setSelectedPalette] = useState<keyof typeof pieChartPalettes>('finhubBlues');
   const { ttmRevenue, isLoading: ttmRevenueLoading } = useTTMRevenue(currentSymbol || '');
   const { ttm, isLoading: ttmLoading } = useTTMIncomeStatement(currentSymbol || '');
   
@@ -416,12 +414,7 @@ export function CompanyOverview() {
     }
   };
 
-  // Palette selector UI
-  const paletteOptions = Object.entries(pieChartPalettes).map(([key, value]) => ({
-    key,
-    label: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-    colors: value,
-  }));
+
 
   const mostRecentBalanceSheet = balanceSheets && balanceSheets.length > 0 ? balanceSheets[0] : null;
   const mostRecentIncome = statements && statements.length > 0 ? statements[0] : null;
@@ -434,10 +427,8 @@ export function CompanyOverview() {
     ? marketCap + totalDebt - cash + minorityInterest
     : null;
   const evToEbitda = (enterpriseValue !== null && ebitda) ? enterpriseValue / ebitda : null;
-  // Get highlight color from palette based on theme
-  const highlightColor = resolvedTheme === 'dark'
-    ? pieChartPalettes[selectedPalette][0] || '#1e293b' // darkest for dark mode
-    : pieChartPalettes[selectedPalette][pieChartPalettes[selectedPalette].length - 1] || '#f9fafb'; // lightest for light mode
+  // Get highlight color based on theme
+  const highlightColor = resolvedTheme === 'dark' ? '#1e293b' : '#f9fafb';
   // Determine border color class for theme
   const borderColorClass = resolvedTheme === 'dark' ? 'border-white' : 'border-black';
   const highlightTextColor = resolvedTheme === 'dark' ? '#fff' : '#111';
@@ -600,25 +591,6 @@ export function CompanyOverview() {
         </TooltipProvider>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-2 mb-4">
-          <label htmlFor="palette-select" className="text-sm font-medium">Chart Palette:</label>
-          <select
-            id="palette-select"
-            className="border rounded px-2 py-1 text-sm"
-            value={selectedPalette}
-            onChange={e => setSelectedPalette(e.target.value as keyof typeof pieChartPalettes)}
-          >
-            {paletteOptions.map(opt => (
-              <option key={opt.key} value={opt.key}>{opt.label}</option>
-            ))}
-          </select>
-          {/* Show color swatches for preview */}
-          <div className="flex gap-1 ml-2">
-            {pieChartPalettes[selectedPalette].slice(0, 8).map((color, idx) => (
-              <span key={color} style={{ background: color, width: 16, height: 16, borderRadius: 4, border: '1px solid #ccc', display: 'inline-block' }} />
-            ))}
-          </div>
-        </div>
         <div className="grid gap-3">
           <div className="flex items-start space-x-4 rounded-md border p-3">
             <Avatar className="h-12 w-12">
@@ -748,7 +720,7 @@ export function CompanyOverview() {
                   <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
                     <RevenueChart 
                       data={revenueData}
-                      palette={revenueData.map((bar, idx) => idx === revenueData.length - 1 ? pieChartPalettes[selectedPalette][0] : pieChartPalettes[selectedPalette][3])}
+                      palette={revenueData.map((bar, idx) => idx === revenueData.length - 1 ? '#1e3a8a' : '#60a5fa')}
                       tickFontSize={12}
                     />
                     {ltmRefDate && (
@@ -769,7 +741,7 @@ export function CompanyOverview() {
                   <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
                     <EbitdaChart 
                       data={ebitdaData}
-                      palette={ebitdaData.map((bar, idx) => idx === ebitdaData.length - 1 ? pieChartPalettes[selectedPalette][0] : pieChartPalettes[selectedPalette][3])}
+                      palette={ebitdaData.map((bar, idx) => idx === ebitdaData.length - 1 ? '#1e3a8a' : '#60a5fa')}
                       tickFontSize={12}
                     />
                     {ltmRefDate && (
@@ -827,7 +799,7 @@ export function CompanyOverview() {
                           data={scaledSegmentData} 
                           nameKey="name" 
                           dataKey="value" 
-                          colors={pieChartPalettes[selectedPalette]}
+                          colors={['#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#e0e7ff']}
                           formatter={(value) => `$${value.toFixed(1)}B`}
                           labelColor={pieLabelColor}
                         />
@@ -873,7 +845,7 @@ export function CompanyOverview() {
                         data={consolidatedGeographyData} 
                         nameKey="name" 
                         dataKey="value" 
-                        colors={pieChartPalettes[selectedPalette]}
+                        colors={['#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#e0e7ff']}
                         formatter={(value) => `$${value.toFixed(1)}B`}
                         labelColor={pieLabelColor}
                       />

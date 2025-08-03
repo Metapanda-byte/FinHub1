@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
+
 import { useSearchStore } from "@/lib/store/search-store";
 import { useCompanyProfile, useIncomeStatements, useBalanceSheets } from "@/lib/api/financial";
 import { formatFinancialNumber, formatPercentage } from "@/lib/utils/formatters";

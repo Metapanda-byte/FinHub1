@@ -18,7 +18,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useSearchStore } from "@/lib/store/search-store";
-import { format } from "date-fns";
 import useSWR from 'swr';
 
 interface SearchResult {
@@ -124,7 +123,7 @@ export function StockSearch({ className }: StockSearchProps) {
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-[300px] justify-between bg-muted/30 hover:bg-muted transition-all duration-200",
+            "w-[200px] justify-between bg-muted/30 hover:bg-muted transition-all duration-200",
             !currentSymbol && "ring-1 ring-muted-foreground/20 hover:ring-muted-foreground/40",
             className
           )}
@@ -144,7 +143,7 @@ export function StockSearch({ className }: StockSearchProps) {
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" align="start">
+      <PopoverContent className="w-[200px] p-0" align="start">
         <div className="border-b px-3 py-2">
           <div className="text-sm font-medium text-foreground">Select Company</div>
           <div className="text-xs text-muted-foreground">Search by company name or ticker symbol</div>
@@ -231,9 +230,7 @@ export function StockSearch({ className }: StockSearchProps) {
                         <span className="ml-2 text-muted-foreground">
                           {item.name}
                         </span>
-                        <span className="ml-auto flex h-4 w-4 items-center justify-center text-xs text-muted-foreground">
-                          {format(item.timestamp, "MMM d")}
-                        </span>
+
                       </CommandItem>
                     ))}
                   </CommandGroup>

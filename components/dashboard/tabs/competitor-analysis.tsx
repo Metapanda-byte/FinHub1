@@ -6,7 +6,7 @@ import { CrunchingNumbersCardWithHeader } from "@/components/ui/crunching-number
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Info, X, Plus, Search, Loader2 } from "lucide-react";
+import { Download, X, Plus, Search, Loader2 } from "lucide-react";
 import { formatCurrency, formatPercentage } from "@/lib/formatters";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,7 @@ interface PeerCompany {
 interface ValuationData {
   ticker: string;
   company: string;
+  sector: string;
   marketCap: number;
   evToEbitda: number;
   peRatio: number;
@@ -40,6 +41,7 @@ interface ValuationData {
 interface PerformanceData {
   ticker: string;
   company: string;
+  sector: string;
   revenueGrowth: number;
   grossMargin: number;
   operatingMargin: number;
@@ -250,6 +252,7 @@ export function CompetitorAnalysis() {
         {
           ticker: newTicker,
           company: newTicker,
+          sector: 'N/A',
           marketCap: 0,
           evToEbitda: 0,
           peRatio: 0,
@@ -263,6 +266,7 @@ export function CompetitorAnalysis() {
         {
           ticker: newTicker,
           company: newTicker,
+          sector: 'N/A',
           revenueGrowth: 0,
           grossMargin: 0,
           operatingMargin: 0,
@@ -362,21 +366,7 @@ export function CompetitorAnalysis() {
     }
   };
 
-  const renderMetricTooltip = (title: string, description: string) => (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Info className="h-4 w-4 inline-block ml-1 text-muted-foreground" />
-        </TooltipTrigger>
-        <TooltipContent>
-          <div className="max-w-xs">
-            <p className="font-medium">{title}</p>
-            <p className="text-sm">{description}</p>
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
+
 
   // Memoize filtered data
   const filteredValuationData = useMemo(() => 
@@ -701,30 +691,26 @@ export function CompetitorAnalysis() {
               <table className="w-full border-collapse comps-table">
                 <thead>
                   <tr className="border-b-2 border-black dark:border-white text-xs">
+                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Ticker</th>
                     <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Company</th>
+                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Sector</th>
                     <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[90px]">
                       Market Cap
-                      {renderMetricTooltip("Market Capitalization", "The total value of all outstanding shares of a company.")}
                     </th>
                     <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                       EV/EBITDA
-                      {renderMetricTooltip("Enterprise Value to EBITDA", "Measures the value of a company compared to its earnings before interest, taxes, depreciation, and amortization.")}
                     </th>
                     <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                       P/E Ratio
-                      {renderMetricTooltip("Price to Earnings Ratio", "Measures a company's current share price relative to its earnings per share.")}
                     </th>
                     <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                       P/S Ratio
-                      {renderMetricTooltip("Price to Sales Ratio", "Compares a company's stock price to its revenues.")}
                     </th>
                     <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                       P/B Ratio
-                      {renderMetricTooltip("Price to Book Ratio", "Compares a company's market value to its book value.")}
                     </th>
                     <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                       Div. Yield
-                      {renderMetricTooltip("Dividend Yield", "The annual dividend payment divided by the stock price, expressed as a percentage.")}
                     </th>
                   </tr>
                 </thead>
@@ -733,6 +719,8 @@ export function CompetitorAnalysis() {
                   {filteredValuationData.map((company) => (
                     <tr key={company.ticker} className="hover:bg-muted/50 transition-colors text-xs h-10 border-b border-border/30">
                       <td className="py-2 px-2 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline align-middle">{company.ticker}</td>
+                      <td className="py-2 px-2 align-middle">{company.company}</td>
+                      <td className="py-2 px-2 text-muted-foreground align-middle">{company.sector}</td>
                       <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'marketCap')}</td>
                       <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'evToEbitda')}</td>
                       <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'peRatio')}</td>
@@ -750,6 +738,8 @@ export function CompetitorAnalysis() {
                     <>
                       <tr className="border-b-2 border-border bg-blue-25 dark:bg-blue-900/20">
                         <td className="py-2 px-2 text-xs font-bold text-blue-600 dark:text-blue-400 align-middle">Median</td>
+                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
+                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
                         <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {formatMarketCap(calculateMetrics(filteredValuationData).median.marketCap)}
                         </td>
@@ -771,6 +761,8 @@ export function CompetitorAnalysis() {
                       </tr>
                       <tr className="border-b-2 border-border bg-yellow-25 dark:bg-yellow-900/20">
                         <td className="py-2 px-2 text-xs font-bold text-yellow-600 dark:text-yellow-400 align-middle">Average</td>
+                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
+                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
                         <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {formatMarketCap(calculateMetrics(filteredValuationData).average.marketCap)}
                         </td>
@@ -800,7 +792,13 @@ export function CompetitorAnalysis() {
                   {data?.peerValuationData.find(company => company.ticker === currentSymbol) && (
                     <tr className="border-2 border-blue-600 dark:border-blue-400 bg-green-25 dark:bg-green-900/20">
                       <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-green-25 dark:bg-green-900/20">
-                        {data.peerValuationData.find(company => company.ticker === currentSymbol)?.company} ({currentSymbol})
+                        {currentSymbol}
+                      </td>
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                        {data.peerValuationData.find(company => company.ticker === currentSymbol)?.company}
+                      </td>
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                        {data.peerValuationData.find(company => company.ticker === currentSymbol)?.sector}
                       </td>
                       <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {formatMarketCap(data.peerValuationData.find(company => company.ticker === currentSymbol)?.marketCap || 0)}
@@ -841,30 +839,26 @@ export function CompetitorAnalysis() {
             <table className="w-full border-collapse comps-table">
               <thead>
                 <tr className="border-b-2 border-black dark:border-white text-xs">
+                  <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Ticker</th>
                   <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Company</th>
+                  <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Sector</th>
                   <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                     Rev. Growth
-                    {renderMetricTooltip("Revenue Growth", "Year-over-year percentage change in revenue.")}
                   </th>
                   <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                     Gross Margin
-                    {renderMetricTooltip("Gross Margin", "Gross profit divided by revenue, expressed as a percentage.")}
                   </th>
                   <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                     Op. Margin
-                    {renderMetricTooltip("Operating Margin", "Operating income divided by revenue, expressed as a percentage.")}
                   </th>
                   <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                     Net Margin
-                    {renderMetricTooltip("Net Margin", "Net income divided by revenue, expressed as a percentage.")}
                   </th>
                   <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                     ROIC
-                    {renderMetricTooltip("Return on Invested Capital", "Measures how efficiently a company uses capital to generate profits.")}
                   </th>
                   <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                     ROE
-                    {renderMetricTooltip("Return on Equity", "Net income divided by shareholders' equity, expressed as a percentage.")}
                   </th>
                 </tr>
               </thead>
@@ -873,6 +867,8 @@ export function CompetitorAnalysis() {
                 {filteredPerformanceData.map((company) => (
                   <tr key={company.ticker} className="hover:bg-muted/50 transition-colors text-xs h-10 border-b border-border/30">
                     <td className="py-2 px-2 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline align-middle">{company.ticker}</td>
+                    <td className="py-2 px-2 align-middle">{company.company}</td>
+                    <td className="py-2 px-2 text-muted-foreground align-middle">{company.sector}</td>
                     <td className={cn(
                       "text-right py-2 px-2 tabular-nums align-middle",
                       company.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
@@ -893,6 +889,8 @@ export function CompetitorAnalysis() {
                   <>
                     <tr className="border-b-2 border-border bg-blue-25 dark:bg-blue-900/20">
                       <td className="py-2 px-2 text-xs font-bold text-blue-600 dark:text-blue-400 align-middle">Median</td>
+                      <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
+                      <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
                       <td className={cn(
                         "text-right py-2 px-2 text-xs tabular-nums font-bold align-middle",
                         calculateMetrics(filteredPerformanceData).median.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
@@ -917,6 +915,8 @@ export function CompetitorAnalysis() {
                     </tr>
                     <tr className="border-b-2 border-border bg-yellow-25 dark:bg-yellow-900/20">
                       <td className="py-2 px-2 text-xs font-bold text-yellow-600 dark:text-yellow-400 align-middle">Average</td>
+                      <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
+                      <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
                       <td className={cn(
                         "text-right py-2 px-2 text-xs tabular-nums font-bold align-middle",
                         calculateMetrics(filteredPerformanceData).average.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
@@ -949,7 +949,13 @@ export function CompetitorAnalysis() {
                 {data?.peerPerformanceData.find(company => company.ticker === currentSymbol) && (
                   <tr className="border-2 border-blue-600 dark:border-blue-400 bg-green-25 dark:bg-green-900/20">
                     <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-green-25 dark:bg-green-900/20">
-                      {data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.company} ({currentSymbol})
+                      {currentSymbol}
+                    </td>
+                    <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                      {data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.company}
+                    </td>
+                    <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                      {data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.sector}
                     </td>
                     <td className={cn(
                       "text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold",

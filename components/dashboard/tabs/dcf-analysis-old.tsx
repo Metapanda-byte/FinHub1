@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { TrendingUp, TrendingDown, Calculator, DollarSign, Percent, Info } from "lucide-react";
+import { TrendingUp, TrendingDown, Calculator, DollarSign, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFinancialNumber } from "@/lib/utils/formatters";
 import { useDCFAnalysis, useCompanyProfile, useIncomeStatements, useCashFlows, useBalanceSheets, CustomDCFAssumptions } from "@/lib/api/financial";
@@ -183,7 +183,6 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
         </CardHeader>
         <CardContent>
           <Alert>
-            <Info className="h-4 w-4" />
             <AlertDescription>
               Unable to perform DCF analysis. Missing required financial data for {symbol}.
             </AlertDescription>

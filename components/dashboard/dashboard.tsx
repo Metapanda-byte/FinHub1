@@ -238,69 +238,78 @@ export function Dashboard() {
 
   return (
     <>
-      <div data-dashboard className="px-mobile space-y-3">
-        {/* Ticker Header Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 border-b">
-          <div className="flex items-center gap-3">
-            <div>
-              <div className="flex items-center gap-2">
+      <div data-dashboard className="flex flex-col h-screen overflow-hidden">
+        {/* Sticky Header Section */}
+        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shrink-0">
+          <div className="px-mobile py-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-3">
                 <div>
-                  <h1 className="text-xl font-bold">
-                    {resolvedCompanyName ? `${resolvedCompanyName} (${currentSymbol})` : currentSymbol}
-                  </h1>
+                  <div className="flex items-center gap-2">
+                    <div>
+                      <h1 className="text-xl font-bold">
+                        {resolvedCompanyName ? `${resolvedCompanyName} (${currentSymbol})` : currentSymbol}
+                      </h1>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 hover:bg-muted/60 transition-colors group"
+                      onClick={toggleWatchlist}
+                      title={isInWatchlist ? "Remove from watchlist" : "Add to watchlist"}
+                    >
+                      <Star className={cn(
+                        "h-3.5 w-3.5 transition-all duration-200",
+                        isInWatchlist 
+                          ? "fill-yellow-400 text-yellow-400" 
+                          : "text-muted-foreground group-hover:text-foreground"
+                      )} />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    FinHubIQ Workstation
+                  </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 hover:bg-muted/60 transition-colors group"
-                  onClick={toggleWatchlist}
-                  title={isInWatchlist ? "Remove from watchlist" : "Add to watchlist"}
-                >
-                  <Star className={cn(
-                    "h-3.5 w-3.5 transition-all duration-200",
-                    isInWatchlist 
-                      ? "fill-yellow-400 text-yellow-400" 
-                      : "text-muted-foreground group-hover:text-foreground"
-                  )} />
-                </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                FinHubIQ Workstation
-              </p>
+              
+              {/* Inline Ticker Input - Aligned to toolbar edge */}
+              <div className="flex items-center justify-end">
+                <div className="w-48 sm:w-56 mr-1">
+                  <StockSearch className="border-2 border-[hsl(var(--finhub-orange))] rounded-lg" />
+                </div>
+              </div>
             </div>
           </div>
-          
-          {/* Inline Ticker Input */}
-          <div className="flex items-center gap-2">
-            <div className="w-56 sm:w-72">
-              <StockSearch className="border-2 border-[hsl(var(--finhub-orange))] rounded-lg" />
-            </div>
-          </div>
-        </div>
 
-        {/* Main Tabs Content */}
-        <div className="w-full">
+          {/* Tab Navigation - Sticky within header */}
+          <div className="px-mobile pb-2">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              {/* Tab Navigation - Full Width Toolbar */}
               <div className="w-full rounded-xl bg-gradient-to-r from-muted/40 via-muted/30 to-muted/40 backdrop-blur-sm p-1 border border-border/30 shadow-sm">
                 <TabsList className="flex h-auto w-full bg-transparent gap-0.5">
                   {tabConfig.map((tab) => (
                     <TabsTrigger
                       key={tab.id}
                       value={tab.id}
-                      className="flex-1 px-3 py-2.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md border border-transparent data-[state=active]:border-border/50 transition-all duration-300 hover:bg-muted/60 rounded-md"
+                      className="flex-1 px-2 py-2.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md border border-transparent data-[state=active]:border-border/50 transition-all duration-300 hover:bg-muted/60 rounded-md"
                     >
                       <div className="flex items-center justify-center gap-2">
                         <tab.icon className="h-4 w-4 flex-shrink-0" />
-                        <span className="text-xs font-semibold whitespace-nowrap tracking-wide">{tab.label}</span>
+                        <span className="text-xs font-semibold whitespace-nowrap tracking-wide hidden sm:inline">{tab.label}</span>
                       </div>
                     </TabsTrigger>
                   ))}
                 </TabsList>
               </div>
+            </Tabs>
+          </div>
+        </div>
 
-              {/* Tab Content */}
-              <div className="mt-3 animate-fade-in">
+        {/* Main Content Area with Vertical Scrolling */}
+        <div className="flex-1 overflow-y-auto mobile-scroll">
+          <div className="px-mobile py-4 pb-20 sm:pb-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              {/* Tab Content with Vertical Scrolling */}
+              <div className="animate-fade-in">
                 <TabsContent value="company-snapshot" className="mt-0 space-y-3">
                   <CompanyOverview />
                 </TabsContent>
@@ -331,6 +340,7 @@ export function Dashboard() {
               </div>
             </Tabs>
           </div>
+        </div>
 
         {/* AI Analysis & Chat Components */}
         {currentSymbol && (
@@ -339,21 +349,18 @@ export function Dashboard() {
               onHighlightAnalyze={handleHighlightAnalyze} 
               activeTab={activeTab}
             />
-            <ChatFAB onClick={() => setIsChatOpen(true)} />
-            
             <AnalysisPopup
               isOpen={isAnalysisOpen}
               onClose={() => setIsAnalysisOpen(false)}
               selectedMetric={analysisData.metric}
               context={analysisData.context}
               symbol={currentSymbol}
-              financialData={financialData}
+              financialData={analysisData}
               onOpenChat={handleOpenChatFromAnalysis}
             />
-            
             <FinancialChat
               symbol={currentSymbol}
-              financialData={financialData}
+              financialData={analysisData}
               isOpen={isChatOpen}
               onClose={() => setIsChatOpen(false)}
               initialQuery={highlightQuery}

@@ -121,6 +121,102 @@
   .py-mobile {
     @apply py-3 sm:py-4 md:py-6 lg:py-8;
   }
+
+  /* Mobile-Optimized Touch Interactions */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    position: relative;
+  }
+
+  /* Mobile-Friendly Scrolling */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* iOS-style smooth scrolling */
+  @supports (-webkit-touch-callout: none) {
+    .mobile-scroll {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* Safe Area Support for Mobile */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Mobile Navigation Styles */
+  .mobile-nav-container {
+    @apply fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border safe-bottom;
+  }
+
+  .mobile-nav-item {
+    @apply flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all duration-200;
+  }
+
+  /* Responsive Typography for Mobile */
+  @media (max-width: 640px) {
+    h1 {
+      @apply text-xl font-bold;
+    }
+    
+    h2 {
+      @apply text-lg font-semibold;
+    }
+    
+    h3 {
+      @apply text-base font-semibold;
+    }
+  }
+
+  /* Mobile Table Improvements */
+  @media (max-width: 768px) {
+    .mobile-table-scroll {
+      @apply overflow-x-auto;
+      scroll-snap-type: x mandatory;
+    }
+    
+    .mobile-table-scroll table {
+      @apply min-w-full;
+    }
+    
+    .mobile-table-scroll th,
+    .mobile-table-scroll td {
+      @apply whitespace-nowrap px-2 py-1 text-xs;
+    }
+  }
+
+  /* Enhanced Card Layouts for Mobile */
+  @media (max-width: 640px) {
+    .mobile-card {
+      @apply rounded-lg mx-0;
+    }
+    
+    .mobile-card-content {
+      @apply p-4;
+    }
+  }
+
+  /* Sticky Elements Mobile Support */
+  .sticky-mobile {
+    @apply sticky top-0 z-40;
+  }
+
+  /* Improved Focus States for Mobile */
+  @media (max-width: 768px) {
+    button:focus,
+    input:focus,
+    textarea:focus,
+    select:focus {
+      @apply outline-none ring-2 ring-primary ring-offset-2;
+    }
+  }
 }
 
 @layer components {

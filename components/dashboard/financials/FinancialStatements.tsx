@@ -108,6 +108,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
                   label="Cost of Revenue"
                   values={incomeStatements.map(s => s.costOfRevenue)}
                   isExpense
+                  indentLevel={1}
                 />
 
                 <IncomeStatementLine
@@ -122,11 +123,13 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
                       label="Research & Development"
                       values={incomeStatements.map(s => s.researchAndDevelopment || 0)}
                       isExpense
+                      indentLevel={1}
                     />
                     <IncomeStatementLine
                       label="Selling, General & Administrative"
                       values={incomeStatements.map(s => s.sellingGeneralAndAdministrative || 0)}
                       isExpense
+                      indentLevel={1}
                     />
                   </>
                 )}
@@ -166,11 +169,13 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
                     <IncomeStatementLine
                       label="Interest Income"
                       values={incomeStatements.map(s => s.interestIncome || 0)}
+                      indentLevel={1}
                     />
                     <IncomeStatementLine
                       label="Interest Expense"
                       values={incomeStatements.map(s => s.interestExpense || 0)}
                       isExpense
+                      indentLevel={1}
                     />
                   </>
                 )}
@@ -185,6 +190,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
                   label="Income Tax Expense"
                   values={incomeStatements.map(s => s.incomeTaxExpense)}
                   isExpense
+                  indentLevel={1}
                 />
 
                 <IncomeStatementLine

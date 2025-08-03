@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calculator, Info } from "lucide-react";
+import { Calculator } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFinancialNumber } from "@/lib/utils/formatters";
 import { useDCFAnalysis, useCompanyProfile, useIncomeStatements, useCashFlows, useBalanceSheets, CustomDCFAssumptions } from "@/lib/api/financial";
@@ -360,7 +360,6 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
         </CardHeader>
         <CardContent>
           <Alert>
-            <Info className="h-4 w-4" />
             <AlertDescription>
               Unable to perform DCF analysis. Missing required financial data for {symbol}.
             </AlertDescription>

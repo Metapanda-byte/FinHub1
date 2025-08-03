@@ -40,7 +40,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn(inter.className, "safe-top min-h-screen")}>
+      <body className={cn(inter.className, "safe-top min-h-screen overflow-hidden")}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -49,14 +49,12 @@ export default function RootLayout({
         >
           <SWRProvider>
             <AuthProvider>
-              <div className="flex min-h-screen flex-col">
+              <div className="flex min-h-screen flex-col overflow-hidden">
                 <Header />
-                <main className="flex-1 pb-16 sm:pb-0 animate-fade-in w-full">
-                  <div className="container-wide mx-auto">
-                    {children}
-                  </div>
+                <main className="flex-1 overflow-hidden animate-fade-in w-full">
+                  {children}
                 </main>
-                <div className="hidden sm:block">
+                <div className="hidden sm:block shrink-0">
                   <Footer />
                 </div>
                 <MobileNav />

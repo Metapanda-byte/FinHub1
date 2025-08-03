@@ -20,6 +20,7 @@ interface CompanyProfile {
 interface ValuationData {
   ticker: string;
   company: string;
+  sector: string;
   marketCap: number;
   evToEbitda: number;
   peRatio: number;
@@ -31,6 +32,7 @@ interface ValuationData {
 interface PerformanceData {
   ticker: string;
   company: string;
+  sector: string;
   revenueGrowth: number;
   grossMargin: number;
   operatingMargin: number;
@@ -227,10 +229,12 @@ export async function GET(request: Request) {
       const ratios = ratiosResults[index];
       const profile = companyProfiles.find((p) => p?.symbol === sym);
       const company = profile?.companyName || sym;
+      const sector = profile?.sector || 'N/A';
 
       return {
         ticker: sym,
         company,
+        sector,
         marketCap: metrics?.marketCapTTM || 0,
         evToEbitda: ratios?.enterpriseValueMultipleTTM || 0,
         peRatio: ratios?.priceEarningsRatioTTM || 0,
@@ -259,11 +263,13 @@ export async function GET(request: Request) {
       const statements = incomeResults[index];
       const profile = companyProfiles.find((p) => p?.symbol === sym);
       const company = profile?.companyName || sym;
+      const sector = profile?.sector || 'N/A';
 
       if (!statements || statements.length < 2) {
         return {
           ticker: sym,
           company,
+          sector,
           revenueGrowth: 0,
           grossMargin: 0,
           operatingMargin: 0,
@@ -280,6 +286,7 @@ export async function GET(request: Request) {
       return {
         ticker: sym,
         company,
+        sector,
         revenueGrowth,
         grossMargin: (current.grossProfitRatio || 0) * 100,
         operatingMargin: (current.operatingIncomeRatio || 0) * 100,
