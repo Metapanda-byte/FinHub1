@@ -119,10 +119,10 @@ export function FinHubIQLogo({
       'flex items-center', 
       layout === 'stacked' ? 'flex-col' : 'space-x-1'
     )}>
-      <span className={cn('font-medium', colors.finhub, size === 'small' ? 'text-base' : size === 'medium' ? 'text-xl' : 'text-2xl')}>
+      <span className={cn('font-medium leading-none', colors.finhub, size === 'small' ? 'text-base' : size === 'medium' ? 'text-xl' : 'text-2xl')}>
         FinHub
       </span>
-      <span className={cn('font-bold', colors.iq, size === 'small' ? 'text-base' : size === 'medium' ? 'text-xl' : 'text-2xl', animated && 'animate-pulse')}>
+      <span className={cn('font-bold leading-none', colors.iq, size === 'small' ? 'text-base' : size === 'medium' ? 'text-xl' : 'text-2xl', animated && 'animate-pulse')}>
         IQ
       </span>
     </div>
@@ -142,7 +142,7 @@ export function FinHubIQLogo({
     <div
       className={cn(
         'flex items-center',
-        layout === 'stacked' ? 'flex-col space-y-2' : 'gap-2',
+        layout === 'stacked' ? 'flex-col space-y-2' : 'space-x-3',
         className
       )}
     >
