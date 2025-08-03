@@ -6,7 +6,7 @@ const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+  <div className="relative w-full overflow-auto touch-pan-x">
     <table
       ref={ref}
       className={cn('w-full caption-bottom text-sm', className)}
@@ -20,7 +20,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn('', className)} {...props} />
+  <thead ref={ref} className={cn('[&_tr]:border-b', className)} {...props} />
 ));
 TableHeader.displayName = 'TableHeader';
 
@@ -70,7 +70,8 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      'h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0',
+      'h-10 md:h-12 px-2 md:px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0',
+      'text-xs md:text-sm whitespace-nowrap',
       className
     )}
     {...props}
@@ -84,7 +85,11 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn('p-4 align-middle [&:has([role=checkbox])]:pr-0', className)}
+    className={cn(
+      'p-2 md:p-4 align-middle [&:has([role=checkbox])]:pr-0',
+      'text-xs md:text-sm',
+      className
+    )}
     {...props}
   />
 ));
@@ -102,6 +107,72 @@ const TableCaption = React.forwardRef<
 ));
 TableCaption.displayName = 'TableCaption';
 
+// Mobile-optimized table wrapper with horizontal scrolling
+const MobileTableWrapper = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & {
+    showSwipeHint?: boolean;
+  }
+>(({ className, children, showSwipeHint = true, ...props }, ref) => {
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
+  const [canScrollRight, setCanScrollRight] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkScroll = () => {
+      if (scrollRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+        setCanScrollLeft(scrollLeft > 0);
+        setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+      }
+    };
+
+    checkScroll();
+    scrollRef.current?.addEventListener('scroll', checkScroll);
+    window.addEventListener('resize', checkScroll);
+
+    return () => {
+      scrollRef.current?.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [children]);
+
+  return (
+    <div ref={ref} className={cn('relative', className)} {...props}>
+      {/* Left scroll indicator */}
+      {canScrollLeft && (
+        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none z-10" />
+      )}
+
+      {/* Right scroll indicator */}
+      {canScrollRight && (
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none z-10" />
+      )}
+
+      {/* Scrollable container */}
+      <div
+        ref={scrollRef}
+        className="overflow-x-auto scrollbar-hide -mx-4 px-4 mobile-table-wrapper"
+      >
+        {children}
+      </div>
+
+      {/* Swipe hint */}
+      {showSwipeHint && canScrollRight && (
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none md:hidden animate-bounce">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md">
+            <span>Swipe</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+MobileTableWrapper.displayName = 'MobileTableWrapper';
+
 export {
   Table,
   TableHeader,
@@ -111,4 +182,5 @@ export {
   TableRow,
   TableCell,
   TableCaption,
+  MobileTableWrapper,
 };

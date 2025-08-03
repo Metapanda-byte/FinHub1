@@ -77,8 +77,76 @@
 }
 
 @layer base {
+  /* Premium Mobile-First Base Styles */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    touch-action: manipulation;
+  }
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    position: relative;
+  }
+  
+  /* Prevent horizontal scroll on mobile */
+  main {
+    overflow-x: hidden;
+    width: 100%;
+  }
+  
+  /* Enhanced focus states for accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+  
+  /* Premium button interactions */
+  button {
+    @apply transition-all duration-200 ease-out;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+  
+  /* Mobile-first typography with fluid scaling */
+  h1 {
+    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight;
+    line-height: 1.1;
+  }
+  
+  h2 {
+    @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight;
+    line-height: 1.2;
+  }
+  
+  h3 {
+    @apply text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold;
+    line-height: 1.3;
+  }
+  
+  p {
+    @apply text-sm sm:text-base leading-relaxed;
+  }
+  
+  /* Premium card hover effects - desktop only */
+  @media (hover: hover) {
+    .card {
+      @apply transition-all duration-300 ease-out;
+    }
+    
+    .card:hover {
+      @apply shadow-xl translate-y-[-2px];
+    }
   }
   
   /* Remove default table borders */
@@ -87,76 +155,381 @@
     border: none !important;
   }
   
-  /* Remove all table gridlines */
-  .financial-table {
-    border-collapse: collapse;
-    border-spacing: 0;
-  }
-  
-  .financial-table th,
-  .financial-table td {
-    border: none !important;
-  }
-
-/* Hide scrollbars for horizontal scrolling tabs */
-.scrollbar-hide {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
-}
-.scrollbar-hide::-webkit-scrollbar { 
-  display: none;  /* Safari and Chrome */
-}
-
-/* Mobile-responsive enhancements */
-@media (max-width: 768px) {
-  /* Compact tables for mobile */
-  .financial-table {
-    font-size: 0.75rem;
-  }
-  
-  .financial-table th,
-  .financial-table td {
-    padding: 0.375rem 0.25rem;
-  }
-  
-  /* Mobile-friendly cards */
-  .mobile-compact .card {
-    padding: 0.75rem;
-  }
-  
-  /* Responsive charts */
-  .mobile-chart {
-    height: 200px;
-  }
-  
-  /* Touch-friendly buttons */
-  .mobile-touch button {
+  /* Touch-optimized interactive elements */
+  a, button, [role="button"], [role="link"], .clickable {
+    @apply relative;
     min-height: 44px;
     min-width: 44px;
   }
 }
 
+/* Premium animations */
+@layer utilities {
+  /* Smooth fade-in animation */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Slide animations */
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideInLeft {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideInUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  /* Scale animation */
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  /* Bounce animation for actions */
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  
+  /* Animation classes */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+  
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out forwards;
+  }
+  
+  .animate-slide-in-left {
+    animation: slideInLeft 0.3s ease-out forwards;
+  }
+  
+  .animate-slide-in-up {
+    animation: slideInUp 0.4s ease-out forwards;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out forwards;
+  }
+  
+  .animate-bounce {
+    animation: bounce 0.6s ease-in-out;
+  }
+  
+  /* Animation delays */
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+  
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+  
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+  
+  .animation-delay-500 {
+    animation-delay: 500ms;
+  }
+}
+
+/* Mobile-specific utilities */
+@layer utilities {
+  /* Safe area insets for modern phones */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Hide scrollbars but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Custom premium scrollbar */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsla(var(--muted-foreground), 0.3) transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsla(var(--muted-foreground), 0.3);
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsla(var(--muted-foreground), 0.5);
+  }
+  
+  /* Glassmorphism effect */
+  .glass-effect {
+    @apply backdrop-blur-xl bg-background/70 border border-border/50;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+  
+  .dark .glass-effect {
+    @apply bg-background/60 border-border/30;
+  }
+  
+  /* Premium gradient backgrounds */
+  .premium-gradient {
+    background-image: 
+      radial-gradient(at 40% 20%, hsla(var(--finhub-orange), 0.15) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsla(var(--primary), 0.1) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsla(var(--accent), 0.1) 0px, transparent 50%);
+  }
+  
+  .dark .premium-gradient {
+    background-image: 
+      radial-gradient(at 40% 20%, hsla(var(--finhub-orange), 0.08) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsla(var(--primary), 0.05) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsla(var(--accent), 0.05) 0px, transparent 50%);
+  }
+}
+
+/* Mobile-responsive layouts */
+@layer components {
+  /* Mobile container with responsive padding */
+  .mobile-container {
+    @apply w-full px-4 mx-auto;
+    max-width: 100%;
+  }
+  
+  @media (min-width: 640px) {
+    .mobile-container {
+      @apply px-6;
+      max-width: 640px;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .mobile-container {
+      @apply px-8;
+      max-width: 768px;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .mobile-container {
+      max-width: 1024px;
+    }
+  }
+  
+  @media (min-width: 1280px) {
+    .mobile-container {
+      max-width: 1280px;
+    }
+  }
+  
+  /* Mobile-optimized card grid */
+  .mobile-card-grid {
+    @apply grid grid-cols-1 gap-4;
+  }
+  
+  @media (min-width: 640px) {
+    .mobile-card-grid {
+      @apply grid-cols-2 gap-6;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .mobile-card-grid {
+      @apply grid-cols-3 gap-8;
+    }
+  }
+  
+  /* Touch-friendly spacing */
+  .touch-spacing {
+    @apply space-y-3 sm:space-y-4 md:space-y-6;
+  }
+  
+  /* Mobile-first table wrapper */
+  .mobile-table-wrapper {
+    @apply relative w-full overflow-x-auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  .mobile-table-wrapper table {
+    @apply min-w-full;
+  }
+  
+  /* Swipe hint indicator */
+  .swipe-hint::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 40px;
+    background: linear-gradient(to right, transparent, rgba(0,0,0,0.05));
+    pointer-events: none;
+  }
+  
+  .dark .swipe-hint::after {
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.05));
+  }
+}
+
+/* Mobile-specific responsive utilities */
+@media (max-width: 768px) {
+  /* Ensure full width on mobile */
+  .container {
+    @apply px-4 max-w-full;
+  }
+  
+  /* Responsive text sizing */
+  .text-responsive {
+    @apply text-sm;
+  }
+  
+  /* Mobile-optimized buttons */
+  .btn-mobile {
+    @apply w-full justify-center text-base py-3;
+  }
+  
+  /* Stack elements vertically */
+  .mobile-stack {
+    @apply flex-col space-y-4;
+  }
+  
+  /* Compact spacing for mobile */
+  .mobile-compact {
+    @apply space-y-2;
+  }
+  
+  /* Full-width elements */
+  .mobile-full {
+    @apply w-full mx-0;
+  }
+  
+  /* Mobile table optimizations */
+  .financial-table {
+    @apply text-xs;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .financial-table th,
+  .financial-table td {
+    @apply px-2 py-1.5;
+  }
+  
+  /* Mobile-friendly card padding */
+  .card-mobile {
+    @apply p-4;
+  }
+  
+  /* Horizontal scrolling tabs */
+  .tabs-mobile {
+    @apply flex overflow-x-auto snap-x snap-mandatory;
+    scroll-padding: 0 1rem;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .tabs-mobile > * {
+    @apply snap-start flex-shrink-0;
+  }
+}
+
+/* Ultra-small mobile optimizations */
 @media (max-width: 640px) {
-  /* Extra compact for very small screens */
+  .container {
+    @apply px-3;
+  }
+  
   .financial-table {
     font-size: 0.7rem;
   }
   
-  .mobile-chart {
-    height: 180px;
+  .text-mobile-xs {
+    @apply text-xs;
+  }
+  
+  .text-mobile-sm {
+    @apply text-sm;
+  }
+  
+  .text-mobile-base {
+    @apply text-base;
   }
 }
 
-/* Animation delay utilities */
-.animation-delay-200 {
-  animation-delay: 200ms;
-}
-
-.animation-delay-400 {
-  animation-delay: 400ms;
-}
-
-/* Excel-style background colors for financial tables */
+/* Excel-style table colors */
 .bg-blue-25 { 
   background-color: rgb(239 246 255); 
 }
@@ -172,4 +545,42 @@
 .bg-red-25 { 
   background-color: rgb(254 242 242); 
 }
+
+/* Premium loading states */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsla(var(--muted), 0.5) 0%,
+    hsla(var(--muted), 0.7) 50%,
+    hsla(var(--muted), 0.5) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Touch gesture support */
+.touch-pan-x {
+  touch-action: pan-x;
+}
+
+.touch-pan-y {
+  touch-action: pan-y;
+}
+
+.touch-none {
+  touch-action: none;
+}
+
+/* Smooth transitions for theme changes */
+* {
+  @apply transition-colors duration-200;
 }
