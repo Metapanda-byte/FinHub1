@@ -35,6 +35,8 @@ import {
   Share2,
   Filter,
   RefreshCw,
+  Eye,
+  X,
 } from "lucide-react";
 import { StockSearch } from "@/components/search/stock-search";
 import { Card } from "@/components/ui/card";
@@ -89,6 +91,12 @@ const tabConfig = [
     label: "Ideas", 
     icon: Lightbulb,
     component: IdeaGeneration
+  },
+  { 
+    id: "watchlist", 
+    label: "Watchlist", 
+    icon: Eye,
+    component: null // Will be handled specially
   },
 ];
 
@@ -206,7 +214,10 @@ export function DashboardEnhanced() {
                   key={symbol}
                   variant="outline"
                   className="justify-start nav-pill"
-                  onClick={() => useSearchStore.getState().setCurrentSymbol(symbol)}
+                  onClick={() => {
+                    const stock = stocks.find(s => s.symbol === symbol);
+                    useSearchStore.getState().setCurrentCompany(symbol, stock?.name || symbol);
+                  }}
                 >
                   {symbol}
                 </Button>
@@ -266,7 +277,10 @@ export function DashboardEnhanced() {
                       key={symbol}
                       variant={symbol === currentSymbol ? "secondary" : "ghost"}
                       className="w-full justify-start text-sm nav-pill"
-                      onClick={() => useSearchStore.getState().setCurrentSymbol(symbol)}
+                      onClick={() => {
+                        const stock = stocks.find(s => s.symbol === symbol);
+                        useSearchStore.getState().setCurrentCompany(symbol, stock?.name || symbol);
+                      }}
                     >
                       {symbol}
                     </Button>

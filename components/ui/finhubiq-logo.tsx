@@ -133,7 +133,7 @@ export function FinHubIQLogo({
     >
       <LogoGraphic />
       <div className={cn(
-        'flex items-center pl-1', 
+        'flex items-center', 
         layout === 'stacked' ? 'flex-col' : 'space-x-0.5'
       )}>
         <span className={cn('font-medium leading-none', colors.finhub, size === 'small' ? 'text-sm' : size === 'medium' ? 'text-lg' : 'text-xl')}>
