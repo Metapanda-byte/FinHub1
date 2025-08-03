@@ -18,6 +18,10 @@ const buttonVariants = cva(
           'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
+        orange:
+          'bg-[hsl(var(--finhub-orange))] text-[hsl(var(--finhub-orange-foreground))] hover:bg-[hsl(var(--finhub-orange))]/90 shadow-[0_0_20px_rgba(255,140,0,0.2)]',
+        'orange-outline':
+          'border border-[hsl(var(--finhub-orange))]/50 text-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/10 hover:border-[hsl(var(--finhub-orange))]',
       },
       size: {
         default: 'h-10 px-4 py-2',

@@ -76,27 +76,41 @@ export function DashboardTabs() {
 
   return (
     <>
+    <div className="mobile-optimized container">
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <div className="flex items-center justify-between gap-4 mb-4">
-        <TabsList className="grid grid-cols-8 flex-1">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="financials">Financials</TabsTrigger>
-          <TabsTrigger value="credit-analysis">Credit</TabsTrigger>
-          <TabsTrigger value="valuation">Valuation</TabsTrigger>
-          <TabsTrigger value="competitors">Competitors</TabsTrigger>
-          <TabsTrigger value="idea-generation">Idea Generation</TabsTrigger>
-          <TabsTrigger value="recent-news">Recent News</TabsTrigger>
-          <TabsTrigger value="screening">Screening</TabsTrigger>
-        </TabsList>
-        <PDFExportButton 
-          targetId={`tab-content-${activeTab}`}
-          filename={pdfFilename}
-          buttonText="Export PDF"
-          className="flex-shrink-0"
-        />
+      <div className="flex flex-col gap-4 mb-4">
+        {/* Mobile-first tab navigation */}
+        <div className="flex items-center justify-between w-full">
+          <div className="flex-1 overflow-hidden">
+            <TabsList className="mobile-tabs w-full bg-transparent border-b border-border px-0 py-0 h-auto justify-start rounded-none">
+              <TabsTrigger value="overview" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Overview</TabsTrigger>
+              <TabsTrigger value="financials" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Financials</TabsTrigger>
+              <TabsTrigger value="credit-analysis" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Credit</TabsTrigger>
+              <TabsTrigger value="valuation" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Valuation</TabsTrigger>
+              <TabsTrigger value="competitors" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Competitors</TabsTrigger>
+              <TabsTrigger value="idea-generation" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Ideas</TabsTrigger>
+              <TabsTrigger value="recent-news" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">News</TabsTrigger>
+              <TabsTrigger value="screening" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Screening</TabsTrigger>
+            </TabsList>
+          </div>
+          <div className="flex-shrink-0 ml-4">
+            <PDFExportButton 
+              targetId={`tab-content-${activeTab}`}
+              filename={pdfFilename}
+              buttonText="Export PDF"
+              className="hidden sm:inline-flex"
+            />
+            <PDFExportButton 
+              targetId={`tab-content-${activeTab}`}
+              filename={pdfFilename}
+              buttonText="PDF"
+              className="sm:hidden"
+            />
+          </div>
+        </div>
       </div>
       
-      <TabsContent value="overview">
+      <TabsContent value="overview" className="space-y-responsive mobile-card">
         <div id="tab-content-overview">
           <Suspense fallback={<OverviewLoadingSkeleton />}>
             <Overview />
@@ -104,7 +118,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
-      <TabsContent value="financials">
+      <TabsContent value="financials" className="space-y-responsive mobile-card">
         <div id="tab-content-financials">
           <Suspense fallback={<FinancialsLoadingSkeleton />}>
             <Financials />
@@ -112,7 +126,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
-      <TabsContent value="credit-analysis">
+      <TabsContent value="credit-analysis" className="space-y-responsive mobile-card">
         <div id="tab-content-credit-analysis">
           <Suspense fallback={<FinancialsLoadingSkeleton />}>
             <CreditAnalysis />
@@ -120,7 +134,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
-      <TabsContent value="valuation">
+      <TabsContent value="valuation" className="space-y-responsive mobile-card">
         <div id="tab-content-valuation">
           <Suspense fallback={<ValuationLoadingSkeleton />}>
             <ValuationConsiderations />
@@ -128,7 +142,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
-      <TabsContent value="recent-news">
+      <TabsContent value="recent-news" className="space-y-responsive mobile-card">
         <div id="tab-content-recent-news">
           <Suspense fallback={<CardLoadingSkeleton />}>
             <RecentNews />
@@ -136,7 +150,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
-      <TabsContent value="idea-generation">
+      <TabsContent value="idea-generation" className="space-y-responsive mobile-card">
         <div id="tab-content-idea-generation">
           <Suspense fallback={<CardLoadingSkeleton />}>
             <IdeaGeneration />
@@ -144,7 +158,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
-      <TabsContent value="competitors">
+      <TabsContent value="competitors" className="space-y-responsive mobile-card">
         <div id="tab-content-competitors">
           <Suspense fallback={<PeerComparisonLoadingSkeleton />}>
             <CompetitorAnalysis />
@@ -152,7 +166,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
 
-      <TabsContent value="screening">
+      <TabsContent value="screening" className="space-y-responsive mobile-card">
         <div id="tab-content-screening">
           <Suspense fallback={<ScreeningLoadingSkeleton />}>
             <ScreeningTool />
@@ -160,6 +174,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
     </Tabs>
+    </div>
     
     {/* AI Chat Components */}
     <ChatFAB onClick={() => setIsChatOpen(true)} />

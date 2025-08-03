@@ -8,6 +8,8 @@ import { AuthProvider } from '@/lib/supabase/auth-context';
 import { SWRProvider } from '@/components/providers/swr-provider';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
+import { MobileNav } from '@/components/layout/mobile-nav';
+import { cn } from '@/lib/utils';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -18,7 +20,13 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'FinHubIQ | Financial Dashboard',
   description: 'Modern SAAS financial dashboard for comprehensive financial analysis',
-  viewport: 'width=device-width, initial-scale=1',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: 'cover',
+  },
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: 'white' },
     { media: '(prefers-color-scheme: dark)', color: 'black' },
@@ -32,7 +40,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={cn(inter.className, "safe-top min-h-screen")}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -43,8 +51,15 @@ export default function RootLayout({
             <AuthProvider>
               <div className="flex min-h-screen flex-col">
                 <Header />
-                <main className="flex-1">{children}</main>
-                <Footer />
+                <main className="flex-1 pb-16 sm:pb-0 animate-fade-in w-full">
+                  <div className="container-wide mx-auto">
+                    {children}
+                  </div>
+                </main>
+                <div className="hidden sm:block">
+                  <Footer />
+                </div>
+                <MobileNav />
               </div>
             </AuthProvider>
           </SWRProvider>

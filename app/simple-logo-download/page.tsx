@@ -164,7 +164,7 @@ export default function SimpleLogoDownload() {
       console.log('Download triggered for:', filename);
     } catch (error) {
       console.error('Error generating image:', error);
-      alert(`Error generating image: ${error.message}`);
+      alert(`Error generating image: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 

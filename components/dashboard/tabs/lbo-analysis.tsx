@@ -489,7 +489,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
   }, [lboCalculation, assumptions.holdingPeriod]);
 
   if (profileLoading || incomeLoading || cashFlowLoading || balanceSheetLoading) {
-    return <TableLoadingSkeleton title="LBO Analysis" />;
+    return <TableLoadingSkeleton />;
   }
 
   if (!lboCalculation) {

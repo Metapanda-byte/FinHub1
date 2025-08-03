@@ -15,6 +15,8 @@ const badgeVariants = cva(
         destructive:
           'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
         outline: 'text-foreground',
+        orange:
+          'border-[hsl(var(--finhub-orange))]/20 bg-[hsl(var(--finhub-orange))]/10 text-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/20',
       },
     },
     defaultVariants: {

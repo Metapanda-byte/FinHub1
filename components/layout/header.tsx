@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChartBig, Menu, X } from "lucide-react";
+import { BarChartBig, Menu, X, Bell, Grid3X3, BarChart3 } from "lucide-react";
 import { FinHubIQLogo } from "@/components/ui/finhubiq-logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -28,46 +28,101 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    // Close mobile menu on route change
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-200",
+        "sticky top-0 z-50 w-full transition-all duration-200 safe-top",
         isScrolled
-          ? "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm"
+          ? "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm border-b border-border/40"
           : "bg-transparent"
       )}
     >
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2 sm:gap-8">
-          <Link href="/" className="flex items-center">
-            <FinHubIQLogo variant={theme === 'light' ? 'black' : 'primary'} size="medium" />
-          </Link>
-          {isDashboard && (
-            <div className="hidden sm:block">
-              <StockSearch />
+      <div className="container-wide h-14 sm:h-16 flex items-center justify-between px-mobile">
+        {/* Logo and Search */}
+        <div className="flex items-center gap-2 sm:gap-4 flex-1">
+          <Link href="/" className="flex items-center flex-shrink-0 group">
+            <div className="relative">
+              <FinHubIQLogo 
+                variant={theme === 'light' ? 'black' : 'primary'} 
+                size="small"
+                className="sm:hidden transition-transform group-hover:scale-105"
+              />
+              <FinHubIQLogo 
+                variant={theme === 'light' ? 'black' : 'primary'} 
+                size="medium"
+                className="hidden sm:block transition-transform group-hover:scale-105"
+              />
+              {/* Orange glow on hover */}
+              <div className="absolute inset-0 bg-[hsl(var(--finhub-orange))]/0 group-hover:bg-[hsl(var(--finhub-orange))]/10 blur-xl transition-all duration-300 -z-10" />
             </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-4">
+          </Link>
+          
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" asChild>
-              <Link href="/dashboard">Dashboard</Link>
+          <nav className="hidden md:flex items-center space-x-2">
+            <Button 
+              variant="ghost" 
+              asChild 
+              className={cn(
+                "touch-target orange-accent-hover relative",
+                pathname === '/dashboard' && "text-[hsl(var(--finhub-orange))]"
+              )}
+            >
+              <Link href="/dashboard">
+                Dashboard
+                {pathname === '/dashboard' && (
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-[hsl(var(--finhub-orange))] rounded-full" />
+                )}
+              </Link>
             </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/plans">Plans</Link>
+            <Button 
+              variant="ghost" 
+              asChild 
+              className={cn(
+                "touch-target orange-accent-hover relative",
+                pathname === '/plans' && "text-[hsl(var(--finhub-orange))]"
+              )}
+            >
+              <Link href="/plans">
+                Plans
+                {pathname === '/plans' && (
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-[hsl(var(--finhub-orange))] rounded-full" />
+                )}
+              </Link>
             </Button>
           </nav>
+        </div>
 
-          {/* Mobile Search for Dashboard */}
+        {/* Center Search on Desktop */}
+        {isDashboard && (
+          <div className="hidden sm:block flex-1 max-w-md mx-4">
+            <StockSearch />
+          </div>
+        )}
+
+        {/* Right Actions */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Mobile Search */}
           {isDashboard && (
             <div className="sm:hidden">
               <StockSearch />
             </div>
           )}
 
+          {/* Action Buttons */}
+          <Button variant="ghost" size="icon" className="hidden sm:flex touch-target">
+            <Bell className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="hidden sm:flex touch-target">
+            <Grid3X3 className="h-4 w-4" />
+          </Button>
+          
           <ThemeToggle />
+          
           <div className="hidden sm:block">
             <AuthButton />
           </div>
@@ -76,7 +131,7 @@ export default function Header() {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="md:hidden touch-target"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? (
@@ -88,22 +143,63 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Slide-out Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container py-4 space-y-3">
-            <Button variant="ghost" asChild className="w-full justify-start">
-              <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                Dashboard
-              </Link>
-            </Button>
-            <Button variant="ghost" asChild className="w-full justify-start">
-              <Link href="/plans" onClick={() => setIsMobileMenuOpen(false)}>
-                Plans
-              </Link>
-            </Button>
-            <div className="pt-2 border-t">
-              <AuthButton />
+        <div className="fixed inset-0 z-50 md:hidden animate-fade-in">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          
+          {/* Menu Panel */}
+          <div className="fixed right-0 top-0 h-full w-[280px] bg-background border-l shadow-2xl animate-slide-in-right safe-right">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold">Menu</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            <div className="p-4 space-y-2">
+              <Button 
+                variant={pathname === '/dashboard' ? 'secondary' : 'ghost'} 
+                asChild 
+                className="w-full justify-start touch-target"
+              >
+                <Link href="/dashboard">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Dashboard
+                </Link>
+              </Button>
+              
+              <Button 
+                variant={pathname === '/plans' ? 'secondary' : 'ghost'} 
+                asChild 
+                className="w-full justify-start touch-target"
+              >
+                <Link href="/plans">
+                  <Grid3X3 className="h-4 w-4 mr-2" />
+                  Plans
+                </Link>
+              </Button>
+              
+              <div className="pt-4 border-t">
+                <div className="space-y-2">
+                  <Button variant="ghost" className="w-full justify-start touch-target">
+                    <Bell className="h-4 w-4 mr-2" />
+                    Notifications
+                  </Button>
+                  
+                  <div className="pt-2">
+                    <AuthButton />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
