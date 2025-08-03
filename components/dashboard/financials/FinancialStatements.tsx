@@ -75,7 +75,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
         <section>
           <h3 className="text-lg font-semibold mb-4">Income Statement</h3>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full financial-table">
               <thead>
                 <tr className="">
                   <th className="text-left py-3 px-4 font-medium text-sm">Metric</th>
@@ -195,7 +195,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
 
                 {viewMode === 'detailed' && (
                   <>
-                    <tr className="border-t">
+                    <tr className="">
                       <td colSpan={incomeStatements.length + 2} className="py-4 px-4 font-medium text-sm">
                         Per Share Data
                       </td>
@@ -221,7 +221,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
         <section>
           <h3 className="text-lg font-semibold mb-4">Balance Sheet</h3>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full financial-table">
               <thead>
                 <tr className="">
                   <th className="text-left py-3 px-4 font-medium text-sm">Metric</th>
@@ -305,7 +305,7 @@ export function FinancialStatements({ symbol }: FinancialStatementsProps) {
         <section>
           <h3 className="text-lg font-semibold mb-4">Cash Flow Statement</h3>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full financial-table">
               <thead>
                 <tr className="">
                   <th className="text-left py-3 px-4 font-medium text-sm">Metric</th>

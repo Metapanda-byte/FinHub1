@@ -4,6 +4,7 @@ import React, { useState, lazy, Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartLoadingSkeleton, TableLoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 import { Lightbulb, Search, Brain, TrendingUp } from "lucide-react";
 
 // Lazy load sub-components
@@ -12,28 +13,11 @@ const AIAssistedIdeaGeneration = lazy(() => import("./ai-assisted-idea-generatio
 
 // Sub-tab loading skeletons
 function ScreeningLoadingSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2">
-        <ChartLoadingSkeleton />
-        <ChartLoadingSkeleton />
-      </div>
-      <TableLoadingSkeleton />
-    </div>
-  );
+  return <CrunchingNumbersCard message="Crunching the numbers" />;
 }
 
 function AIIdeaLoadingSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-3">
-        <ChartLoadingSkeleton />
-        <ChartLoadingSkeleton />
-        <ChartLoadingSkeleton />
-      </div>
-      <TableLoadingSkeleton />
-    </div>
-  );
+  return <CrunchingNumbersCard message="Crunching the numbers" />;
 }
 
 export default function IdeaGeneration() {

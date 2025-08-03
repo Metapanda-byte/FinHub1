@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { lazy, Suspense, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CardLoadingSkeleton, ChartLoadingSkeleton, TableLoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 import { PDFExportButton } from "@/components/ui/pdf-export-button";
 import { useSearchStore } from "@/lib/store/search-store";
 import { FinancialChat } from "@/components/ui/financial-chat";
@@ -18,48 +19,27 @@ const ValuationConsiderations = lazy(() => import("./valuation-considerations").
 const RecentNews = lazy(() => import("./recent-news").then(m => ({ default: m.RecentNews })));
 const IdeaGeneration = lazy(() => import("./idea-generation"));
 const CompetitorAnalysis = lazy(() => import("./competitor-analysis").then(m => ({ default: m.CompetitorAnalysis })));
+const ScreeningTool = lazy(() => import("./screening-tool").then(m => ({ default: m.ScreeningTool })));
 
 // Tab-specific loading skeletons
 function OverviewLoadingSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2">
-        <ChartLoadingSkeleton />
-        <ChartLoadingSkeleton />
-      </div>
-      <CardLoadingSkeleton />
-    </div>
-  );
+  return <CrunchingNumbersCard message="Crunching the numbers" />;
 }
 
 function FinancialsLoadingSkeleton() {
-  return (
-    <div className="space-y-4">
-      <CardLoadingSkeleton />
-      <TableLoadingSkeleton rows={8} />
-    </div>
-  );
+  return <CrunchingNumbersCard message="Crunching the numbers" />;
 }
 
 function ValuationLoadingSkeleton() {
-  return (
-    <div className="space-y-4">
-      <CardLoadingSkeleton />
-      <div className="grid gap-4 md:grid-cols-2">
-        <CardLoadingSkeleton />
-        <CardLoadingSkeleton />
-      </div>
-    </div>
-  );
+  return <CrunchingNumbersCard message="Crunching the numbers" />;
 }
 
-function CompetitorsLoadingSkeleton() {
-  return (
-    <div className="space-y-4">
-      <CardLoadingSkeleton />
-      <TableLoadingSkeleton rows={6} />
-    </div>
-  );
+function PeerComparisonLoadingSkeleton() {
+  return <CrunchingNumbersCard message="Crunching the numbers" />;
+}
+
+function ScreeningLoadingSkeleton() {
+  return <CrunchingNumbersCard message="Loading screening data" />;
 }
 
 export function DashboardTabs() {
@@ -98,7 +78,7 @@ export function DashboardTabs() {
     <>
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <div className="flex items-center justify-between gap-4 mb-4">
-        <TabsList className="grid grid-cols-7 flex-1">
+        <TabsList className="grid grid-cols-8 flex-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="financials">Financials</TabsTrigger>
           <TabsTrigger value="credit-analysis">Credit</TabsTrigger>
@@ -106,6 +86,7 @@ export function DashboardTabs() {
           <TabsTrigger value="competitors">Competitors</TabsTrigger>
           <TabsTrigger value="idea-generation">Idea Generation</TabsTrigger>
           <TabsTrigger value="recent-news">Recent News</TabsTrigger>
+          <TabsTrigger value="screening">Screening</TabsTrigger>
         </TabsList>
         <PDFExportButton 
           targetId={`tab-content-${activeTab}`}
@@ -165,8 +146,16 @@ export function DashboardTabs() {
       
       <TabsContent value="competitors">
         <div id="tab-content-competitors">
-          <Suspense fallback={<CompetitorsLoadingSkeleton />}>
+          <Suspense fallback={<PeerComparisonLoadingSkeleton />}>
             <CompetitorAnalysis />
+          </Suspense>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="screening">
+        <div id="tab-content-screening">
+          <Suspense fallback={<ScreeningLoadingSkeleton />}>
+            <ScreeningTool />
           </Suspense>
         </div>
       </TabsContent>

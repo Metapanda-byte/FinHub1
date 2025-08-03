@@ -1,16 +1,19 @@
+"use client";
+
 import Link from "next/link";
-import { BarChartBig } from "lucide-react";
-import { FinHubLogo } from "@/components/ui/finhub-logo";
+import { FinHubIQLogo } from "@/components/ui/finhubiq-logo";
+import { useTheme } from "next-themes";
 
 export default function Footer() {
+  const { theme } = useTheme();
+  
   return (
     <footer className="border-t">
       <div className="container py-8 md:py-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <FinHubLogo size="sm" />
-              <span className="font-bold text-lg">FinHub<span className="text-finhub-orange">IQ</span></span>
+            <div className="flex items-center">
+              <FinHubIQLogo variant={theme === 'light' ? 'black' : 'primary'} size="small" />
             </div>
             <p className="text-sm text-muted-foreground">
               Comprehensive financial analysis and visualization platform for

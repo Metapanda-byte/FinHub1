@@ -83,8 +83,20 @@
   
   /* Remove default table borders */
   table, th, td {
-  @apply border-0;
-}
+    @apply border-0;
+    border: none !important;
+  }
+  
+  /* Remove all table gridlines */
+  .financial-table {
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+  
+  .financial-table th,
+  .financial-table td {
+    border: none !important;
+  }
 
 /* Hide scrollbars for horizontal scrolling tabs */
 .scrollbar-hide {
@@ -133,5 +145,31 @@
   .mobile-chart {
     height: 180px;
   }
+}
+
+/* Animation delay utilities */
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
+
+/* Excel-style background colors for financial tables */
+.bg-blue-25 { 
+  background-color: rgb(239 246 255); 
+}
+
+.bg-yellow-25 { 
+  background-color: rgb(254 252 232); 
+}
+
+.bg-green-25 { 
+  background-color: rgb(240 253 244); 
+}
+
+.bg-red-25 { 
+  background-color: rgb(254 242 242); 
 }
 }

@@ -535,6 +535,18 @@ export const screeningFilters = {
     "TSX",
     "LSE",
     "EURONEXT"
+  ],
+  country: [
+    "United States",
+    "Canada",
+    "United Kingdom",
+    "Germany",
+    "France",
+    "Japan",
+    "South Korea",
+    "Taiwan",
+    "Netherlands",
+    "Switzerland"
   ]
 };
 
@@ -547,7 +559,19 @@ export const screeningResults = [
     peRatio: 30.5,
     dividendYield: 0.5,
     revenueGrowth: -2.8,
-    priceChange1Y: 38.9
+    priceChange1Y: 38.9,
+    beta: 1.25,
+    eps: 6.13,
+    priceToBook: 47.5,
+    priceToSales: 7.7,
+    roe: 160.6,
+    roa: 28.4,
+    grossMargin: 43.0,
+    operatingMargin: 28.8,
+    netMargin: 25.3,
+    debtToEquity: 1.73,
+    currentRatio: 0.94,
+    quickRatio: 0.81
   },
   {
     ticker: "MSFT",
@@ -557,7 +581,19 @@ export const screeningResults = [
     peRatio: 36.2,
     dividendYield: 0.7,
     revenueGrowth: 16.6,
-    priceChange1Y: 53.3
+    priceChange1Y: 53.3,
+    beta: 0.90,
+    eps: 9.65,
+    priceToBook: 13.2,
+    priceToSales: 12.5,
+    roe: 38.8,
+    roa: 16.5,
+    grossMargin: 69.5,
+    operatingMargin: 43.8,
+    netMargin: 35.7,
+    debtToEquity: 0.47,
+    currentRatio: 1.77,
+    quickRatio: 1.75
   },
   {
     ticker: "GOOGL",
@@ -567,7 +603,19 @@ export const screeningResults = [
     peRatio: 25.4,
     dividendYield: 0.5,
     revenueGrowth: 13.6,
-    priceChange1Y: 56.4
+    priceChange1Y: 56.4,
+    beta: 1.05,
+    eps: 5.80,
+    priceToBook: 6.3,
+    priceToSales: 6.1,
+    roe: 24.7,
+    roa: 21.2,
+    grossMargin: 55.4,
+    operatingMargin: 29.5,
+    netMargin: 24.0,
+    debtToEquity: 0.11,
+    currentRatio: 2.46,
+    quickRatio: 2.42
   },
   {
     ticker: "AMZN",
@@ -577,7 +625,19 @@ export const screeningResults = [
     peRatio: 59.8,
     dividendYield: 0.0,
     revenueGrowth: 13.7,
-    priceChange1Y: 77.9
+    priceChange1Y: 77.9,
+    beta: 1.15,
+    eps: 2.90,
+    priceToBook: 9.2,
+    priceToSales: 3.1,
+    roe: 14.8,
+    roa: 6.0,
+    grossMargin: 45.4,
+    operatingMargin: 5.2,
+    netMargin: 4.0,
+    debtToEquity: 0.91,
+    currentRatio: 1.05,
+    quickRatio: 0.82
   },
   {
     ticker: "META",
@@ -587,7 +647,19 @@ export const screeningResults = [
     peRatio: 24.7,
     dividendYield: 0.4,
     revenueGrowth: 16.1,
-    priceChange1Y: 150.3
+    priceChange1Y: 150.3,
+    beta: 1.18,
+    eps: 14.87,
+    priceToBook: 6.4,
+    priceToSales: 7.3,
+    roe: 27.4,
+    roa: 23.9,
+    grossMargin: 80.9,
+    operatingMargin: 35.0,
+    netMargin: 29.2,
+    debtToEquity: 0.13,
+    currentRatio: 2.54,
+    quickRatio: 2.51
   },
   {
     ticker: "NVDA",
@@ -597,7 +669,19 @@ export const screeningResults = [
     peRatio: 65.1,
     dividendYield: 0.03,
     revenueGrowth: 125.5,
-    priceChange1Y: 207.5
+    priceChange1Y: 207.5,
+    beta: 1.68,
+    eps: 12.96,
+    priceToBook: 45.8,
+    priceToSales: 31.5,
+    roe: 87.2,
+    roa: 66.3,
+    grossMargin: 72.7,
+    operatingMargin: 57.4,
+    netMargin: 48.9,
+    debtToEquity: 0.17,
+    currentRatio: 3.86,
+    quickRatio: 3.40
   },
   {
     ticker: "TSLA",
@@ -607,7 +691,19 @@ export const screeningResults = [
     peRatio: 47.5,
     dividendYield: 0.0,
     revenueGrowth: 1.8,
-    priceChange1Y: 4.7
+    priceChange1Y: 4.7,
+    beta: 2.29,
+    eps: 4.30,
+    priceToBook: 12.8,
+    priceToSales: 7.5,
+    roe: 28.1,
+    roa: 7.6,
+    grossMargin: 19.3,
+    operatingMargin: 9.6,
+    netMargin: 15.0,
+    debtToEquity: 0.17,
+    currentRatio: 1.73,
+    quickRatio: 1.31
   },
   {
     ticker: "TSM",
@@ -617,7 +713,19 @@ export const screeningResults = [
     peRatio: 26.3,
     dividendYield: 1.4,
     revenueGrowth: 12.5,
-    priceChange1Y: 94.2
+    priceChange1Y: 94.2,
+    beta: 1.02,
+    eps: 4.85,
+    priceToBook: 4.1,
+    priceToSales: 9.8,
+    roe: 16.8,
+    roa: 12.3,
+    grossMargin: 54.0,
+    operatingMargin: 45.5,
+    netMargin: 38.9,
+    debtToEquity: 0.28,
+    currentRatio: 2.35,
+    quickRatio: 2.15
   },
   {
     ticker: "AVGO",
@@ -627,7 +735,19 @@ export const screeningResults = [
     peRatio: 49.8,
     dividendYield: 1.5,
     revenueGrowth: 39.8,
-    priceChange1Y: 134.5
+    priceChange1Y: 134.5,
+    beta: 1.88,
+    eps: 26.25,
+    priceToBook: 12.5,
+    priceToSales: 19.2,
+    roe: 28.3,
+    roa: 8.7,
+    grossMargin: 75.2,
+    operatingMargin: 35.8,
+    netMargin: 28.4,
+    debtToEquity: 1.58,
+    currentRatio: 1.64,
+    quickRatio: 1.52
   },
   {
     ticker: "ORCL",
@@ -637,6 +757,18 @@ export const screeningResults = [
     peRatio: 32.4,
     dividendYield: 1.1,
     revenueGrowth: 5.4,
-    priceChange1Y: 26.8
+    priceChange1Y: 26.8,
+    beta: 0.87,
+    eps: 4.88,
+    priceToBook: 44.2,
+    priceToSales: 8.9,
+    roe: 144.5,
+    roa: 9.8,
+    grossMargin: 70.9,
+    operatingMargin: 30.1,
+    netMargin: 20.1,
+    debtToEquity: 13.2,
+    currentRatio: 0.72,
+    quickRatio: 0.72
   }
 ];

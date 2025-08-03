@@ -2,6 +2,7 @@
 
 import { useBalanceSheets, useIncomeStatements, useCashFlows } from "@/lib/api/financial";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CrunchingNumbersCardWithHeader } from "@/components/ui/crunching-numbers-loader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
 import { useSearchStore } from "@/lib/store/search-store";
@@ -37,19 +38,10 @@ export function FinancialStatements() {
 
   if (!currentSymbol || balanceSheetsLoading || incomeStatementsLoading || cashFlowsLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Loading Financial Data...</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[200px] flex items-center justify-center">
-            <div className="animate-pulse space-y-4">
-              <div className="h-4 w-48 bg-muted rounded"></div>
-              <div className="h-4 w-36 bg-muted rounded"></div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <CrunchingNumbersCardWithHeader 
+        title="Financial Statements"
+        message="Crunching the numbers"
+      />
     );
   }
 

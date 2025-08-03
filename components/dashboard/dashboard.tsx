@@ -4,10 +4,9 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompanyOverview } from "@/components/dashboard/tabs/company-overview";
 import { HistoricalFinancials } from "@/components/dashboard/tabs/historical-financials";
-import CreditAnalysis from "@/components/dashboard/tabs/credit-analysis";
 import { CompetitorAnalysis } from "@/components/dashboard/tabs/competitor-analysis";
 import { DCFAnalysis } from "@/components/dashboard/tabs/dcf-analysis";
-import { ValuationConsiderations } from "@/components/dashboard/tabs/valuation-considerations";
+import { LBOAnalysis } from "@/components/dashboard/tabs/lbo-analysis";
 import { RecentNews } from "@/components/dashboard/tabs/recent-news";
 import IdeaGeneration from "@/components/dashboard/tabs/idea-generation";
 import { WatchlistTable } from "@/components/dashboard/tabs/watchlist-table";
@@ -111,7 +110,7 @@ export function Dashboard() {
             value="competitor-analysis"
             className="data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 md:px-4 py-2 border-b-2 border-transparent rounded-none transition-all whitespace-nowrap text-sm md:text-base"
           >
-            Competitor Analysis
+            Peer Comparison
           </TabsTrigger>
           <TabsTrigger 
             value="dcf-analysis"
@@ -120,16 +119,10 @@ export function Dashboard() {
             DCF Analysis
           </TabsTrigger>
           <TabsTrigger 
-            value="credit-analysis"
+            value="lbo-analysis"
             className="data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 md:px-4 py-2 border-b-2 border-transparent rounded-none transition-all whitespace-nowrap text-sm md:text-base"
           >
-            Credit Analysis
-          </TabsTrigger>
-          <TabsTrigger 
-            value="valuation-considerations"
-            className="data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 md:px-4 py-2 border-b-2 border-transparent rounded-none transition-all whitespace-nowrap text-sm md:text-base"
-          >
-            Valuation Considerations
+            LBO Analysis
           </TabsTrigger>
           <TabsTrigger 
             value="recent-news"
@@ -168,11 +161,8 @@ export function Dashboard() {
       <TabsContent value="dcf-analysis" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
         <DCFAnalysis symbol={currentSymbol} />
       </TabsContent>
-      <TabsContent value="credit-analysis" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
-        <CreditAnalysis />
-      </TabsContent>
-      <TabsContent value="valuation-considerations" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
-        <ValuationConsiderations />
+      <TabsContent value="lbo-analysis" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
+        <LBOAnalysis symbol={currentSymbol} />
       </TabsContent>
       <TabsContent value="recent-news" className="space-y-3 md:space-y-4 mt-3 md:mt-4 px-2 md:px-0">
         <RecentNews />
@@ -191,7 +181,10 @@ export function Dashboard() {
     {/* AI Analysis & Chat Components */}
     {currentSymbol && (
       <>
-        <HighlightToChat onHighlightAnalyze={handleHighlightAnalyze} />
+        <HighlightToChat 
+          onHighlightAnalyze={handleHighlightAnalyze} 
+          activeTab={activeTab}
+        />
         <ChatFAB onClick={() => setIsChatOpen(true)} />
         
         <AnalysisPopup

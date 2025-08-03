@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, XCircle, Shield, Target, BarChart3, PieChart } from 'lucide-react';
 import { useSearchStore } from '@/lib/store/search-store';
 import { useFinancialRatios, useKeyMetrics, type FinancialRatios, type KeyMetrics } from '@/lib/api/financial';
+import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, RadialBarChart, RadialBar, Legend, Pie } from 'recharts';
 
 interface CreditMetricProps {
@@ -326,27 +327,7 @@ export default function CreditAnalysis() {
   }
 
   if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader>
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {[...Array(4)].map((_, j) => (
-                  <div key={j} className="flex justify-between">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
+    return <CrunchingNumbersCard message="Crunching the numbers" />;
   }
 
   if (error) {

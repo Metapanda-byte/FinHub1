@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 
 interface HighlightToChatProps {
   onHighlightAnalyze: (hoveredElement: string, context: string) => void;
+  activeTab?: string;
 }
 
-export function HighlightToChat({ onHighlightAnalyze }: HighlightToChatProps) {
+export function HighlightToChat({ onHighlightAnalyze, activeTab }: HighlightToChatProps) {
   const [showPopup, setShowPopup] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [hoveredData, setHoveredData] = useState({ element: '', context: '' });
@@ -17,6 +18,9 @@ export function HighlightToChat({ onHighlightAnalyze }: HighlightToChatProps) {
 
   useEffect(() => {
     const handleMouseOver = (event: MouseEvent) => {
+      // Only activate on Historical Financials tab
+      if (activeTab !== 'historical-financials') return;
+      
       const target = event.target as HTMLElement;
       
       // Check if hovered element contains financial data
@@ -112,7 +116,7 @@ export function HighlightToChat({ onHighlightAnalyze }: HighlightToChatProps) {
         clearTimeout(hoverTimeoutRef.current);
       }
     };
-  }, []);
+  }, [activeTab]);
 
   const handleAnalyze = () => {
     if (hoveredData.element) {

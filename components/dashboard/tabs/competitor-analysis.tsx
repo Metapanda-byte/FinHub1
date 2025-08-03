@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { CrunchingNumbersCardWithHeader } from "@/components/ui/crunching-numbers-loader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,16 +62,37 @@ interface StockSearchResult {
 }
 
 const fetcher = async (url: string) => {
-  console.log("Fetching competitors from:", url);
-  const response = await fetch(url);
-  if (!response.ok) {
-    const error = new Error(`Failed to fetch competitors: ${response.status}`);
-    console.error("Competitor fetch error:", error);
-    throw error;
+  console.log("Fetching peer data from:", url);
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API Response ${response.status}:`, errorText);
+      
+      if (response.status === 404) {
+        throw new Error(`No peer data available (404)`);
+      } else if (response.status >= 500) {
+        throw new Error(`Server error (${response.status})`);
+      } else {
+        throw new Error(`Failed to fetch competitors: ${response.status}`);
+      }
+    }
+    const data = await response.json();
+    console.log("Peer comparison API response:", data);
+    
+    // Validate the response structure
+    if (!data || (!data.peerCompanies && !data.peerValuationData)) {
+              throw new Error("Invalid response structure from peer comparison API");
+    }
+    
+    return data;
+  } catch (fetchError) {
+    console.error("Network or parsing error:", fetchError);
+    if (fetchError instanceof Error) {
+      throw fetchError;
+    }
+    throw new Error("Network error while fetching peer data");
   }
-  const data = await response.json();
-  console.log("Competitor API response:", data);
-  return data;
 };
 
 // Cache search results
@@ -127,33 +149,41 @@ export function CompetitorAnalysis() {
   const [loadingForward, setLoadingForward] = useState(false);
 
   // Cache the API URL
-  const apiUrl = useMemo(() => 
-    currentSymbol ? 
+  const apiUrl = useMemo(() => {
+    const url = currentSymbol ? 
       `/api/competitors?symbol=${currentSymbol}${manualTickers.length > 0 ? `&additionalTickers=${manualTickers.join(",")}` : ""}` 
-      : null,
-    [currentSymbol, manualTickers]
-  );
+      : null;
+    console.log("Peer Comparison API URL:", url, "Symbol:", currentSymbol);
+    return url;
+  }, [currentSymbol, manualTickers]);
 
-  const { data, error: swrError, isLoading } = useSWR<CompetitorData>(
+  const { data, error: swrError, isLoading, mutate: revalidate } = useSWR<CompetitorData>(
     apiUrl,
     fetcher,
     {
       onSuccess: (data) => {
+        console.log("SWR Success - data received:", data);
         if (data?.peerCompanies) {
           // Always select the first 5 peers when data is loaded
           const firstFivePeers = data.peerCompanies.slice(0, 5).map(company => company.id);
           setSelectedPeers(firstFivePeers);
         }
+        setError(null); // Clear any previous errors
       },
       onError: (err) => {
-        console.error("Error fetching competitors:", err);
+        console.error("SWR Error fetching peer data:", err);
         setError(err.message);
       },
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      errorRetryCount: 3,
-      shouldRetryOnError: true,
-      dedupingInterval: 5000, // Dedupe requests within 5 seconds
+      errorRetryCount: 2, // Reduced retry count
+      errorRetryInterval: 1000, // 1 second between retries
+      shouldRetryOnError: (err) => {
+        // Only retry on network errors, not on 404s
+        return !err.message.includes('404') && !err.message.includes('No peer data');
+      },
+      dedupingInterval: 10000, // Increased deduping interval
+      refreshInterval: 0, // Disable automatic refresh
     }
   );
 
@@ -473,37 +503,66 @@ export function CompetitorAnalysis() {
     return peer[metric];
   };
 
-  if (isLoading) {
+  // Early return if no symbol is selected
+  if (!currentSymbol) {
     return (
       <div className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Loading Competitor Analysis...</CardTitle>
+            <CardTitle>Select a Company</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <div className="h-4 w-3/4 bg-muted animate-pulse rounded" />
-              <div className="h-4 w-1/2 bg-muted animate-pulse rounded" />
-              <div className="h-4 w-2/3 bg-muted animate-pulse rounded" />
-            </div>
+            <p className="text-muted-foreground">
+              Please search for and select a company symbol to view competitor analysis.
+            </p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  if (isLoading) {
+    return (
+      <CrunchingNumbersCardWithHeader 
+        title="Peer Comparison"
+        message="Crunching the numbers"
+      />
+    );
+  }
+
   if (swrError) {
+    const errorMessage = swrError.message.includes('404') 
+      ? "No peer data found for this symbol"
+      : swrError.message.includes('Failed to fetch')
+      ? "Unable to connect to data source"
+      : "An unexpected error occurred";
+      
     return (
       <div className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Error Loading Competitor Analysis</CardTitle>
+            <CardTitle>Unable to Load Peer Comparison</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-red-500">Error: {swrError.message}</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Please try again later or check if the symbol is correct.
+            <p className="text-amber-600 dark:text-amber-400 mb-3">
+              {errorMessage}
             </p>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>• This may be due to limited data availability for this symbol</p>
+              <p>• Try selecting a different company symbol</p>
+              <p>• Check your internet connection and try again</p>
+            </div>
+            <Button 
+              onClick={() => {
+                setError(null);
+                revalidate();
+              }} 
+              variant="outline" 
+              size="sm" 
+              className="mt-4"
+            >
+              Retry
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -515,11 +574,11 @@ export function CompetitorAnalysis() {
       <div className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>No Competitor Data Available</CardTitle>
+            <CardTitle>No Peer Data Available</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              No competitor analysis data is available for {currentSymbol} at this time.
+              No peer comparison data is available for {currentSymbol} at this time.
             </p>
           </CardContent>
         </Card>
@@ -529,14 +588,15 @@ export function CompetitorAnalysis() {
 
   return (
     <div className="space-y-4">
-      <Card className="col-span-full">
-        <CardHeader className="pb-2">
+      {/* Shared Ticker Selection Controls */}
+      <Card>
+        <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Valuation Comparables</CardTitle>
-              <CardDescription>Compare key valuation metrics with industry peers</CardDescription>
+              <CardTitle className="text-lg font-semibold">Peer Selection & Controls</CardTitle>
+              <CardDescription>Select and manage companies for comparison across all tabs</CardDescription>
             </div>
-            <div className="flex flex-col gap-4 w-full md:w-auto">
+            <div className="flex flex-col gap-3 w-full md:w-auto">
               <div className="flex justify-end w-full">
                 <Popover open={isSearchOpen} onOpenChange={setIsSearchOpen}>
                   <PopoverTrigger asChild>
@@ -610,58 +670,72 @@ export function CompetitorAnalysis() {
             </div>
           </div>
         </CardHeader>
+      </Card>
+
+      <Tabs defaultValue="valuation" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="valuation" className="text-sm">Valuation Comparables</TabsTrigger>
+          <TabsTrigger value="operating" className="text-sm">Operating Benchmarks</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="valuation" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold">Valuation Comparables</CardTitle>
+              <CardDescription>Compare key valuation metrics with industry peers</CardDescription>
+            </CardHeader>
         <CardContent>
           {valuationMode === 'forward' && loadingForward ? (
             <div className="py-8 text-center text-muted-foreground">Loading forward estimates...</div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg">
               <div className="flex justify-start mb-2">
                 <ToggleGroup type="single" value={valuationMode} onValueChange={v => v && setValuationMode(v as 'ttm' | 'forward')}>
                   <ToggleGroupItem value="ttm">TTM</ToggleGroupItem>
                   <ToggleGroupItem value="forward">Forward</ToggleGroupItem>
                 </ToggleGroup>
               </div>
-              <table className="w-full">
-                <thead>
-                  <tr className="">
-                    <th className="text-left py-3 px-4 font-medium text-sm">Company</th>
-                    <th className="text-right py-3 px-4 font-medium text-sm">
+              <table className="w-full financial-table">
+                <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur">
+                  <tr className="border-b-2 border-slate-200 dark:border-slate-700">
+                    <th className="text-left py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90">Company</th>
+                    <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[90px]">
                       Market Cap
                       {renderMetricTooltip("Market Capitalization", "The total value of all outstanding shares of a company.")}
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-sm">
+                    <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
                       EV/EBITDA
                       {renderMetricTooltip("Enterprise Value to EBITDA", "Measures the value of a company compared to its earnings before interest, taxes, depreciation, and amortization.")}
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-sm">
+                    <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
                       P/E Ratio
                       {renderMetricTooltip("Price to Earnings Ratio", "Measures a company's current share price relative to its earnings per share.")}
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-sm">
+                    <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
                       P/S Ratio
                       {renderMetricTooltip("Price to Sales Ratio", "Compares a company's stock price to its revenues.")}
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-sm">
+                    <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
                       P/B Ratio
                       {renderMetricTooltip("Price to Book Ratio", "Compares a company's market value to its book value.")}
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-sm">
+                    <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
                       Div. Yield
                       {renderMetricTooltip("Dividend Yield", "The annual dividend payment divided by the stock price, expressed as a percentage.")}
                     </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="bg-white dark:bg-slate-950">
                   {/* Peer companies */}
                   {filteredValuationData.map((company) => (
-                    <tr key={company.ticker} className="hover:bg-muted/50 transition-colors">
-                      <td className="py-3 px-4 text-sm font-medium">{company.company} ({company.ticker})</td>
-                      <td className="text-right py-3 px-4 text-sm">{getValuationMetric(company, 'marketCap')}</td>
-                      <td className="text-right py-3 px-4 text-sm">{getValuationMetric(company, 'evToEbitda')}</td>
-                      <td className="text-right py-3 px-4 text-sm">{getValuationMetric(company, 'peRatio')}</td>
-                      <td className="text-right py-3 px-4 text-sm">{getValuationMetric(company, 'priceToSales')}</td>
-                      <td className="text-right py-3 px-4 text-sm">{getValuationMetric(company, 'priceToBook')}</td>
-                      <td className="text-right py-3 px-4 text-sm">{getValuationMetric(company, 'dividendYield')}</td>
+                    <tr key={company.ticker} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="py-2 px-4 text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300 sticky left-0 z-20 bg-white dark:bg-slate-950">{company.company} ({company.ticker})</td>
+                      <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{getValuationMetric(company, 'marketCap')}</td>
+                      <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{getValuationMetric(company, 'evToEbitda')}</td>
+                      <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{getValuationMetric(company, 'peRatio')}</td>
+                      <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{getValuationMetric(company, 'priceToSales')}</td>
+                      <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{getValuationMetric(company, 'priceToBook')}</td>
+                      <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{getValuationMetric(company, 'dividendYield')}</td>
                     </tr>
                   ))}
                   
@@ -671,45 +745,45 @@ export function CompetitorAnalysis() {
                   {/* Median row */}
                   {filteredValuationData.length > 0 && (
                     <>
-                      <tr className="bg-muted/30 font-bold">
-                        <td className="py-3 px-4 text-sm">Median</td>
-                        <td className="text-right py-3 px-4 text-sm">
+                      <tr className="border-b-2 border-slate-300 dark:border-slate-600 bg-blue-25 dark:bg-blue-900/20">
+                        <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-blue-25 dark:bg-blue-900/20">Median</td>
+                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                           {formatMarketCap(calculateMetrics(filteredValuationData).median.marketCap)}
                         </td>
-                        <td className="text-right py-3 px-4 text-sm">
+                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                           {calculateMetrics(filteredValuationData).median.evToEbitda.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-4 text-sm">
+                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                           {calculateMetrics(filteredValuationData).median.peRatio.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-4 text-sm">
+                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                           {calculateMetrics(filteredValuationData).median.priceToSales.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-4 text-sm">
+                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                           {calculateMetrics(filteredValuationData).median.priceToBook.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-4 text-sm">
+                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                           {formatPercentage(calculateMetrics(filteredValuationData).median.dividendYield)}
                         </td>
                       </tr>
-                      <tr className="bg-muted/30 font-bold">
-                        <td className="py-3 px-4 text-sm">Average</td>
-                        <td className="text-right py-3 px-4 text-sm">
+                      <tr className="border-b-2 border-slate-300 dark:border-slate-600 bg-yellow-25 dark:bg-yellow-900/20">
+                        <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-yellow-25 dark:bg-yellow-900/20">Average</td>
+                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                           {formatMarketCap(calculateMetrics(filteredValuationData).average.marketCap)}
                         </td>
-                        <td className="text-right py-3 px-4 text-sm">
+                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                           {calculateMetrics(filteredValuationData).average.evToEbitda.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-4 text-sm">
+                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                           {calculateMetrics(filteredValuationData).average.peRatio.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-4 text-sm">
+                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                           {calculateMetrics(filteredValuationData).average.priceToSales.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-4 text-sm">
+                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                           {calculateMetrics(filteredValuationData).average.priceToBook.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-4 text-sm">
+                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                           {formatPercentage(calculateMetrics(filteredValuationData).average.dividendYield)}
                         </td>
                       </tr>
@@ -721,26 +795,26 @@ export function CompetitorAnalysis() {
                   
                   {/* Subject company row */}
                   {data?.peerValuationData.find(company => company.ticker === currentSymbol) && (
-                    <tr className="bg-[#2563eb]/20 font-medium">
-                      <td className="py-3 px-4 text-sm">
+                    <tr className="border-2 border-blue-600 dark:border-blue-400 bg-green-25 dark:bg-green-900/20">
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-green-25 dark:bg-green-900/20">
                         {data.peerValuationData.find(company => company.ticker === currentSymbol)?.company} ({currentSymbol})
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {formatMarketCap(data.peerValuationData.find(company => company.ticker === currentSymbol)?.marketCap || 0)}
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {data.peerValuationData.find(company => company.ticker === currentSymbol)?.evToEbitda.toFixed(1)}x
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {data.peerValuationData.find(company => company.ticker === currentSymbol)?.peRatio.toFixed(1)}x
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {data.peerValuationData.find(company => company.ticker === currentSymbol)?.priceToSales.toFixed(1)}x
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {data.peerValuationData.find(company => company.ticker === currentSymbol)?.priceToBook.toFixed(1)}x
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {formatPercentage(data.peerValuationData.find(company => company.ticker === currentSymbol)?.dividendYield || 0)}
                       </td>
                     </tr>
@@ -751,59 +825,60 @@ export function CompetitorAnalysis() {
           )}
         </CardContent>
       </Card>
-
-      {/* Performance Table (separate, below valuation) */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Benchmark Analysis</CardTitle>
-          <CardDescription>Compare key operating metrics with industry peers</CardDescription>
-        </CardHeader>
+        </TabsContent>
+        
+        <TabsContent value="operating" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Operating Benchmarks</CardTitle>
+              <CardDescription>Compare key operating metrics with industry peers</CardDescription>
+            </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="">
-                  <th className="text-left py-3 px-4 font-medium text-sm">Company</th>
-                  <th className="text-right py-3 px-4 font-medium text-sm">
+          <div className="overflow-x-auto rounded-lg">
+            <table className="w-full financial-table">
+              <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur">
+                <tr className="border-b-2 border-slate-200 dark:border-slate-700">
+                  <th className="text-left py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90">Company</th>
+                  <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
                     Rev. Growth
                     {renderMetricTooltip("Revenue Growth", "Year-over-year percentage change in revenue.")}
                   </th>
-                  <th className="text-right py-3 px-4 font-medium text-sm">
+                  <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
                     Gross Margin
                     {renderMetricTooltip("Gross Margin", "Gross profit divided by revenue, expressed as a percentage.")}
                   </th>
-                  <th className="text-right py-3 px-4 font-medium text-sm">
+                  <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
                     Op. Margin
                     {renderMetricTooltip("Operating Margin", "Operating income divided by revenue, expressed as a percentage.")}
                   </th>
-                  <th className="text-right py-3 px-4 font-medium text-sm">
+                  <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
                     Net Margin
                     {renderMetricTooltip("Net Margin", "Net income divided by revenue, expressed as a percentage.")}
                   </th>
-                  <th className="text-right py-3 px-4 font-medium text-sm">
+                  <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
                     ROIC
                     {renderMetricTooltip("Return on Invested Capital", "Measures how efficiently a company uses capital to generate profits.")}
                   </th>
-                  <th className="text-right py-3 px-4 font-medium text-sm">
+                  <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
                     ROE
                     {renderMetricTooltip("Return on Equity", "Net income divided by shareholders' equity, expressed as a percentage.")}
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="bg-white dark:bg-slate-950">
                 {/* Peer companies */}
                 {filteredPerformanceData.map((company) => (
-                  <tr key={company.ticker} className="hover:bg-muted/50 transition-colors">
-                    <td className="py-3 px-4 text-sm font-medium">{company.company} ({company.ticker})</td>
+                  <tr key={company.ticker} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                    <td className="py-2 px-4 text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300 sticky left-0 z-20 bg-white dark:bg-slate-950">{company.company} ({company.ticker})</td>
                     <td className={cn(
-                      "text-right py-3 px-4 text-sm",
+                      "text-right py-2 px-3 text-xs md:text-sm tabular-nums",
                       company.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                     )}>{formatPercentage(company.revenueGrowth)}</td>
-                    <td className="text-right py-3 px-4 text-sm">{formatPercentage(company.grossMargin)}</td>
-                    <td className="text-right py-3 px-4 text-sm">{formatPercentage(company.operatingMargin)}</td>
-                    <td className="text-right py-3 px-4 text-sm">{formatPercentage(company.netMargin)}</td>
-                    <td className="text-right py-3 px-4 text-sm">{formatPercentage(company.roic)}</td>
-                    <td className="text-right py-3 px-4 text-sm">{formatPercentage(company.roe)}</td>
+                    <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{formatPercentage(company.grossMargin)}</td>
+                    <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{formatPercentage(company.operatingMargin)}</td>
+                    <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{formatPercentage(company.netMargin)}</td>
+                    <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{formatPercentage(company.roic)}</td>
+                    <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{formatPercentage(company.roe)}</td>
                   </tr>
                 ))}
                 
@@ -813,51 +888,51 @@ export function CompetitorAnalysis() {
                 {/* Median row */}
                 {filteredPerformanceData.length > 0 && (
                   <>
-                                          <tr className="bg-muted/30 font-bold">
-                      <td className="py-3 px-4 text-sm">Median</td>
+                    <tr className="border-b-2 border-slate-300 dark:border-slate-600 bg-blue-25 dark:bg-blue-900/20">
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-blue-25 dark:bg-blue-900/20">Median</td>
                       <td className={cn(
-                        "text-right py-3 px-4 text-sm",
+                        "text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold",
                         calculateMetrics(filteredPerformanceData).median.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                       )}>
                         {formatPercentage(calculateMetrics(filteredPerformanceData).median.revenueGrowth)}
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).median.grossMargin)}
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).median.operatingMargin)}
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).median.netMargin)}
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).median.roic)}
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).median.roe)}
                       </td>
                     </tr>
-                                          <tr className="bg-muted/30 font-bold">
-                      <td className="py-3 px-4 text-sm">Average</td>
+                    <tr className="border-b-2 border-slate-300 dark:border-slate-600 bg-yellow-25 dark:bg-yellow-900/20">
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-yellow-25 dark:bg-yellow-900/20">Average</td>
                       <td className={cn(
-                        "text-right py-3 px-4 text-sm",
+                        "text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold",
                         calculateMetrics(filteredPerformanceData).average.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                       )}>
                         {formatPercentage(calculateMetrics(filteredPerformanceData).average.revenueGrowth)}
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).average.grossMargin)}
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).average.operatingMargin)}
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).average.netMargin)}
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).average.roic)}
                       </td>
-                      <td className="text-right py-3 px-4 text-sm">
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                         {formatPercentage(calculateMetrics(filteredPerformanceData).average.roe)}
                       </td>
                     </tr>
@@ -869,31 +944,31 @@ export function CompetitorAnalysis() {
                 
                 {/* Subject company row */}
                 {data?.peerPerformanceData.find(company => company.ticker === currentSymbol) && (
-                  <tr className="bg-[#2563eb]/20 font-medium">
-                    <td className="py-3 px-4 text-sm">
+                  <tr className="border-2 border-blue-600 dark:border-blue-400 bg-green-25 dark:bg-green-900/20">
+                    <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-green-25 dark:bg-green-900/20">
                       {data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.company} ({currentSymbol})
                     </td>
                     <td className={cn(
-                      "text-right py-3 px-4 text-sm",
+                      "text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold",
                       (data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.revenueGrowth || 0) >= 0 
                         ? "text-green-600 dark:text-green-400" 
                         : "text-red-600 dark:text-red-400"
                     )}>
                       {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.revenueGrowth || 0)}
                     </td>
-                    <td className="text-right py-3 px-4 text-sm">
+                    <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                       {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.grossMargin || 0)}
                     </td>
-                    <td className="text-right py-3 px-4 text-sm">
+                    <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                       {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.operatingMargin || 0)}
                     </td>
-                    <td className="text-right py-3 px-4 text-sm">
+                    <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                       {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.netMargin || 0)}
                     </td>
-                    <td className="text-right py-3 px-4 text-sm">
+                    <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                       {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.roic || 0)}
                     </td>
-                    <td className="text-right py-3 px-4 text-sm">
+                    <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
                       {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.roe || 0)}
                     </td>
                   </tr>
@@ -904,88 +979,8 @@ export function CompetitorAnalysis() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Metrics Calculator</CardTitle>
-          <CardDescription>Automatically calculate derived financial metrics</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="py-4">
-                <CardTitle className="text-sm font-medium">
-                  Enterprise Value (EV)
-                  {renderMetricTooltip("Enterprise Value", "Market Cap + Total Debt - Cash & Equivalents")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">$3.02T</p>
-                <p className="text-xs text-muted-foreground mt-1">Market Cap + Total Debt - Cash</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="py-4">
-                <CardTitle className="text-sm font-medium">
-                  EBITDA Margin
-                  {renderMetricTooltip("EBITDA Margin", "EBITDA / Revenue, expressed as a percentage")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">33.0%</p>
-                <p className="text-xs text-muted-foreground mt-1">EBITDA / Revenue</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="py-4">
-                <CardTitle className="text-sm font-medium">
-                  Free Cash Flow
-                  {renderMetricTooltip("Free Cash Flow", "Operating Cash Flow - Capital Expenditures")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">$102.5B</p>
-                <p className="text-xs text-muted-foreground mt-1">Operating Cash Flow - CapEx</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="py-4">
-                <CardTitle className="text-sm font-medium">
-                  FCF Yield
-                  {renderMetricTooltip("Free Cash Flow Yield", "Free Cash Flow / Market Cap, expressed as a percentage")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">3.5%</p>
-                <p className="text-xs text-muted-foreground mt-1">FCF / Market Cap</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="py-4">
-                <CardTitle className="text-sm font-medium">
-                  Price to FCF
-                  {renderMetricTooltip("Price to Free Cash Flow", "Market Cap / Free Cash Flow")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">28.9x</p>
-                <p className="text-xs text-muted-foreground mt-1">Market Cap / FCF</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="py-4">
-                <CardTitle className="text-sm font-medium">
-                  Net Debt / EBITDA
-                  {renderMetricTooltip("Net Debt to EBITDA", "Measures a company's ability to pay off its debt")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">0.4x</p>
-                <p className="text-xs text-muted-foreground mt-1">(Total Debt - Cash) / EBITDA</p>
-              </CardContent>
-            </Card>
-          </div>
-        </CardContent>
-      </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

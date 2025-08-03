@@ -3,15 +3,19 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
-  reactStrictMode: false,
+  reactStrictMode: false, // Disabled for debugging - can enable later
   webpack: (config) => {
-    // Disable webpack cache
-    config.cache = false;
+    // Re-enable webpack cache for better performance
+    config.cache = {
+      type: 'filesystem',
+    };
     return config;
   },
-  // Enable static optimization where possible
+  // Fix serverActions configuration
   experimental: {
-    serverActions: true
+    serverActions: {
+      allowedOrigins: ["localhost:3000", "localhost:3001"]
+    }
   }
 }
 

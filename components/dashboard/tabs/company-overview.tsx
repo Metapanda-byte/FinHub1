@@ -27,6 +27,7 @@ import { pieChartPalettes } from "@/components/dashboard/charts/pie-chart-palett
 import clsx from 'clsx';
 import useSWR from 'swr';
 import { ChartLoadingSkeleton, CardLoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { CrunchingNumbersCardWithHeader } from "@/components/ui/crunching-numbers-loader";
 
 // Define a consistent FinHub blue palette (dark to light)
 const finhubBluePalette = [
@@ -465,22 +466,11 @@ export function CompanyOverview() {
   if (!currentSymbol || profileLoading || statementsLoading || pricesLoading || segmentsLoading || regionsLoading) {
     return (
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="col-span-full">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div className="space-y-1">
-              <CardTitle className="text-xl font-bold">Loading...</CardTitle>
-              <CardDescription>Fetching company data</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[200px] flex items-center justify-center">
-              <div className="animate-pulse space-y-4">
-                <div className="h-4 w-48 bg-muted rounded"></div>
-                <div className="h-4 w-36 bg-muted rounded"></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <CrunchingNumbersCardWithHeader 
+          className="col-span-full"
+          title="Company Overview"
+          message="Crunching the numbers"
+        />
       </div>
     );
   }
@@ -488,17 +478,11 @@ export function CompanyOverview() {
   if (!revenueData || !ebitdaData || !ltmRefDate) {
     return (
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="col-span-full">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div className="space-y-1">
-              <CardTitle className="text-xl font-bold">No Data Available</CardTitle>
-              <CardDescription>Unable to fetch company data</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Please try again later or select a different company.</p>
-          </CardContent>
-        </Card>
+        <CrunchingNumbersCardWithHeader 
+          className="col-span-full"
+          title="No Data Available"
+          message="Unable to fetch company data"
+        />
       </div>
     );
   }

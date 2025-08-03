@@ -538,9 +538,9 @@ export function HistoricalFinancials() {
     return (
       <div 
         ref={(el) => { tableContainerRefs.current[title] = el; }}
-        className="overflow-x-auto rounded-lg border-2 border-slate-200 dark:border-slate-700 shadow-sm"
+        className="overflow-x-auto rounded-lg shadow-sm"
       >
-        <table className="w-full financial-table">
+        <table className="w-full financial-table border-collapse">
           <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur">
             <tr className="">
               <th className={cn(
@@ -604,11 +604,11 @@ export function HistoricalFinancials() {
                   key={row.label} 
                   className={cn(
                     "group transition-colors relative",
-                    row.isImportant && !row.isEBITDA ? "before:absolute before:inset-y-0 before:left-6 before:right-6 before:bg-slate-50 dark:before:bg-slate-900/50 before:-z-10" : "",
-                    row.isEBITDA ? "before:absolute before:inset-y-0 before:left-6 before:right-6 before:bg-blue-50/80 dark:before:bg-blue-950/30 before:-z-10" : "",
-                    row.hasBorderTop ? "after:absolute after:top-0 after:left-6 after:right-4 after:h-px after:bg-slate-800 dark:after:bg-slate-200" : "",
+                    row.isImportant && !row.isEBITDA ? "before:absolute before:inset-y-0 before:left-6 before:right-6 before:bg-slate-100 dark:before:bg-slate-800 before:-z-10" : "",
+                    row.isEBITDA ? "before:absolute before:inset-y-0 before:left-6 before:right-6 before:bg-blue-100 dark:before:bg-blue-900 before:-z-10" : "",
+                    row.hasBorderTop ? "after:absolute after:top-0 after:left-0 after:right-0 after:h-px after:bg-slate-800 dark:after:bg-slate-200 after:z-40" : "",
                     row.isMargin ? "text-slate-500 dark:text-slate-400" : "",
-                    "hover:bg-slate-25 dark:hover:bg-slate-900/25"
+                    "hover:bg-slate-100 dark:hover:bg-slate-800"
                   )}
                 >
                   <td className={cn(
@@ -617,7 +617,7 @@ export function HistoricalFinancials() {
                     row.isImportant ? "font-semibold" : "",
                     row.isBold ? "font-bold" : "",
                     row.isMargin ? "text-slate-500 dark:text-slate-400" : "",
-                    "min-w-40 md:min-w-80 sticky left-0 z-20 bg-white dark:bg-slate-950"
+                    "min-w-40 md:min-w-80 sticky left-0 z-30 bg-white dark:bg-slate-950 shadow-sm"
                   )}>
                     {row.label}
                   </td>

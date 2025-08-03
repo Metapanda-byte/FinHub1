@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { BarChartBig, Menu, X } from "lucide-react";
-import { FinHubLogo } from "@/components/ui/finhub-logo";
+import { FinHubIQLogo } from "@/components/ui/finhubiq-logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { StockSearch } from "@/components/search/stock-search";
 import { usePathname } from "next/navigation";
@@ -16,6 +17,7 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const isDashboard = pathname === "/dashboard";
+  const { theme } = useTheme();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,11 +39,8 @@ export default function Header() {
     >
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-8">
-          <Link href="/" className="flex items-center space-x-2">
-            <FinHubLogo size="md" />
-            <span className="font-bold text-lg sm:text-xl">
-              FinHub<span className="text-finhub-orange">IQ</span>
-            </span>
+          <Link href="/" className="flex items-center">
+            <FinHubIQLogo variant={theme === 'light' ? 'black' : 'primary'} size="medium" />
           </Link>
           {isDashboard && (
             <div className="hidden sm:block">
