@@ -731,7 +731,7 @@ export function ScreeningTool() {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse screening-table">
               <thead>
-                <tr className="border-b-2 border-black text-xs">
+                <tr className="border-b-2 border-black dark:border-white text-xs">
                   <th 
                     className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('ticker')}
