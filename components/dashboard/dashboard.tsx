@@ -326,58 +326,7 @@ export function Dashboard() {
                   <IdeaGeneration />
                 </TabsContent>
                 <TabsContent value="watchlist" className="mt-0 space-y-3">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-lg font-semibold">Watchlist</h2>
-                      <p className="text-xs text-muted-foreground">
-                        {watchlistSymbols.length} saved {watchlistSymbols.length === 1 ? 'stock' : 'stocks'}
-                      </p>
-                    </div>
-                    
-                    {watchlistSymbols.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                        {watchlistSymbols.map((symbol) => (
-                          <Card key={symbol} className="p-3 hover:shadow-md transition-shadow">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h3 className="font-semibold text-base">{symbol}</h3>
-                                <p className="text-xs text-muted-foreground">Saved stock</p>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeStock(symbol)}
-                                className="h-7 w-7"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                            <Button
-                              variant="outline"
-                              className="w-full mt-2"
-                              onClick={() => {
-                                const stock = stocks.find(s => s.symbol === symbol);
-                                useSearchStore.getState().setCurrentCompany(symbol, stock?.name || symbol);
-                              }}
-                            >
-                              View Analysis
-                            </Button>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6">
-                        <Eye className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                        <h3 className="text-base font-semibold mb-2">No stocks in watchlist</h3>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Add stocks to your watchlist to track them here
-                        </p>
-                        <Button onClick={() => setActiveTab("company-snapshot")}>
-                          Browse Stocks
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                  <WatchlistTable />
                 </TabsContent>
               </div>
             </Tabs>
