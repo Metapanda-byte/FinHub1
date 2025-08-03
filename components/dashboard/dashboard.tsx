@@ -12,8 +12,7 @@ import { WatchlistTable } from "@/components/dashboard/tabs/watchlist-table";
 import SECFilingsTranscripts from "@/components/dashboard/tabs/sec-filings-transcripts";
 import { LBOAnalysis } from "@/components/dashboard/tabs/lbo-analysis";
 import { useSearchStore } from "@/lib/store/search-store";
-import { FinancialChat } from "@/components/ui/financial-chat";
-import { ChatFAB } from "@/components/ui/chat-fab";
+import { AnalystCopilot } from "@/components/ui/analyst-copilot";
 import { HighlightToChat } from "@/components/ui/highlight-to-chat";
 import { AnalysisPopup } from "@/components/ui/analysis-popup";
 import { useIncomeStatements, useCashFlows, useBalanceSheets, useSECFilings, useEarningsTranscriptDates } from "@/lib/api/financial";
@@ -34,6 +33,7 @@ import {
   Target,
   Search,
   Star,
+  Sparkles,
   X,
 } from "lucide-react";
 
@@ -150,13 +150,14 @@ export function Dashboard() {
 
   // Handle mobile navigation tab changes
   useEffect(() => {
-    const handleMobileNavChange = (e: CustomEvent) => {
-      setActiveTab(e.detail.tab);
+    const handleTabChange = (event: CustomEvent) => {
+      setActiveTab(event.detail.tab);
     };
 
-    window.addEventListener('mobile-nav-tab-change', handleMobileNavChange as any);
+    window.addEventListener('mobileTabChange', handleTabChange as EventListener);
+
     return () => {
-      window.removeEventListener('mobile-nav-tab-change', handleMobileNavChange as any);
+      window.removeEventListener('mobileTabChange', handleTabChange as EventListener);
     };
   }, []);
 
@@ -243,31 +244,41 @@ export function Dashboard() {
     <>
       <div data-dashboard className="flex flex-col h-screen overflow-hidden">
         {/* Dashboard-Specific Sticky Header Only */}
-        <div className="sticky top-12 z-40 bg-background/95 backdrop-blur-sm border-b border-border shrink-0 -mt-px">
+        <div className="sticky top-10 z-40 bg-background/95 backdrop-blur-sm border-b border-border shrink-0 -mt-px">
           {/* Company Info Section */}
-          <div className="px-mobile py-0.5 border-b border-border/30">
+          <div className="px-mobile pt-0.5 pb-1 border-b border-border/30">
             <div className="flex items-center gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold">
+                  <h1 className="text-lg font-bold leading-none">
                     {resolvedCompanyName ? `${resolvedCompanyName} (${currentSymbol})` : currentSymbol}
                   </h1>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 hover:bg-muted/60 transition-colors group"
+                    className="h-6 w-6 hover:bg-muted/60 transition-colors group"
                     onClick={toggleWatchlist}
                     title={isInWatchlist ? "Remove from watchlist" : "Add to watchlist"}
                   >
                     <Star className={cn(
-                      "h-3.5 w-3.5 transition-all duration-200",
+                      "h-3 w-3 transition-all duration-200",
                       isInWatchlist 
                         ? "fill-yellow-400 text-yellow-400" 
                         : "text-muted-foreground group-hover:text-foreground"
                     )} />
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-xs font-bold bg-white hover:bg-gray-50 text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300 transition-colors"
+                    onClick={() => setIsChatOpen(true)}
+                    title="Open AI Analyst Co-pilot"
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Analyst Co-pilot
+                  </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground leading-none mt-0.5">
                   FinHubIQ Workstation
                 </p>
               </div>
@@ -275,7 +286,7 @@ export function Dashboard() {
           </div>
 
           {/* Tab Navigation Section */}
-          <div className="px-mobile py-0.5">
+          <div className="px-mobile py-1">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="w-full">
                 <TabsList className="flex h-auto w-full bg-transparent gap-1 p-0">
@@ -283,10 +294,10 @@ export function Dashboard() {
                     <TabsTrigger
                       key={tab.id}
                       value={tab.id}
-                      className="flex-1 px-3 py-2.5 data-[state=active]:bg-muted/50 data-[state=active]:text-foreground transition-all duration-300 hover:bg-muted/30 rounded-lg border-0 shadow-none"
+                      className="flex-1 px-2 py-2 data-[state=active]:bg-muted/50 data-[state=active]:text-foreground transition-all duration-300 hover:bg-muted/30 rounded-lg border-0 shadow-none"
                     >
                       <div className="flex items-center justify-center gap-2">
-                        <tab.icon className="h-4 w-4 flex-shrink-0" />
+                        <tab.icon className="h-3.5 w-3.5 flex-shrink-0" />
                         <span className="text-xs font-medium whitespace-nowrap tracking-wide hidden sm:inline">
                           {tab.label}
                         </span>
@@ -353,14 +364,14 @@ export function Dashboard() {
               financialData={analysisData}
               onOpenChat={handleOpenChatFromAnalysis}
             />
-            <FinancialChat
+            <AnalystCopilot
               symbol={currentSymbol}
+              companyName={resolvedCompanyName}
               financialData={analysisData}
               isOpen={isChatOpen}
               onClose={() => setIsChatOpen(false)}
               initialQuery={highlightQuery}
               onQueryProcessed={() => setHighlightQuery('')}
-              hideUserQuery={!!highlightQuery}
             />
           </>
         )}

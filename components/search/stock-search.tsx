@@ -200,25 +200,25 @@ export function StockSearch({ className, placeholder = "Search companies...", sh
         onFocus={handleInputFocus}
         onBlur={() => setTimeout(() => setOpen(false), 200)} // Delay to allow clicking on dropdown items
         className={cn(
-          "w-full h-10 px-3 py-2 pr-20 text-sm bg-transparent rounded-md",
+          "w-full h-8 px-2 py-1 pr-16 text-sm bg-transparent rounded-md",
           "placeholder:text-muted-foreground placeholder:italic",
           "focus:outline-none",
           "disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
       />
-      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
         {showClearButton && (
           <Button
             variant="ghost"
             size="sm"
             onClick={handleClearInput}
-            className="h-6 w-6 p-0 hover:bg-muted/50"
+            className="h-5 w-5 p-0 hover:bg-muted/50"
           >
             <X className="h-3 w-3" />
           </Button>
         )}
-        <Search className="h-4 w-4 text-muted-foreground" />
+        <Search className="h-3.5 w-3.5 text-muted-foreground" />
       </div>
       
       {/* Dropdown Results */}

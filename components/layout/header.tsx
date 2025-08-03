@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChartBig, Menu, X } from "lucide-react";
+import { BarChartBig, Menu, X, Sparkles } from "lucide-react";
 import { FinHubIQLogo } from "@/components/ui/finhubiq-logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ export default function Header() {
     >
       <div className="container-wide px-mobile">
         {/* Main Header Row */}
-        <div className="h-12 flex items-center justify-between">
+        <div className="h-9 my-0.5 flex items-center justify-between">
           {/* Left: Logo */}
           <div className="flex items-center gap-4 flex-1">
             <Link href="/" className="flex items-center flex-shrink-0 group">
@@ -52,8 +52,8 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Center: Ticker Search */}
-          <div className="flex-1 flex justify-center max-w-lg mx-8">
+          {/* Center: Ticker Search - Desktop Only */}
+          <div className="hidden sm:flex flex-1 justify-center max-w-lg mx-8">
             <div className="w-full max-w-md">
               <StockSearch 
                 className="border-0 bg-muted/30 hover:bg-muted/40 focus-within:bg-muted/50 transition-colors duration-200 shadow-sm" 
@@ -70,14 +70,14 @@ export default function Header() {
             {/* Log In Button - No outline */}
             <Button 
               variant="ghost" 
-              className="hidden sm:flex items-center justify-center h-8 px-3 text-xs m-0 p-0 px-3 hover:bg-muted/50"
+              className="hidden sm:flex items-center justify-center h-7 px-2 text-xs hover:bg-muted/50"
             >
               Log In
             </Button>
 
             {/* Upgrade Button - McLaren Orange */}
             <Button 
-              className="hidden sm:flex items-center justify-center h-8 px-3 text-xs m-0 p-0 px-3 bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white"
+              className="hidden sm:flex items-center justify-center h-7 px-2 text-xs bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white"
             >
               Upgrade
             </Button>
@@ -86,24 +86,24 @@ export default function Header() {
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden touch-target"
+              className="sm:hidden h-7 w-7"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label="Toggle mobile menu"
             >
               {isMobileMenuOpen ? (
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               ) : (
-                <Menu className="h-5 w-5" />
+                <Menu className="h-4 w-4" />
               )}
             </Button>
           </div>
         </div>
 
-        {/* Mobile Ticker Search Row - Below main header */}
+        {/* Mobile Search Row - Compact */}
         {isDashboard && (
-          <div className="sm:hidden">
+          <div className="sm:hidden border-t border-border/20 py-1">
             <StockSearch 
-              className="w-full border-0 bg-muted/30 hover:bg-muted/40 focus-within:bg-muted/50 transition-colors duration-200 shadow-sm" 
+              className="w-full border-0 bg-muted/20 hover:bg-muted/30 focus-within:bg-muted/40 transition-colors duration-200" 
               placeholder="Search Company or Ticker"
               showSelectedTicker={false}
             />
