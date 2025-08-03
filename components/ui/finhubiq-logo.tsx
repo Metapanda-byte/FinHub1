@@ -113,21 +113,6 @@ export function FinHubIQLogo({
     </svg>
   );
 
-  // Text Component - exactly matching variants page structure
-  const LogoText = () => (
-    <div className={cn(
-      'flex items-center', 
-      layout === 'stacked' ? 'flex-col' : 'space-x-0.5'
-    )}>
-      <span className={cn('font-medium leading-none', colors.finhub, size === 'small' ? 'text-sm' : size === 'medium' ? 'text-lg' : 'text-xl')}>
-        FinHub
-      </span>
-      <span className={cn('font-bold leading-none', colors.iq, size === 'small' ? 'text-sm' : size === 'medium' ? 'text-lg' : 'text-xl', animated && 'animate-pulse')}>
-        IQ
-      </span>
-    </div>
-  );
-
   // Icon-only version
   if (variant === 'icon' || !showText) {
     return (
@@ -147,7 +132,17 @@ export function FinHubIQLogo({
       )}
     >
       <LogoGraphic />
-      <LogoText />
+      <div className={cn(
+        'flex items-center', 
+        layout === 'stacked' ? 'flex-col' : 'space-x-0.5'
+      )}>
+        <span className={cn('font-medium leading-none', colors.finhub, size === 'small' ? 'text-sm' : size === 'medium' ? 'text-lg' : 'text-xl')}>
+          FinHub
+        </span>
+        <span className={cn('font-bold leading-none', colors.iq, size === 'small' ? 'text-sm' : size === 'medium' ? 'text-lg' : 'text-xl', animated && 'animate-pulse')}>
+          IQ
+        </span>
+      </div>
     </div>
   );
 }
