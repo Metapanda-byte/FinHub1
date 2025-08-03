@@ -107,6 +107,7 @@ export function StockSearch({ className }: StockSearchProps) {
         addToRecent(company.symbol, company.name);
         setCurrentCompany(company.symbol, company.name);
         
+        console.log('StockSearch - Setting company:', company.symbol, company.name);
         console.log('State updates completed');
       } else {
         console.warn('No company found for symbol:', symbol);

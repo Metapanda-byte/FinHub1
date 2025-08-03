@@ -107,6 +107,21 @@ export function Dashboard() {
   const [analysisData, setAnalysisData] = useState({ metric: '', context: '' });
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
   const currentCompanyName = useSearchStore((state) => state.currentCompanyName);
+  const recentSearches = useSearchStore((state) => state.recentSearches);
+  const favorites = useSearchStore((state) => state.favorites);
+  
+  // Try to find company name if not set
+  const resolvedCompanyName = currentCompanyName || 
+    (currentSymbol ? 
+      recentSearches.find(s => s.symbol === currentSymbol)?.name ||
+      favorites.find(f => f.symbol === currentSymbol)?.name ||
+      null
+    : null);
+  
+  // Debug logging
+  console.log('Dashboard - currentSymbol:', currentSymbol);
+  console.log('Dashboard - currentCompanyName:', currentCompanyName);
+  console.log('Dashboard - resolvedCompanyName:', resolvedCompanyName);
   const stocks = useWatchlistStore((state) => state.stocks);
   const hasStock = useWatchlistStore((state) => state.hasStock);
   const addStock = useWatchlistStore((state) => state.addStock);
@@ -231,9 +246,9 @@ export function Dashboard() {
               <div className="flex items-center gap-3">
                 <div>
                   <h1 className="text-2xl font-bold">{currentSymbol}</h1>
-                  {currentCompanyName && (
+                  {resolvedCompanyName && (
                     <p className="text-sm text-muted-foreground mt-1">
-                      {currentCompanyName}
+                      {resolvedCompanyName}
                     </p>
                   )}
                 </div>
