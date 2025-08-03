@@ -1,12 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
   images: {
-    domains: ['financialmodelingprep.com', 'api.dicebear.com', 'images.unsplash.com', 'upload.wikimedia.org'],
+    unoptimized: true
   },
+  reactStrictMode: false, // Disabled for debugging - can enable later
+  webpack: (config) => {
+    // Re-enable webpack cache for better performance
+    config.cache = {
+      type: 'filesystem',
+    };
+    return config;
+  },
+  // Fix serverActions configuration
   experimental: {
-    serverActions: true
-  },
+    serverActions: {
+      allowedOrigins: ["localhost:3000", "localhost:3001"]
+    }
+  }
 }
 
 module.exports = nextConfig
