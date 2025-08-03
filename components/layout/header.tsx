@@ -46,18 +46,7 @@ export default function Header() {
         {/* Logo */}
         <div className="flex items-center gap-2 sm:gap-4 flex-1">
           <Link href="/" className="flex items-center flex-shrink-0 group">
-            <FinHubIQLogo 
-              variant={theme === 'light' ? 'black' : 'primary'} 
-              size="small"
-              layout="horizontal"
-              className="sm:hidden transition-transform group-hover:scale-105"
-            />
-            <FinHubIQLogo 
-              variant={theme === 'light' ? 'black' : 'primary'} 
-              size="medium"
-              layout="horizontal"
-              className="hidden sm:block transition-transform group-hover:scale-105"
-            />
+            <FinHubIQLogo variant={theme === 'light' ? 'black' : 'primary'} size="small" />
           </Link>
         </div>
 
