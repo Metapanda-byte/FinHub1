@@ -34,6 +34,7 @@ import {
   Target,
   Search,
   Star,
+  X,
 } from "lucide-react";
 import { StockSearch } from "@/components/search/stock-search";
 import { Card } from "@/components/ui/card";
@@ -89,6 +90,12 @@ const tabConfig = [
     label: "Ideas", 
     icon: Lightbulb,
     description: "AI-powered investment ideas"
+  },
+  { 
+    id: "watchlist", 
+    label: "Watchlist", 
+    icon: Eye,
+    description: "Your saved stocks"
   },
 ];
 
@@ -248,31 +255,8 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Main Content with Watchlist Sidebar */}
-        <div className="flex gap-4">
-          {/* Watchlist Sidebar - Desktop Only */}
-          {watchlistSymbols.length > 0 && (
-            <div className="hidden lg:block w-48 flex-shrink-0">
-              <Card className="p-4 sticky top-20">
-                <h3 className="text-sm font-medium mb-3">Watchlist</h3>
-                <div className="space-y-1">
-                  {watchlistSymbols.map((symbol) => (
-                    <Button
-                      key={symbol}
-                      variant={symbol === currentSymbol ? "secondary" : "ghost"}
-                      className="w-full justify-start text-sm"
-                      onClick={() => useSearchStore.getState().setCurrentSymbol(symbol)}
-                    >
-                      {symbol}
-                    </Button>
-                  ))}
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {/* Main Tabs Content */}
-          <div className="flex-1">
+        {/* Main Tabs Content */}
+        <div className="w-full">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               {/* Tab Navigation - Full Width Toolbar */}
               <div className="tabs-scroll-container rounded-xl bg-muted/30 backdrop-blur p-1">
@@ -318,10 +302,60 @@ export function Dashboard() {
                 <TabsContent value="idea-generation" className="mt-0 space-y-4">
                   <IdeaGeneration />
                 </TabsContent>
+                <TabsContent value="watchlist" className="mt-0 space-y-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xl font-semibold">Watchlist</h2>
+                      <p className="text-sm text-muted-foreground">
+                        {watchlistSymbols.length} saved {watchlistSymbols.length === 1 ? 'stock' : 'stocks'}
+                      </p>
+                    </div>
+                    
+                    {watchlistSymbols.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {watchlistSymbols.map((symbol) => (
+                          <Card key={symbol} className="p-4 hover:shadow-md transition-shadow">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h3 className="font-semibold text-lg">{symbol}</h3>
+                                <p className="text-sm text-muted-foreground">Saved stock</p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeStock(symbol)}
+                                className="h-8 w-8"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <Button
+                              variant="outline"
+                              className="w-full mt-3"
+                              onClick={() => useSearchStore.getState().setCurrentSymbol(symbol)}
+                            >
+                              View Analysis
+                            </Button>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Eye className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">No stocks in watchlist</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Add stocks to your watchlist to track them here
+                        </p>
+                        <Button onClick={() => setActiveTab("company-snapshot")}>
+                          Browse Stocks
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
               </div>
             </Tabs>
           </div>
-        </div>
 
         {/* AI Analysis & Chat Components */}
         {currentSymbol && (
