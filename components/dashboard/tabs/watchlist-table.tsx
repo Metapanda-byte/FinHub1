@@ -259,10 +259,10 @@ export function WatchlistTable() {
         </Button>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b text-xs">
+                  <div className="overflow-x-auto">
+            <table className="w-full border-collapse watchlist-table">
+              <thead>
+                <tr className="border-b-2 border-border text-xs">
                 <th 
                   className="text-left py-2 px-2 font-medium cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSort('symbol')}
@@ -376,9 +376,9 @@ export function WatchlistTable() {
                 </th>
               </tr>
             </thead>
-            <tbody>
-              {paginatedStocks.map((stock) => (
-                <tr key={stock.symbol} className="hover:bg-muted/50 transition-colors text-xs h-10">
+                          <tbody>
+                {paginatedStocks.map((stock) => (
+                  <tr key={stock.symbol} className="hover:bg-muted/50 transition-colors text-xs h-10 border-b border-border/30">
                   <td className="py-2 px-2 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline align-middle">
                     {stock.symbol}
                   </td>
