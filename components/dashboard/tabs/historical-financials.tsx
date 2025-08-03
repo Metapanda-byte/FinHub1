@@ -29,7 +29,7 @@ const formatMetric = (value: number | null | undefined, label?: string, isHeader
   if (isHeaderRow) {
     return '';
   }
-  if (value === null || value === undefined || isNaN(value)) {
+  if (value === null || value === undefined || isNaN(value) || value === 0) {
     return '-';
   }
   const isEPS = label?.includes('EPS');

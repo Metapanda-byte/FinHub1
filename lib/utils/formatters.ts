@@ -27,6 +27,11 @@ export function formatFinancialNumber(
   const opts = { ...defaultOptions, ...options };
   const { decimals, prefix, suffix, includeCurrency, showZeroDecimals, useParentheses } = opts;
 
+  // Return dash for zero values
+  if (value === 0) {
+    return '-';
+  }
+
   const scaledValue = value / 1_000_000; // Scale to millions
   const formattedNumber = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: showZeroDecimals ? decimals : 0,
@@ -51,6 +56,9 @@ export function formatFinancialNumber(
 }
 
 export function formatPercentage(value: number, decimals = 1): string {
+  if (value === 0) {
+    return '-';
+  }
   return `${value.toLocaleString('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,

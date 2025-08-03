@@ -127,6 +127,9 @@ const calculateAverage = (numbers: number[]): number => {
 
 // Update the market cap formatter to include commas
 const formatMarketCap = (value: number): string => {
+  if (value === 0) {
+    return '-';
+  }
   const billions = value / 1_000_000_000;
   return `$${billions.toLocaleString('en-US', { 
     minimumFractionDigits: 1,
