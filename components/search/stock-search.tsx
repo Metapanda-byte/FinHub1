@@ -123,23 +123,34 @@ export function StockSearch({ className }: StockSearchProps) {
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-[300px] justify-between bg-muted/30 hover:bg-muted",
+            "w-[300px] justify-between bg-muted/30 hover:bg-muted transition-all duration-200",
+            !currentSymbol && "ring-1 ring-muted-foreground/20 hover:ring-muted-foreground/40",
             className
           )}
         >
           <Search className="mr-2 h-4 w-4" />
           {currentSymbol ? (
-            <span>{currentSymbol}</span>
+            <span className="font-semibold">{currentSymbol}</span>
           ) : (
-            "Search symbol or company..."
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Select Company</span>
+              </div>
+              <span className="text-xs text-muted-foreground/60">or ticker symbol</span>
+            </div>
           )}
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0" align="start">
+        <div className="border-b px-3 py-2">
+          <div className="text-sm font-medium text-foreground">Select Company</div>
+          <div className="text-xs text-muted-foreground">Search by company name or ticker symbol</div>
+        </div>
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search symbol or company..."
+            placeholder="Type company name or ticker symbol..."
             value={search}
             onValueChange={setSearch}
             className="h-9"
