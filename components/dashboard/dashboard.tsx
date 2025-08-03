@@ -245,12 +245,9 @@ export function Dashboard() {
             <div>
               <div className="flex items-center gap-3">
                 <div>
-                  <h1 className="text-2xl font-bold">{currentSymbol}</h1>
-                  {resolvedCompanyName && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {resolvedCompanyName}
-                    </p>
-                  )}
+                  <h1 className="text-2xl font-bold">
+                    {resolvedCompanyName ? `${resolvedCompanyName} (${currentSymbol})` : currentSymbol}
+                  </h1>
                 </div>
                 <Button
                   variant="ghost"
