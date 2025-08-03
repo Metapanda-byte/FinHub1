@@ -237,12 +237,6 @@ export function Dashboard() {
               </p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="w-full sm:w-64">
-              <StockSearch />
-            </div>
-          </div>
         </div>
 
         {/* Main Content with Watchlist Sidebar */}
@@ -272,7 +266,8 @@ export function Dashboard() {
           <div className="flex-1">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               {/* Tab Navigation - Full Width Toolbar */}
-              <TabsList className="w-full h-auto p-1 bg-muted/30 backdrop-blur rounded-xl grid grid-cols-4 md:grid-cols-8 gap-1">
+              <div className="tabs-scroll-container rounded-xl bg-muted/30 backdrop-blur p-1">
+                <TabsList className="flex h-auto gap-1 w-max min-w-full md:grid md:grid-cols-8">
                 {tabConfig.map((tab) => (
                   <TabsTrigger
                     key={tab.id}
@@ -283,9 +278,10 @@ export function Dashboard() {
                       <tab.icon className="h-4 w-4" />
                       <span className="text-xs font-medium">{tab.label}</span>
                     </div>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+                                      </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
 
               {/* Tab Content */}
               <div className="mt-6 animate-fade-in">

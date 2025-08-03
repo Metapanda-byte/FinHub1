@@ -834,7 +834,7 @@ export function CompetitorAnalysis() {
               <CardDescription>Compare key operating metrics with industry peers</CardDescription>
             </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto rounded-lg">
+          <div className="financial-table-wrapper table-scroll-container rounded-lg">
             <table className="w-full financial-table">
               <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur">
                 <tr className="border-b-2 border-slate-200 dark:border-slate-700">

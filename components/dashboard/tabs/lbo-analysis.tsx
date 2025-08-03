@@ -524,7 +524,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Main Assumptions */}
             <div className="lg:col-span-3">
-              <div className="overflow-x-auto">
+              <div className="table-scroll-container">
                 <table className="w-full">
                   <thead>
                     <tr>

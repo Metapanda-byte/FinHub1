@@ -356,10 +356,139 @@
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
     scrollbar-width: none;
+    scroll-snap-type: x mandatory;
   }
   
   .touch-scroll-x::-webkit-scrollbar {
     display: none;
+  }
+  
+  /* Enhanced Table Scrolling */
+  .table-scroll-container {
+    @apply overflow-x-auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+  }
+  
+  .table-scroll-container::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  .table-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .table-scroll-container::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.3);
+    border-radius: 3px;
+  }
+  
+  .table-scroll-container::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.5);
+  }
+  
+  /* Smooth Momentum Scrolling */
+  .smooth-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior-x: contain;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .smooth-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Tab Scrolling Optimization */
+  .tabs-scroll-container {
+    @apply overflow-x-auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    scroll-snap-type: x proximity;
+    scroll-padding: 0 1rem;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  
+  .tabs-scroll-container::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .tabs-scroll-container > * {
+    scroll-snap-align: start;
+  }
+  
+  /* Financial Table Specific Optimizations */
+  .financial-table-wrapper {
+    @apply relative;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior-x: contain;
+  }
+  
+  /* Add subtle shadows to indicate scrollable content */
+  .financial-table-wrapper::before,
+  .financial-table-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    pointer-events: none;
+    z-index: 10;
+  }
+  
+  .financial-table-wrapper::before {
+    left: 0;
+    background: linear-gradient(to right, var(--background), transparent);
+  }
+  
+  .financial-table-wrapper::after {
+    right: 0;
+    background: linear-gradient(to left, var(--background), transparent);
+  }
+  
+  /* Hide shadows when not scrollable */
+  .financial-table-wrapper:not(.scrollable)::before,
+  .financial-table-wrapper:not(.scrollable)::after {
+    display: none;
+  }
+  
+  /* Improved Mobile Table Performance */
+  @media (max-width: 768px) {
+    .financial-table-wrapper {
+      /* Enable hardware acceleration */
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      perspective: 1000px;
+      -webkit-perspective: 1000px;
+    }
+    
+    .financial-table {
+      /* Prevent text selection while scrolling */
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    
+    /* Re-enable text selection on desktop */
+    @media (hover: hover) {
+      .financial-table {
+        -webkit-user-select: auto;
+        -moz-user-select: auto;
+        -ms-user-select: auto;
+        user-select: auto;
+      }
+    }
   }
   
   /* Premium Animations */

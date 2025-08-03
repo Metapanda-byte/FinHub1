@@ -538,7 +538,7 @@ export function HistoricalFinancials() {
     return (
       <div 
         ref={(el) => { tableContainerRefs.current[title] = el; }}
-        className="overflow-x-auto rounded-lg shadow-sm"
+        className="financial-table-wrapper table-scroll-container rounded-lg shadow-sm"
       >
         <table className="w-full financial-table border-collapse">
           <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur">
