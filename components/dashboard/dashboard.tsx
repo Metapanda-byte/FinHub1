@@ -202,22 +202,22 @@ export function Dashboard() {
 
   if (!currentSymbol) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-mobile">
-        <div className="mb-8">
-          <Search className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold mb-2">Enter a Ticker to Begin</h2>
-          <p className="text-muted-foreground mb-6">
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-mobile">
+        <div className="mb-6">
+          <Search className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+          <h2 className="text-xl font-semibold mb-2">Enter a Ticker to Begin</h2>
+          <p className="text-sm text-muted-foreground mb-4">
             Search for any company symbol to access comprehensive financial analysis
           </p>
         </div>
         
-        <div className="w-full max-w-md mb-8">
+        <div className="w-full max-w-md mb-6">
           <StockSearch />
         </div>
         
         {watchlistSymbols.length > 0 && (
           <div className="w-full max-w-2xl">
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">Your Watchlist</h3>
+            <h3 className="text-xs font-medium text-muted-foreground mb-2">Your Watchlist</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
               {watchlistSymbols.map((symbol) => (
                 <Button
@@ -238,33 +238,33 @@ export function Dashboard() {
 
   return (
     <>
-      <div data-dashboard className="px-mobile space-y-4">
+      <div data-dashboard className="px-mobile space-y-3">
         {/* Ticker Header Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 border-b">
+          <div className="flex items-center gap-3">
             <div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <div>
-                  <h1 className="text-2xl font-bold">
+                  <h1 className="text-xl font-bold">
                     {resolvedCompanyName ? `${resolvedCompanyName} (${currentSymbol})` : currentSymbol}
                   </h1>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 hover:bg-muted/60 transition-colors group"
+                  className="h-7 w-7 hover:bg-muted/60 transition-colors group"
                   onClick={toggleWatchlist}
                   title={isInWatchlist ? "Remove from watchlist" : "Add to watchlist"}
                 >
                   <Star className={cn(
-                    "h-4 w-4 transition-all duration-200",
+                    "h-3.5 w-3.5 transition-all duration-200",
                     isInWatchlist 
                       ? "fill-yellow-400 text-yellow-400" 
                       : "text-muted-foreground group-hover:text-foreground"
                   )} />
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground mt-2">
+              <p className="text-xs text-muted-foreground mt-1">
                 Financial Analysis Dashboard
               </p>
             </div>
@@ -272,7 +272,7 @@ export function Dashboard() {
           
           {/* Inline Ticker Input */}
           <div className="flex items-center gap-2">
-            <div className="w-64 sm:w-80">
+            <div className="w-56 sm:w-72">
               <StockSearch className="border-2 border-[hsl(var(--finhub-orange))] rounded-lg" />
             </div>
           </div>
@@ -282,17 +282,17 @@ export function Dashboard() {
         <div className="w-full">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               {/* Tab Navigation - Full Width Toolbar */}
-              <div className="w-full border-t border-b border-border/50 bg-background/50 backdrop-blur-sm">
-                <TabsList className="flex h-auto w-full bg-transparent gap-0 p-1">
+              <div className="w-full rounded-xl bg-gradient-to-r from-muted/40 via-muted/30 to-muted/40 backdrop-blur-sm p-1 border border-border/30 shadow-sm">
+                <TabsList className="flex h-auto w-full bg-transparent gap-0.5">
                   {tabConfig.map((tab) => (
                     <TabsTrigger
                       key={tab.id}
                       value={tab.id}
-                      className="flex-1 px-3 py-2.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-[hsl(var(--finhub-orange))] data-[state=active]:font-semibold border border-transparent transition-all duration-300 hover:bg-muted/60 rounded-none"
+                      className="flex-1 px-3 py-2.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md border border-transparent data-[state=active]:border-border/50 transition-all duration-300 hover:bg-muted/60 rounded-md"
                     >
                       <div className="flex items-center justify-center gap-2">
                         <tab.icon className="h-4 w-4 flex-shrink-0" />
-                        <span className="text-xs font-medium whitespace-nowrap tracking-wide">{tab.label}</span>
+                        <span className="text-xs font-semibold whitespace-nowrap tracking-wide">{tab.label}</span>
                       </div>
                     </TabsTrigger>
                   ))}
@@ -300,61 +300,61 @@ export function Dashboard() {
               </div>
 
               {/* Tab Content */}
-              <div className="mt-6 animate-fade-in">
-                <TabsContent value="company-snapshot" className="mt-0 space-y-4">
+              <div className="mt-3 animate-fade-in">
+                <TabsContent value="company-snapshot" className="mt-0 space-y-3">
                   <CompanyOverview />
                 </TabsContent>
-                <TabsContent value="historical-financials" className="mt-0 space-y-4">
+                <TabsContent value="historical-financials" className="mt-0 space-y-3">
                   <HistoricalFinancials />
                 </TabsContent>
-                <TabsContent value="competitor-analysis" className="mt-0 space-y-4">
+                <TabsContent value="competitor-analysis" className="mt-0 space-y-3">
                   <CompetitorAnalysis />
                 </TabsContent>
-                <TabsContent value="dcf-analysis" className="mt-0 space-y-4">
+                <TabsContent value="dcf-analysis" className="mt-0 space-y-3">
                   <DCFAnalysis symbol={currentSymbol} />
                 </TabsContent>
-                <TabsContent value="lbo-analysis" className="mt-0 space-y-4">
+                <TabsContent value="lbo-analysis" className="mt-0 space-y-3">
                   <LBOAnalysis symbol={currentSymbol} />
                 </TabsContent>
-                <TabsContent value="recent-news" className="mt-0 space-y-4">
+                <TabsContent value="recent-news" className="mt-0 space-y-3">
                   <RecentNews />
                 </TabsContent>
-                <TabsContent value="sec-filings" className="mt-0 space-y-4">
+                <TabsContent value="sec-filings" className="mt-0 space-y-3">
                   <SECFilingsTranscripts ticker={currentSymbol} />
                 </TabsContent>
-                <TabsContent value="idea-generation" className="mt-0 space-y-4">
+                <TabsContent value="idea-generation" className="mt-0 space-y-3">
                   <IdeaGeneration />
                 </TabsContent>
-                <TabsContent value="watchlist" className="mt-0 space-y-4">
-                  <div className="space-y-4">
+                <TabsContent value="watchlist" className="mt-0 space-y-3">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <h2 className="text-xl font-semibold">Watchlist</h2>
-                      <p className="text-sm text-muted-foreground">
+                      <h2 className="text-lg font-semibold">Watchlist</h2>
+                      <p className="text-xs text-muted-foreground">
                         {watchlistSymbols.length} saved {watchlistSymbols.length === 1 ? 'stock' : 'stocks'}
                       </p>
                     </div>
                     
                     {watchlistSymbols.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                         {watchlistSymbols.map((symbol) => (
-                          <Card key={symbol} className="p-4 hover:shadow-md transition-shadow">
+                          <Card key={symbol} className="p-3 hover:shadow-md transition-shadow">
                             <div className="flex items-center justify-between">
                               <div>
-                                <h3 className="font-semibold text-lg">{symbol}</h3>
-                                <p className="text-sm text-muted-foreground">Saved stock</p>
+                                <h3 className="font-semibold text-base">{symbol}</h3>
+                                <p className="text-xs text-muted-foreground">Saved stock</p>
                               </div>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => removeStock(symbol)}
-                                className="h-8 w-8"
+                                className="h-7 w-7"
                               >
-                                <X className="h-4 w-4" />
+                                <X className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                             <Button
                               variant="outline"
-                              className="w-full mt-3"
+                              className="w-full mt-2"
                               onClick={() => {
                                 const stock = stocks.find(s => s.symbol === symbol);
                                 useSearchStore.getState().setCurrentCompany(symbol, stock?.name || symbol);
@@ -366,10 +366,10 @@ export function Dashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-8">
-                        <Eye className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">No stocks in watchlist</h3>
-                        <p className="text-muted-foreground mb-4">
+                      <div className="text-center py-6">
+                        <Eye className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                        <h3 className="text-base font-semibold mb-2">No stocks in watchlist</h3>
+                        <p className="text-sm text-muted-foreground mb-3">
                           Add stocks to your watchlist to track them here
                         </p>
                         <Button onClick={() => setActiveTab("company-snapshot")}>
