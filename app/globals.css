@@ -578,9 +578,10 @@
   border-color: transparent !important;
 }
 
-/* Clean table styling for watchlist and screening tables */
+/* Clean table styling for watchlist, screening, and comps tables */
 .watchlist-table,
-.screening-table {
+.screening-table,
+.comps-table {
   border-collapse: collapse;
   border-spacing: 0;
 }
@@ -588,7 +589,9 @@
 .watchlist-table th,
 .watchlist-table td,
 .screening-table th,
-.screening-table td {
+.screening-table td,
+.comps-table th,
+.comps-table td {
   border: none !important;
   border-left: none !important;
   border-right: none !important;

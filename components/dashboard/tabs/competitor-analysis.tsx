@@ -698,47 +698,47 @@ export function CompetitorAnalysis() {
                   <ToggleGroupItem value="forward">Forward</ToggleGroupItem>
                 </ToggleGroup>
               </div>
-              <table className="w-full financial-table">
-                <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur">
-                  <tr className="border-b-2 border-slate-200 dark:border-slate-700">
-                    <th className="text-left py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90">Company</th>
-                    <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[90px]">
+              <table className="w-full border-collapse comps-table">
+                <thead>
+                  <tr className="border-b-2 border-black dark:border-white text-xs">
+                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Company</th>
+                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[90px]">
                       Market Cap
                       {renderMetricTooltip("Market Capitalization", "The total value of all outstanding shares of a company.")}
                     </th>
-                    <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
+                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                       EV/EBITDA
                       {renderMetricTooltip("Enterprise Value to EBITDA", "Measures the value of a company compared to its earnings before interest, taxes, depreciation, and amortization.")}
                     </th>
-                    <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
+                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                       P/E Ratio
                       {renderMetricTooltip("Price to Earnings Ratio", "Measures a company's current share price relative to its earnings per share.")}
                     </th>
-                    <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
+                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                       P/S Ratio
                       {renderMetricTooltip("Price to Sales Ratio", "Compares a company's stock price to its revenues.")}
                     </th>
-                    <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
+                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                       P/B Ratio
                       {renderMetricTooltip("Price to Book Ratio", "Compares a company's market value to its book value.")}
                     </th>
-                    <th className="text-right py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 min-w-[80px]">
+                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
                       Div. Yield
                       {renderMetricTooltip("Dividend Yield", "The annual dividend payment divided by the stock price, expressed as a percentage.")}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-slate-950">
+                <tbody>
                   {/* Peer companies */}
                   {filteredValuationData.map((company) => (
-                    <tr key={company.ticker} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="py-2 px-4 text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300 sticky left-0 z-20 bg-white dark:bg-slate-950">{company.company} ({company.ticker})</td>
-                      <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{getValuationMetric(company, 'marketCap')}</td>
-                      <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{getValuationMetric(company, 'evToEbitda')}</td>
-                      <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{getValuationMetric(company, 'peRatio')}</td>
-                      <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{getValuationMetric(company, 'priceToSales')}</td>
-                      <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{getValuationMetric(company, 'priceToBook')}</td>
-                      <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">{getValuationMetric(company, 'dividendYield')}</td>
+                    <tr key={company.ticker} className="hover:bg-muted/50 transition-colors text-xs h-10 border-b border-border/30">
+                      <td className="py-2 px-2 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline align-middle">{company.ticker}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'marketCap')}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'evToEbitda')}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'peRatio')}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'priceToSales')}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'priceToBook')}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'dividendYield')}</td>
                     </tr>
                   ))}
                   
@@ -748,45 +748,45 @@ export function CompetitorAnalysis() {
                   {/* Median row */}
                   {filteredValuationData.length > 0 && (
                     <>
-                      <tr className="border-b-2 border-slate-300 dark:border-slate-600 bg-blue-25 dark:bg-blue-900/20">
-                        <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-blue-25 dark:bg-blue-900/20">Median</td>
-                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <tr className="border-b-2 border-border bg-blue-25 dark:bg-blue-900/20">
+                        <td className="py-2 px-2 text-xs font-bold text-blue-600 dark:text-blue-400 align-middle">Median</td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {formatMarketCap(calculateMetrics(filteredValuationData).median.marketCap)}
                         </td>
-                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {calculateMetrics(filteredValuationData).median.evToEbitda.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {calculateMetrics(filteredValuationData).median.peRatio.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {calculateMetrics(filteredValuationData).median.priceToSales.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {calculateMetrics(filteredValuationData).median.priceToBook.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {formatPercentage(calculateMetrics(filteredValuationData).median.dividendYield)}
                         </td>
                       </tr>
-                      <tr className="border-b-2 border-slate-300 dark:border-slate-600 bg-yellow-25 dark:bg-yellow-900/20">
-                        <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-yellow-25 dark:bg-yellow-900/20">Average</td>
-                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <tr className="border-b-2 border-border bg-yellow-25 dark:bg-yellow-900/20">
+                        <td className="py-2 px-2 text-xs font-bold text-yellow-600 dark:text-yellow-400 align-middle">Average</td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {formatMarketCap(calculateMetrics(filteredValuationData).average.marketCap)}
                         </td>
-                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {calculateMetrics(filteredValuationData).average.evToEbitda.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {calculateMetrics(filteredValuationData).average.peRatio.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {calculateMetrics(filteredValuationData).average.priceToSales.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {calculateMetrics(filteredValuationData).average.priceToBook.toFixed(1)}x
                         </td>
-                        <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {formatPercentage(calculateMetrics(filteredValuationData).average.dividendYield)}
                         </td>
                       </tr>
