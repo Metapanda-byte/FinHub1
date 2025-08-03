@@ -38,6 +38,8 @@ import {
 import { StockSearch } from "@/components/search/stock-search";
 import { Card } from "@/components/ui/card";
 import { useWatchlistStore } from "@/lib/store/watchlist-store";
+import { SwipeableView } from "@/components/ui/swipeable-view";
+import { FloatingActionButton } from "@/components/ui/floating-action-button";
 
 const tabConfig = [
   { 
@@ -235,6 +237,14 @@ export function Dashboard() {
               <p className="text-sm text-muted-foreground">
                 Financial Analysis Dashboard
               </p>
+            </div>
+          </div>
+          
+          {/* Inline Ticker Input */}
+          <div className="flex items-center gap-2">
+            <div className="relative w-64 sm:w-80">
+              <StockSearch />
+              <div className="absolute inset-0 border-2 border-[hsl(var(--finhub-orange))] rounded-lg pointer-events-none opacity-20"></div>
             </div>
           </div>
         </div>

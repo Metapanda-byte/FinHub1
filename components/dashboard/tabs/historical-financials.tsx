@@ -539,9 +539,8 @@ export function HistoricalFinancials() {
       <div 
         ref={(el) => { tableContainerRefs.current[title] = el; }}
         className="financial-table-wrapper table-scroll-container rounded-lg shadow-sm"
-        data-period={selectedPeriod}
       >
-        <table className="w-full financial-table border-collapse">
+        <table className="financial-table border-collapse" style={{ minWidth: 'max-content' }}>
           <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur">
             <tr className="">
               <th className={cn(
@@ -560,7 +559,7 @@ export function HistoricalFinancials() {
                   )), 
                   <th key="ltm" className="text-center py-3 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>LTM</th>]
                 : [...years.map(year => (
-                    <th key={year} className="text-center py-3 px-4 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom">{`FY ${year}`}</th>
+                    <th key={year} className="text-center py-3 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '60px' }}>{`FY ${year}`}</th>
                   )), 
                   <th key="ltm" className="text-center py-3 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>LTM</th>]}
             </tr>
@@ -666,10 +665,10 @@ export function HistoricalFinancials() {
                     })()
                     : [...years.map(year => (
                         <td key={year} className={cn(
-                          "text-right py-1.5 px-4 md:px-6 text-xs md:text-sm tabular-nums relative z-10",
+                          "text-right py-1.5 px-1 md:px-4 text-xs md:text-sm tabular-nums relative z-10",
                           row.isImportant ? "font-semibold" : "",
                           row.isMargin ? "text-slate-500 dark:text-slate-400" : ""
-                        )}>
+                        )} style={{ minWidth: '60px' }}>
                           {formatMetric(row[year], row.label, row.isHeaderRow)}
                         </td>
                       )),

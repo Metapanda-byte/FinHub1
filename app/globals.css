@@ -434,40 +434,26 @@
     max-width: 100%;
   }
   
-  /* Table stretches to full width but allows scrolling when content overflows */
   .financial-table-wrapper table {
-    width: 100%;
-    min-width: fit-content;
+    min-width: max-content;
+    width: auto !important;
   }
   
-  /* Column headers have minimum width but can expand */
-  .financial-table-wrapper thead th:not(.sticky) {
+  .financial-table-wrapper thead th {
     white-space: nowrap;
-    min-width: 100px;
+    min-width: 80px;
   }
   
-  /* Data cells also have minimum width but can expand */
-  .financial-table-wrapper tbody td:not(.sticky) {
+  .financial-table-wrapper tbody td {
     white-space: nowrap;
-    min-width: 100px;
+    min-width: 80px;
   }
   
-  /* First column (row headers) should be sticky and have different sizing */
+  /* Ensure the sticky column doesn't interfere with scrolling */
   .financial-table-wrapper .sticky {
     position: sticky;
     left: 0;
     z-index: 30;
-    min-width: 200px !important;
-    max-width: 300px;
-  }
-  
-  /* For annual view, allow columns to expand more */
-  .financial-table-wrapper[data-period="annual"] thead th:not(.sticky) {
-    min-width: 120px;
-  }
-  
-  .financial-table-wrapper[data-period="annual"] tbody td:not(.sticky) {
-    min-width: 120px;
   }
   
   /* Add subtle shadows to indicate scrollable content */
@@ -520,7 +506,7 @@
     
     /* Re-enable text selection on desktop */
     @media (hover: hover) {
-      .financial-table {
+  .financial-table {
         -webkit-user-select: auto;
         -moz-user-select: auto;
         -ms-user-select: auto;
@@ -704,3 +690,176 @@
 .orange-glow:hover {
   box-shadow: 0 0 40px rgba(255, 140, 0, 0.2);
 }
+
+  /* Premium Navigation Animations */
+  @keyframes nav-slide-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes nav-fade-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes nav-bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+  
+  /* Swipeable Content */
+  .swipeable-content {
+    touch-action: pan-y pinch-zoom;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* Premium Tab Transitions */
+  .tab-content-enter {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  
+  .tab-content-enter-active {
+    opacity: 1;
+    transform: translateX(0);
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .tab-content-exit {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  
+  .tab-content-exit-active {
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Floating Action Button */
+  .fab-enter {
+    animation: nav-fade-in 0.3s ease-out;
+  }
+  
+  .fab-item {
+    animation: nav-slide-up 0.3s ease-out backwards;
+  }
+  
+  /* Pull to Refresh */
+  .pull-to-refresh {
+    position: relative;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .pull-indicator {
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+  
+  /* Navigation Pill */
+  .nav-pill {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .nav-pill::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+  
+  .nav-pill:active::before {
+    width: 300px;
+    height: 300px;
+  }
+  
+  /* Sticky Navigation Shadow */
+  .sticky-nav-shadow {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  .dark .sticky-nav-shadow {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Mobile Navigation Enhancements */
+  @media (max-width: 640px) {
+    /* Tab overflow with momentum scrolling */
+    .mobile-tab-container {
+      scroll-snap-type: x mandatory;
+      scroll-padding: 0 1rem;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .mobile-tab-container > * {
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+    }
+    
+    /* Gesture hints */
+    .gesture-hint {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 0.5rem 1rem;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      pointer-events: none;
+      animation: nav-fade-in 0.5s ease-out, nav-bounce 2s ease-in-out infinite;
+    }
+    
+    /* Enhanced touch targets */
+    .touch-target-enhanced {
+      position: relative;
+      min-height: 48px;
+      min-width: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .touch-target-enhanced::after {
+      content: '';
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      bottom: -8px;
+      left: -8px;
+    }
+  }
