@@ -422,26 +422,40 @@
     scroll-snap-align: start;
   }
   
-  /* Enhanced tab styling for better aesthetics */
-  .tabs-scroll-container .tabs-trigger {
+  /* Enhanced tab styling for institutional-grade appearance */
+  .tabs-scroll-container .tabs-trigger,
+  .tabs-list .tabs-trigger {
     flex-shrink: 0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 6px;
+    font-weight: 500;
+    letter-spacing: 0.025em;
   }
   
-  .tabs-scroll-container .tabs-trigger:hover {
-    transform: translateY(-1px);
+  .tabs-scroll-container .tabs-trigger:hover,
+  .tabs-list .tabs-trigger:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    transform: none;
   }
   
-  .tabs-scroll-container .tabs-trigger[data-state="active"] {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  .tabs-scroll-container .tabs-trigger[data-state="active"],
+  .tabs-list .tabs-trigger[data-state="active"] {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    border: 1px solid hsl(var(--border));
+    transform: none;
   }
   
-  /* Ensure single row layout for tabs */
-  .tabs-scroll-container {
+  /* Professional toolbar container */
+  .tabs-scroll-container,
+  .tabs-list {
     display: flex;
     align-items: center;
-    min-height: 48px;
+    min-height: 44px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-radius: 8px;
+    padding: 2px;
   }
   
   /* Financial Table Specific Optimizations */
@@ -454,23 +468,27 @@
     overscroll-behavior-x: contain;
     width: 100%;
     max-width: 100%;
+    /* Ensure full width usage */
+    min-width: 100%;
+    box-sizing: border-box;
   }
   
   .financial-table-wrapper table {
     min-width: max-content;
-    width: auto !important;
+    width: 100% !important;
+    table-layout: auto;
   }
   
   .financial-table-wrapper thead th {
     white-space: nowrap;
-    min-width: 80px;
+    min-width: 70px;
     max-width: none;
     width: auto;
   }
   
   .financial-table-wrapper tbody td {
     white-space: nowrap;
-    min-width: 80px;
+    min-width: 70px;
     max-width: none;
     width: auto;
   }
@@ -479,22 +497,30 @@
   .financial-table-wrapper th,
   .financial-table-wrapper td {
     box-sizing: border-box;
-    padding: 0.5rem 0.75rem;
+    padding: 0.375rem 0.5rem;
   }
   
   /* Optimize for different screen sizes */
   @media (min-width: 768px) {
     .financial-table-wrapper th,
     .financial-table-wrapper td {
-      min-width: 100px;
-      padding: 0.75rem 1rem;
+      min-width: 90px;
+      padding: 0.5rem 0.75rem;
     }
   }
   
   @media (min-width: 1024px) {
     .financial-table-wrapper th,
     .financial-table-wrapper td {
-      min-width: 120px;
+      min-width: 100px;
+      padding: 0.5rem 1rem;
+    }
+  }
+  
+  @media (min-width: 1440px) {
+    .financial-table-wrapper th,
+    .financial-table-wrapper td {
+      min-width: 110px;
       padding: 0.75rem 1.25rem;
     }
   }
@@ -504,6 +530,20 @@
     position: sticky;
     left: 0;
     z-index: 30;
+    min-width: 140px;
+    max-width: 200px;
+  }
+  
+  /* Optimize table container for full width usage */
+  .financial-table-wrapper {
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Ensure table cells expand to fill available space */
+  .financial-table-wrapper table {
+    border-spacing: 0;
+    border-collapse: collapse;
   }
   
   /* Add subtle shadows to indicate scrollable content */
