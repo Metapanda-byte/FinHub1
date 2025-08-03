@@ -87,21 +87,8 @@ export default function Header() {
           </nav>
         </div>
 
-        {/* Center Search on Desktop */}
-        {isDashboard && (
-          <div className="hidden sm:block flex-1 max-w-md mx-4">
-            <StockSearch />
-          </div>
-        )}
-
         {/* Right Actions */}
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* Mobile Search */}
-          {isDashboard && (
-            <div className="sm:hidden">
-              <StockSearch />
-            </div>
-          )}
 
           {/* Action Buttons */}
           <Button variant="ghost" size="icon" className="hidden sm:flex touch-target">
