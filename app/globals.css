@@ -547,18 +547,54 @@
     border: none;
   }
   
-  /* Remove only the light gray gridlines while preserving emphasis borders */
+  /* Remove all gray gridlines while preserving emphasis borders */
   .financial-table-wrapper th,
   .financial-table-wrapper td {
-    border-left: none;
-    border-right: none;
-    border-top: none;
+    border: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
   }
   
   /* Keep the emphasis borders (black horizontal lines) */
   .financial-table-wrapper tr[data-has-border="true"] td,
   .financial-table-wrapper tr[data-has-border-top="true"] td {
-    border-bottom: 1px solid hsl(var(--border));
+    border-bottom: 1px solid hsl(var(--border)) !important;
+  }
+  
+  /* Override any browser default table styling */
+  .financial-table-wrapper table {
+    border: none !important;
+  }
+  
+  .financial-table-wrapper table th,
+  .financial-table-wrapper table td {
+    border: none !important;
+  }
+  
+  /* Remove any default table borders that might be applied by the browser */
+  .financial-table-wrapper * {
+    border-color: transparent !important;
+  }
+  
+  /* Override any Tailwind or component library table styles */
+  .financial-table-wrapper .table,
+  .financial-table-wrapper table {
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+  
+  /* Ensure no borders on any table elements */
+  .financial-table-wrapper table,
+  .financial-table-wrapper table th,
+  .financial-table-wrapper table td,
+  .financial-table-wrapper .table,
+  .financial-table-wrapper .table th,
+  .financial-table-wrapper .table td {
+    border: none !important;
+    border-width: 0 !important;
+    border-style: none !important;
   }
   
   /* Ensure emphasis borders are visible and prominent */
