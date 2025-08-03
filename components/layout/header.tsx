@@ -43,7 +43,7 @@ export default function Header() {
       )}
     >
       <div className="container-wide h-14 sm:h-16 flex items-center justify-between px-mobile">
-        {/* Logo and Search */}
+        {/* Logo */}
         <div className="flex items-center gap-2 sm:gap-4 flex-1">
           <Link href="/" className="flex items-center flex-shrink-0 group">
             <FinHubIQLogo 
@@ -57,7 +57,11 @@ export default function Header() {
               className="hidden sm:block transition-transform group-hover:scale-105"
             />
           </Link>
-          
+        </div>
+
+        {/* Right Actions */}
+        <div className="flex items-center gap-1 sm:gap-2">
+
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-2">
             <Button 
@@ -85,10 +89,6 @@ export default function Header() {
               </Link>
             </Button>
           </nav>
-        </div>
-
-        {/* Right Actions */}
-        <div className="flex items-center gap-1 sm:gap-2">
 
           <ThemeToggle />
           
