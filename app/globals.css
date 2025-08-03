@@ -430,6 +430,44 @@
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
     overscroll-behavior-x: contain;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Table stretches to full width but allows scrolling when content overflows */
+  .financial-table-wrapper table {
+    width: 100%;
+    min-width: fit-content;
+  }
+  
+  /* Column headers have minimum width but can expand */
+  .financial-table-wrapper thead th:not(.sticky) {
+    white-space: nowrap;
+    min-width: 100px;
+  }
+  
+  /* Data cells also have minimum width but can expand */
+  .financial-table-wrapper tbody td:not(.sticky) {
+    white-space: nowrap;
+    min-width: 100px;
+  }
+  
+  /* First column (row headers) should be sticky and have different sizing */
+  .financial-table-wrapper .sticky {
+    position: sticky;
+    left: 0;
+    z-index: 30;
+    min-width: 200px !important;
+    max-width: 300px;
+  }
+  
+  /* For annual view, allow columns to expand more */
+  .financial-table-wrapper[data-period="annual"] thead th:not(.sticky) {
+    min-width: 120px;
+  }
+  
+  .financial-table-wrapper[data-period="annual"] tbody td:not(.sticky) {
+    min-width: 120px;
   }
   
   /* Add subtle shadows to indicate scrollable content */

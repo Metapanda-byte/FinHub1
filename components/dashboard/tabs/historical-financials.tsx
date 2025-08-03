@@ -539,6 +539,7 @@ export function HistoricalFinancials() {
       <div 
         ref={(el) => { tableContainerRefs.current[title] = el; }}
         className="financial-table-wrapper table-scroll-container rounded-lg shadow-sm"
+        data-period={selectedPeriod}
       >
         <table className="w-full financial-table border-collapse">
           <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur">
@@ -559,7 +560,7 @@ export function HistoricalFinancials() {
                   )), 
                   <th key="ltm" className="text-center py-3 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>LTM</th>]
                 : [...years.map(year => (
-                    <th key={year} className="text-center py-3 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '60px' }}>{`FY ${year}`}</th>
+                    <th key={year} className="text-center py-3 px-4 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom">{`FY ${year}`}</th>
                   )), 
                   <th key="ltm" className="text-center py-3 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>LTM</th>]}
             </tr>
@@ -570,7 +571,7 @@ export function HistoricalFinancials() {
                 <tr className="border-none">
                   <th className="text-left py-1.5 px-3 md:px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-40 md:min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90">{getCurrencyDisplayText(incomeStatements)}</th>
                   {years.map(year => periods.map(period => (
-                    <th key={year+period} className="text-center py-1.5 px-1 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none" style={{ minWidth: '45px' }}>{period}</th>
+                    <th key={year+period} className="text-center py-1.5 px-2 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none" style={{ minWidth: '80px' }}>{period}</th>
                   ))).flat()}
                   {selectedPeriod === 'semi-annual' && (
                     <th key="ltm-sub" className="text-center py-1.5 px-1 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>
@@ -629,10 +630,10 @@ export function HistoricalFinancials() {
                           
                         return (
                           <td key={`${year}-${period}`} className={cn(
-                            "text-right py-1.5 px-1 md:px-4 text-xs md:text-sm tabular-nums relative z-10",
+                            "text-right py-1.5 px-2 md:px-4 text-xs md:text-sm tabular-nums relative z-10",
                             row.isImportant ? "font-semibold" : "",
                             row.isMargin ? "text-slate-500 dark:text-slate-400" : ""
-                          )} style={{ minWidth: '45px' }}>
+                          )} style={{ minWidth: '80px' }}>
                             {formatMetric(row[dataPeriod], row.label, row.isHeaderRow)}
                           </td>
                         );
@@ -647,10 +648,10 @@ export function HistoricalFinancials() {
                           
                         return (
                           <td key={`${year}-${period}`} className={cn(
-                            "text-right py-1.5 px-1 md:px-4 text-xs md:text-sm tabular-nums relative z-10",
+                            "text-right py-1.5 px-2 md:px-4 text-xs md:text-sm tabular-nums relative z-10",
                             row.isImportant ? "font-semibold" : "",
                             row.isMargin ? "text-slate-500 dark:text-slate-400" : ""
-                          )} style={{ minWidth: '45px' }}>
+                          )} style={{ minWidth: '80px' }}>
                             {formatMetric(row[dataPeriod], row.label, row.isHeaderRow)}
                           </td>
                         );
@@ -665,10 +666,10 @@ export function HistoricalFinancials() {
                     })()
                     : [...years.map(year => (
                         <td key={year} className={cn(
-                          "text-right py-1.5 px-1 md:px-4 text-xs md:text-sm tabular-nums relative z-10",
+                          "text-right py-1.5 px-4 md:px-6 text-xs md:text-sm tabular-nums relative z-10",
                           row.isImportant ? "font-semibold" : "",
                           row.isMargin ? "text-slate-500 dark:text-slate-400" : ""
-                        )} style={{ minWidth: '60px' }}>
+                        )}>
                           {formatMetric(row[year], row.label, row.isHeaderRow)}
                         </td>
                       )),
