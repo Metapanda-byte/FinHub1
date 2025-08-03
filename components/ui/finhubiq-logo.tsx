@@ -142,7 +142,7 @@ export function FinHubIQLogo({
     <div
       className={cn(
         'flex items-center',
-        layout === 'stacked' ? 'flex-col space-y-2' : 'space-x-3',
+        layout === 'stacked' ? 'flex-col space-y-2' : 'flex-row space-x-3',
         className
       )}
     >
