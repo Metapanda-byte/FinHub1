@@ -547,24 +547,23 @@
     border: none;
   }
   
-  /* Remove default table borders (gridlines) */
+  /* Remove only the light gray gridlines while preserving emphasis borders */
   .financial-table-wrapper th,
   .financial-table-wrapper td {
-    border: none;
     border-left: none;
     border-right: none;
     border-top: none;
-    border-bottom: none;
   }
   
-  /* Preserve only emphasis borders (thicker horizontal lines) */
+  /* Keep the emphasis borders (black horizontal lines) */
   .financial-table-wrapper tr[data-has-border="true"] td,
   .financial-table-wrapper tr[data-has-border-top="true"] td {
     border-bottom: 1px solid hsl(var(--border));
   }
   
   /* Ensure emphasis borders are visible and prominent */
-  .financial-table-wrapper tr::after {
+  .financial-table-wrapper tr[data-has-border="true"]::after,
+  .financial-table-wrapper tr[data-has-border-top="true"]::after {
     content: '';
     position: absolute;
     top: 0;
@@ -573,36 +572,6 @@
     height: 1px;
     background: hsl(var(--border));
     z-index: 40;
-  }
-  
-  /* Remove any default table styling that might interfere */
-  .financial-table-wrapper table {
-    border: none !important;
-    outline: none !important;
-  }
-  
-  .financial-table-wrapper table,
-  .financial-table-wrapper table th,
-  .financial-table-wrapper table td {
-    border: none !important;
-    outline: none !important;
-  }
-  
-  /* Remove any browser default table styling */
-  .financial-table-wrapper table {
-    border-collapse: collapse;
-    border-spacing: 0;
-  }
-  
-  /* Ensure no borders on any table elements by default */
-  .financial-table-wrapper * {
-    border-color: transparent !important;
-  }
-  
-  /* Only allow borders where explicitly specified for emphasis */
-  .financial-table-wrapper tr[data-has-border="true"]::after,
-  .financial-table-wrapper tr[data-has-border-top="true"]::after {
-    border-color: hsl(var(--border)) !important;
   }
   
   /* Add subtle shadows to indicate scrollable content */
