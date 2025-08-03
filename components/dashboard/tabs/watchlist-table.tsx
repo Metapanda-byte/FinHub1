@@ -233,9 +233,9 @@ export function WatchlistTable() {
     return (
       <div className="text-center py-8">
         <Eye className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-semibold mb-2">No stocks in watchlist</h3>
+        <h3 className="text-lg font-semibold mb-2">No stocks in portfolio</h3>
         <p className="text-muted-foreground mb-4">
-          Add stocks to your watchlist to track them here
+          Add stocks to your portfolio to track them here
         </p>
         <Button variant="outline">
           Browse Stocks
@@ -248,7 +248,7 @@ export function WatchlistTable() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <div>
-          <CardTitle className="text-lg font-semibold">Watchlist</CardTitle>
+          <CardTitle className="text-lg font-semibold">Portfolio</CardTitle>
           <p className="text-sm text-muted-foreground">
             {stocks.length} saved {stocks.length === 1 ? 'stock' : 'stocks'}
           </p>

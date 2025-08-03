@@ -93,7 +93,7 @@ const tabConfig = [
   },
   { 
     id: "watchlist", 
-    label: "Watch", 
+    label: "Portfolio", 
     icon: Eye,
     description: "Your saved stocks"
   },
