@@ -20,84 +20,73 @@ import { useIncomeStatements, useCashFlows, useBalanceSheets, useSECFilings, use
 import useSWR from "swr";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
-  ChevronDown,
   Building2,
   TrendingUp,
   Calculator,
-  CreditCard,
-  DollarSign,
   FileText,
   Newspaper,
   Lightbulb,
   Eye,
   BarChart3,
   Target,
+  Search,
+  Star,
 } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { StockSearch } from "@/components/search/stock-search";
+import { Card } from "@/components/ui/card";
+import { useWatchlistStore } from "@/lib/store/watchlist-store";
 
 const tabConfig = [
   { 
     id: "company-snapshot", 
-    label: "Company Overview", 
+    label: "Overview", 
     icon: Building2,
     description: "Key metrics and company information"
   },
   { 
     id: "historical-financials", 
-    label: "Historical Financials", 
+    label: "Financials", 
     icon: BarChart3,
     description: "Financial statements and trends"
   },
   { 
     id: "competitor-analysis", 
-    label: "Peer Comparison", 
+    label: "Peers", 
     icon: TrendingUp,
     description: "Competitive analysis and benchmarking"
   },
   { 
     id: "dcf-analysis", 
-    label: "DCF Analysis", 
+    label: "DCF", 
     icon: Calculator,
     description: "Discounted cash flow valuation"
   },
   { 
     id: "lbo-analysis", 
-    label: "LBO Analysis", 
+    label: "LBO", 
     icon: Target,
     description: "Leveraged buyout modeling"
   },
   { 
     id: "recent-news", 
-    label: "Recent News", 
+    label: "News", 
     icon: Newspaper,
     description: "Latest news and updates"
   },
   { 
     id: "sec-filings", 
-    label: "SEC Filings & Transcripts", 
+    label: "Filings", 
     icon: FileText,
     description: "Regulatory filings and earnings calls"
   },
   { 
     id: "idea-generation", 
-    label: "Idea Generation", 
+    label: "Ideas", 
     icon: Lightbulb,
     description: "AI-powered investment ideas"
-  },
-  { 
-    id: "watchlist", 
-    label: "Watchlist", 
-    icon: Eye,
-    description: "Your tracked companies"
   },
 ];
 
@@ -107,8 +96,31 @@ export function Dashboard() {
   const [highlightQuery, setHighlightQuery] = useState('');
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [analysisData, setAnalysisData] = useState({ metric: '', context: '' });
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
+  const stocks = useWatchlistStore((state) => state.stocks);
+  const hasStock = useWatchlistStore((state) => state.hasStock);
+  const addStock = useWatchlistStore((state) => state.addStock);
+  const removeStock = useWatchlistStore((state) => state.removeStock);
+  const isInWatchlist = currentSymbol ? hasStock(currentSymbol) : false;
+  const watchlistSymbols = stocks.map(s => s.symbol);
+
+  const toggleWatchlist = () => {
+    if (!currentSymbol) return;
+    if (isInWatchlist) {
+      removeStock(currentSymbol);
+    } else {
+      // Add with minimal data for now
+      addStock({
+        symbol: currentSymbol,
+        name: currentSymbol,
+        lastPrice: 0,
+        change: 0,
+        changePercent: 0,
+        marketCap: 0,
+        peRatio: 0,
+      });
+    }
+  };
 
   // Handle mobile navigation tab changes
   useEffect(() => {
@@ -163,136 +175,148 @@ export function Dashboard() {
     setIsChatOpen(true);
   };
 
-  const activeTabConfig = tabConfig.find(tab => tab.id === activeTab);
-
   if (!currentSymbol) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center px-mobile">
-        <h2 className="text-mobile-lg font-semibold mb-2">Welcome to FinHubIQ</h2>
-        <p className="text-muted-foreground mb-6 text-mobile-sm">
-          Search for a company above to view detailed financial analysis
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Button variant="outline" asChild className="touch-target">
-            <Link href="/financials-layouts">View Financials Layout Concepts</Link>
-          </Button>
-          <Button variant="outline" asChild className="touch-target">
-            <Link href="/dashboard-layouts">View Dashboard Layout Options</Link>
-          </Button>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-mobile">
+        <div className="mb-8">
+          <Search className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold mb-2">Enter a Ticker to Begin</h2>
+          <p className="text-muted-foreground mb-6">
+            Search for any company symbol to access comprehensive financial analysis
+          </p>
         </div>
+        
+        <div className="w-full max-w-md mb-8">
+          <StockSearch />
+        </div>
+        
+        {watchlistSymbols.length > 0 && (
+          <div className="w-full max-w-2xl">
+            <h3 className="text-sm font-medium text-muted-foreground mb-3">Your Watchlist</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {watchlistSymbols.map((symbol) => (
+                <Button
+                  key={symbol}
+                  variant="outline"
+                  className="justify-start"
+                  onClick={() => useSearchStore.getState().setCurrentSymbol(symbol)}
+                >
+                  {symbol}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <>
-      <div data-dashboard className="px-mobile space-y-mobile">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          {/* Mobile Tab Navigation */}
-          <div className="sm:hidden mb-4">
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-between touch-target glass-effect orange-accent-hover btn-premium"
+      <div data-dashboard className="px-mobile space-y-4">
+        {/* Ticker Header Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b">
+          <div className="flex items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold">{currentSymbol}</h1>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={toggleWatchlist}
                 >
-                  <div className="flex items-center gap-2">
-                    {activeTabConfig && (
-                      <>
-                        <activeTabConfig.icon className="h-4 w-4" />
-                        <span className="font-medium">{activeTabConfig.label}</span>
-                      </>
-                    )}
-                  </div>
-                  <ChevronDown className="h-4 w-4" />
+                  <Star className={cn(
+                    "h-4 w-4",
+                    isInWatchlist && "fill-current"
+                  )} />
                 </Button>
-              </SheetTrigger>
-              <SheetContent side="bottom" className="bottom-sheet safe-bottom">
-                <SheetHeader>
-                  <SheetTitle>Select Analysis View</SheetTitle>
-                  <SheetDescription>
-                    Choose a financial analysis section
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="mt-4 space-y-2 max-h-[60vh] overflow-y-auto py-2">
-                  {tabConfig.map((tab) => (
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Financial Analysis Dashboard
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="w-full sm:w-64">
+              <StockSearch />
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content with Watchlist Sidebar */}
+        <div className="flex gap-4">
+          {/* Watchlist Sidebar - Desktop Only */}
+          {watchlistSymbols.length > 0 && (
+            <div className="hidden lg:block w-48 flex-shrink-0">
+              <Card className="p-4 sticky top-20">
+                <h3 className="text-sm font-medium mb-3">Watchlist</h3>
+                <div className="space-y-1">
+                  {watchlistSymbols.map((symbol) => (
                     <Button
-                      key={tab.id}
-                      variant={activeTab === tab.id ? "default" : "ghost"}
-                      className={cn(
-                        "w-full justify-start gap-3 touch-target",
-                        activeTab === tab.id && "bg-[hsl(var(--finhub-orange))]/10 text-[hsl(var(--finhub-orange))] border-[hsl(var(--finhub-orange))]/20"
-                      )}
-                      onClick={() => {
-                        setActiveTab(tab.id);
-                        setIsMobileMenuOpen(false);
-                      }}
+                      key={symbol}
+                      variant={symbol === currentSymbol ? "secondary" : "ghost"}
+                      className="w-full justify-start text-sm"
+                      onClick={() => useSearchStore.getState().setCurrentSymbol(symbol)}
                     >
-                      <tab.icon className={cn(
-                        "h-5 w-5",
-                        activeTab === tab.id && "text-[hsl(var(--finhub-orange))]"
-                      )} />
-                      <div className="text-left flex-1">
-                        <div className="font-medium">{tab.label}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {tab.description}
-                        </div>
-                      </div>
+                      {symbol}
                     </Button>
                   ))}
                 </div>
-              </SheetContent>
-            </Sheet>
-          </div>
+              </Card>
+            </div>
+          )}
 
-          {/* Desktop Tab Navigation */}
-          <TabsList className="hidden sm:grid w-full h-auto p-1 bg-muted/30 backdrop-blur rounded-xl grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-1">
-            {tabConfig.map((tab) => (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="data-[state=active]:bg-[hsl(var(--finhub-orange))]/10 data-[state=active]:text-[hsl(var(--finhub-orange))] data-[state=active]:border-[hsl(var(--finhub-orange))]/20 border border-transparent transition-all duration-200"
-              >
-                <div className="flex items-center gap-2 py-1">
-                  <tab.icon className="h-4 w-4" />
-                  <span className="hidden lg:inline text-sm">{tab.label}</span>
-                  <span className="lg:hidden text-xs">{tab.label.split(' ')[0]}</span>
-                </div>
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          {/* Main Tabs Content */}
+          <div className="flex-1">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              {/* Tab Navigation - Full Width Toolbar */}
+              <TabsList className="w-full h-auto p-1 bg-muted/30 backdrop-blur rounded-xl grid grid-cols-4 md:grid-cols-8 gap-1">
+                {tabConfig.map((tab) => (
+                  <TabsTrigger
+                    key={tab.id}
+                    value={tab.id}
+                    className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-border/50 transition-all duration-200"
+                  >
+                    <div className="flex flex-col items-center gap-1 py-2">
+                      <tab.icon className="h-4 w-4" />
+                      <span className="text-xs font-medium">{tab.label}</span>
+                    </div>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
-          {/* Tab Content */}
-          <div className="animate-scale-in">
-            <TabsContent value="company-snapshot" className="mt-4 space-y-mobile">
-              <CompanyOverview />
-            </TabsContent>
-            <TabsContent value="historical-financials" className="mt-4 space-y-mobile">
-              <HistoricalFinancials />
-            </TabsContent>
-            <TabsContent value="competitor-analysis" className="mt-4 space-y-mobile">
-              <CompetitorAnalysis />
-            </TabsContent>
-            <TabsContent value="dcf-analysis" className="mt-4 space-y-mobile">
-              <DCFAnalysis symbol={currentSymbol} />
-            </TabsContent>
-            <TabsContent value="lbo-analysis" className="mt-4 space-y-mobile">
-              <LBOAnalysis symbol={currentSymbol} />
-            </TabsContent>
-            <TabsContent value="recent-news" className="mt-4 space-y-mobile">
-              <RecentNews />
-            </TabsContent>
-            <TabsContent value="sec-filings" className="mt-4 space-y-mobile">
-              <SECFilingsTranscripts ticker={currentSymbol} />
-            </TabsContent>
-            <TabsContent value="idea-generation" className="mt-4 space-y-mobile">
-              <IdeaGeneration />
-            </TabsContent>
-            <TabsContent value="watchlist" className="mt-4 space-y-mobile">
-              <WatchlistTable />
-            </TabsContent>
+              {/* Tab Content */}
+              <div className="mt-6 animate-fade-in">
+                <TabsContent value="company-snapshot" className="mt-0 space-y-4">
+                  <CompanyOverview />
+                </TabsContent>
+                <TabsContent value="historical-financials" className="mt-0 space-y-4">
+                  <HistoricalFinancials />
+                </TabsContent>
+                <TabsContent value="competitor-analysis" className="mt-0 space-y-4">
+                  <CompetitorAnalysis />
+                </TabsContent>
+                <TabsContent value="dcf-analysis" className="mt-0 space-y-4">
+                  <DCFAnalysis symbol={currentSymbol} />
+                </TabsContent>
+                <TabsContent value="lbo-analysis" className="mt-0 space-y-4">
+                  <LBOAnalysis symbol={currentSymbol} />
+                </TabsContent>
+                <TabsContent value="recent-news" className="mt-0 space-y-4">
+                  <RecentNews />
+                </TabsContent>
+                <TabsContent value="sec-filings" className="mt-0 space-y-4">
+                  <SECFilingsTranscripts ticker={currentSymbol} />
+                </TabsContent>
+                <TabsContent value="idea-generation" className="mt-0 space-y-4">
+                  <IdeaGeneration />
+                </TabsContent>
+              </div>
+            </Tabs>
           </div>
-        </Tabs>
+        </div>
 
         {/* AI Analysis & Chat Components */}
         {currentSymbol && (

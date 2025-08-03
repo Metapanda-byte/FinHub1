@@ -23,9 +23,9 @@ const navItems = [
     icon: BarChart3,
   },
   {
-    label: "Analysis",
+    label: "Financials",
     href: "/dashboard",
-    tab: "dcf-analysis",
+    tab: "historical-financials",
     icon: TrendingUp,
   },
   {
@@ -58,7 +58,7 @@ export function MobileNav() {
   };
   
   return (
-    <nav className="mobile-nav-container sm:hidden glass-effect">
+    <nav className="mobile-nav-container sm:hidden">
       <div className="flex h-14 items-center justify-around px-2">
         {navItems.map((item) => {
           const isActive = 
@@ -78,23 +78,18 @@ export function MobileNav() {
             >
               {/* Active indicator */}
               {isActive && (
-                <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[hsl(var(--finhub-orange))] rounded-full" />
-              )}
-              
-              {/* Glow effect on active */}
-              {isActive && (
-                <div className="absolute inset-0 bg-[hsl(var(--finhub-orange))]/10 rounded-lg blur-xl" />
+                <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
               )}
               
               <div className="relative flex flex-col items-center gap-1">
                 <item.icon className={cn(
                   "h-5 w-5 transition-all duration-300",
-                  isActive ? "text-[hsl(var(--finhub-orange))] scale-110" : "text-muted-foreground",
+                  isActive ? "text-primary scale-110" : "text-muted-foreground",
                   "group-hover:text-foreground"
                 )} />
                 <span className={cn(
                   "text-[10px] font-medium transition-colors",
-                  isActive ? "text-[hsl(var(--finhub-orange))]" : "text-muted-foreground",
+                  isActive ? "text-primary" : "text-muted-foreground",
                   "group-hover:text-foreground"
                 )}>
                   {item.label}

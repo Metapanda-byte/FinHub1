@@ -9,16 +9,16 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'rounded-xl border bg-card text-card-foreground shadow-sm',
-      'transition-all duration-300',
-      'hover:shadow-lg hover:border-[hsl(var(--finhub-orange))]/20',
-      'dark:hover:shadow-[0_0_30px_rgba(255,140,0,0.05)]',
+      "rounded-xl border bg-card text-card-foreground shadow-sm",
+      "transition-all duration-300",
+      "hover:shadow-md",
+      "dark:border-white/10",
       className
     )}
     {...props}
   />
-));
-Card.displayName = 'Card';
+))
+Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<
   HTMLDivElement,

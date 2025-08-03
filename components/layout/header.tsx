@@ -46,20 +46,16 @@ export default function Header() {
         {/* Logo and Search */}
         <div className="flex items-center gap-2 sm:gap-4 flex-1">
           <Link href="/" className="flex items-center flex-shrink-0 group">
-            <div className="relative">
-              <FinHubIQLogo 
-                variant={theme === 'light' ? 'black' : 'primary'} 
-                size="small"
-                className="sm:hidden transition-transform group-hover:scale-105"
-              />
-              <FinHubIQLogo 
-                variant={theme === 'light' ? 'black' : 'primary'} 
-                size="medium"
-                className="hidden sm:block transition-transform group-hover:scale-105"
-              />
-              {/* Orange glow on hover */}
-              <div className="absolute inset-0 bg-[hsl(var(--finhub-orange))]/0 group-hover:bg-[hsl(var(--finhub-orange))]/10 blur-xl transition-all duration-300 -z-10" />
-            </div>
+            <FinHubIQLogo 
+              variant={theme === 'light' ? 'black' : 'primary'} 
+              size="small"
+              className="sm:hidden transition-transform group-hover:scale-105"
+            />
+            <FinHubIQLogo 
+              variant={theme === 'light' ? 'black' : 'primary'} 
+              size="medium"
+              className="hidden sm:block transition-transform group-hover:scale-105"
+            />
           </Link>
           
           {/* Desktop Navigation */}
@@ -68,30 +64,24 @@ export default function Header() {
               variant="ghost" 
               asChild 
               className={cn(
-                "touch-target orange-accent-hover relative",
-                pathname === '/dashboard' && "text-[hsl(var(--finhub-orange))]"
+                "touch-target relative",
+                pathname === '/dashboard' && "bg-accent"
               )}
             >
               <Link href="/dashboard">
                 Dashboard
-                {pathname === '/dashboard' && (
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-[hsl(var(--finhub-orange))] rounded-full" />
-                )}
               </Link>
             </Button>
             <Button 
               variant="ghost" 
               asChild 
               className={cn(
-                "touch-target orange-accent-hover relative",
-                pathname === '/plans' && "text-[hsl(var(--finhub-orange))]"
+                "touch-target relative",
+                pathname === '/plans' && "bg-accent"
               )}
             >
               <Link href="/plans">
                 Plans
-                {pathname === '/plans' && (
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-[hsl(var(--finhub-orange))] rounded-full" />
-                )}
               </Link>
             </Button>
           </nav>
