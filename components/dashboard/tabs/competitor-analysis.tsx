@@ -54,6 +54,20 @@ interface CompetitorData {
   peerCompanies: PeerCompany[];
   peerValuationData: ValuationData[];
   peerPerformanceData: PerformanceData[];
+  peerQualitativeData?: QualitativeData[];
+}
+
+interface QualitativeData {
+  ticker: string;
+  company: string;
+  description: string;
+  country: string;
+  geographicMix: string;
+  segmentMix: string;
+  exchange: string;
+  website: string;
+  ceo: string;
+  employees: number;
 }
 
 interface StockSearchResult {
@@ -137,6 +151,87 @@ const formatMarketCap = (value: number): string => {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1 
   })}B`;
+};
+
+// Country code to full name mapping
+const getFullCountryName = (countryCode: string): string => {
+  const countryMap: Record<string, string> = {
+    'US': 'United States',
+    'USA': 'United States',
+    'CN': 'China',
+    'JP': 'Japan',
+    'DE': 'Germany',
+    'GB': 'United Kingdom',
+    'UK': 'United Kingdom',
+    'FR': 'France',
+    'IN': 'India',
+    'IT': 'Italy',
+    'BR': 'Brazil',
+    'CA': 'Canada',
+    'KR': 'South Korea',
+    'ES': 'Spain',
+    'AU': 'Australia',
+    'RU': 'Russia',
+    'NL': 'Netherlands',
+    'CH': 'Switzerland',
+    'SE': 'Sweden',
+    'SG': 'Singapore',
+    'HK': 'Hong Kong',
+    'TW': 'Taiwan',
+    'BE': 'Belgium',
+    'DK': 'Denmark',
+    'FI': 'Finland',
+    'NO': 'Norway',
+    'IE': 'Ireland',
+    'IL': 'Israel',
+    'AE': 'UAE',
+    'SA': 'Saudi Arabia',
+    'MX': 'Mexico',
+    'ID': 'Indonesia',
+    'TH': 'Thailand',
+    'MY': 'Malaysia',
+    'PH': 'Philippines',
+    'VN': 'Vietnam',
+    'EG': 'Egypt',
+    'ZA': 'South Africa',
+    'AR': 'Argentina',
+    'CL': 'Chile',
+    'CO': 'Colombia',
+    'PE': 'Peru',
+    'NZ': 'New Zealand',
+    'AT': 'Austria',
+    'PL': 'Poland',
+    'PT': 'Portugal',
+    'CZ': 'Czech Republic',
+    'HU': 'Hungary',
+    'RO': 'Romania',
+    'GR': 'Greece',
+    'TR': 'Turkey',
+    'LU': 'Luxembourg',
+    'BM': 'Bermuda',
+    'KY': 'Cayman Islands',
+    'VG': 'British Virgin Islands',
+    'JE': 'Jersey',
+    'GG': 'Guernsey',
+    'IM': 'Isle of Man',
+    'MC': 'Monaco',
+    'LI': 'Liechtenstein',
+    'MT': 'Malta',
+    'CY': 'Cyprus',
+    'BS': 'Bahamas',
+    'BB': 'Barbados'
+  };
+  
+  if (!countryCode || countryCode === 'N/A') return 'N/A';
+  return countryMap[countryCode.toUpperCase()] || countryCode;
+};
+
+// Optimize description for table display
+const optimizeDescription = (description: string): string => {
+  if (!description || description === 'N/A') return 'N/A';
+  
+  // Return the full description - line-clamp-3 will handle overflow
+  return description;
 };
 
 export function CompetitorAnalysis() {
@@ -584,14 +679,20 @@ export function CompetitorAnalysis() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Shared Ticker Selection Controls */}
-      <Card>
-        <CardHeader className="pb-3">
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="space-y-1">
+          <CardTitle className="text-2xl font-bold">Competitor Analysis</CardTitle>
+          <CardDescription>Compare your company with industry peers</CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-3">
+        {/* Integrated Peer Selection Controls */}
+        <div className="mb-4 pb-4 border-b">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <CardTitle className="text-lg font-semibold">Peer Selection & Controls</CardTitle>
-              <CardDescription>Select and manage companies for comparison across all tabs</CardDescription>
+              <h3 className="text-sm font-semibold">Peer Selection</h3>
+              <p className="text-xs text-muted-foreground">Add companies for comparison</p>
             </div>
             <div className="flex flex-col gap-3 w-full md:w-auto">
               <div className="flex justify-end w-full">
@@ -666,247 +767,276 @@ export function CompetitorAnalysis() {
               </div>
             </div>
           </div>
-        </CardHeader>
-      </Card>
-
-      <Tabs defaultValue="peer-selection" className="w-full">
-        <div className="premium-tabs">
-          <TabsList className="h-10 bg-transparent border-none p-0 gap-0 w-full justify-start">
-            <TabsTrigger 
-              value="peer-selection" 
-              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
-            >
-              Peer Selection
-            </TabsTrigger>
-            <TabsTrigger 
-              value="valuation" 
-              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
-            >
-              Valuation Comparables
-            </TabsTrigger>
-            <TabsTrigger 
-              value="operating" 
-              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
-            >
-              Operating Benchmarks
-            </TabsTrigger>
-            <TabsTrigger 
-              value="correlation-charts" 
-              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
-            >
-              Correlation Charts
-            </TabsTrigger>
-          </TabsList>
         </div>
+
+        {/* Tabs with Peer Overview as first tab */}
+        <Tabs defaultValue="peer-overview" className="w-full space-y-3">
+          <div className="premium-tabs">
+            <TabsList className="h-10 bg-transparent border-none p-0 gap-0 w-full justify-start">
+              <TabsTrigger 
+                value="peer-overview" 
+                className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+              >
+                Peer Overview
+              </TabsTrigger>
+              <TabsTrigger 
+                value="valuation" 
+                className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+              >
+                Valuation Comparables
+              </TabsTrigger>
+              <TabsTrigger 
+                value="operating" 
+                className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+              >
+                Operating Benchmarks
+              </TabsTrigger>
+              <TabsTrigger 
+                value="correlation-charts" 
+                className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+              >
+                Correlation Charts
+              </TabsTrigger>
+            </TabsList>
+          </div>
         
-        <TabsContent value="peer-selection" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold">Peer Selection</CardTitle>
-              <CardDescription>Select the most relevant peer companies for your comparative analysis</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Guidance Section */}
-                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">💡 How to Select Relevant Peers</h4>
-                  <div className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                    <p>• <strong>Size Similarity:</strong> Choose peers with comparable market capitalization</p>
-                    <p>• <strong>Geographic Focus:</strong> Consider companies in similar markets/regions</p>
-                    <p>• <strong>Business Model:</strong> Select peers with similar revenue streams and customer bases</p>
-                    <p>• <strong>Growth Stage:</strong> Match companies at similar stages of development</p>
-                  </div>
-                </div>
-
-                {/* Suggested Peer Group */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-sm">🎯 Suggested Peer Group</h4>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        const suggestedPeers = data?.peerCompanies?.slice(0, 5).map(p => p.id) || [];
-                        setSelectedPeers(suggestedPeers);
-                      }}
-                    >
-                      Select All Suggested
-                    </Button>
-                  </div>
-                  <div className="grid gap-3">
-                    {data?.peerCompanies?.slice(0, 5).map((peer, index) => {
-                      const isSelected = selectedPeers.includes(peer.id);
-                      const valuationData = data?.peerValuationData?.find(v => v.ticker === peer.id);
-                      const performanceData = data?.peerPerformanceData?.find(p => p.ticker === peer.id);
-                      
-                      return (
-                        <div 
-                          key={peer.id}
-                          className={cn(
-                            "border rounded-lg p-4 cursor-pointer transition-all hover:shadow-sm",
-                            isSelected 
-                              ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" 
-                              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+        <TabsContent value="peer-overview" className="mt-3">
+          <div className="space-y-4">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold">Peer Overview</h3>
+              <p className="text-sm text-muted-foreground">Qualitative overview of peer companies</p>
+            </div>
+            <div className="overflow-x-auto rounded-lg">
+              <table className="w-full border-collapse comps-table">
+                <thead>
+                  <tr className="border-b-2 border-black dark:border-white text-xs">
+                    <th className="text-left py-2 px-2 font-bold min-w-[40px]">
+                      <span className="sr-only">Selected</span>
+                    </th>
+                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Ticker</th>
+                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Company</th>
+                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[120px]">Country</th>
+                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[500px]">Description</th>
+                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[150px]">Geographic Mix</th>
+                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[150px]">Segment Mix</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* All peer companies with selection indicator */}
+                  {data?.peerCompanies?.map((company) => {
+                    const isSelected = selectedPeers.includes(company.id);
+                    const valuationData = data?.peerValuationData?.find(v => v.ticker === company.id);
+                    const qualitativeInfo = data?.peerQualitativeData?.find(q => q.ticker === company.id);
+                    
+                    // Use real data from API or fallback
+                    const qualitativeData = qualitativeInfo || {
+                      description: "Company information loading...",
+                      country: "N/A",
+                      geographicMix: "N/A",
+                      segmentMix: "N/A"
+                    };
+                    
+                    return (
+                      <tr key={company.id} className={cn(
+                        "hover:bg-muted/50 transition-colors text-xs border-b border-border/30",
+                        isSelected && "bg-blue-50/50 dark:bg-blue-950/20"
+                      )}>
+                        <td className="py-3 px-2 text-center align-middle">
+                          {isSelected ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <div className="w-5 h-5 rounded-full bg-blue-600 dark:bg-blue-400 flex items-center justify-center">
+                                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">Included in analysis</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <div className="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600" />
                           )}
-                          onClick={() => togglePeer(peer.id)}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Badge 
-                                  variant={isSelected ? "default" : "outline"}
-                                  className="text-xs"
-                                >
-                                  {peer.id}
-                                </Badge>
-                                {index < 3 && (
-                                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                    Top Match
-                                  </Badge>
-                                )}
-                              </div>
-                              <h5 className="font-medium text-sm mb-1">{peer.name}</h5>
-                              <p className="text-xs text-muted-foreground mb-3">
-                                {valuationData?.sector || performanceData?.sector || 'Sector N/A'} • {valuationData?.marketCap ? `$${(valuationData.marketCap / 1000000000).toFixed(1)}B Market Cap` : 'Market cap N/A'}
-                              </p>
-                              
-                              {/* Key Metrics Preview */}
-                              <div className="grid grid-cols-2 gap-4 text-xs">
-                                <div>
-                                  <span className="text-muted-foreground">P/E Ratio:</span>
-                                  <span className="ml-1 font-medium">
-                                    {valuationData?.peRatio ? `${valuationData.peRatio.toFixed(1)}x` : 'N/A'}
-                                  </span>
+                        </td>
+                        <td className="py-3 px-2 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline align-middle">{company.id}</td>
+                        <td className="py-3 px-2 align-middle">{company.name}</td>
+                        <td className="py-3 px-2 align-middle">{getFullCountryName(qualitativeData.country)}</td>
+                        <td className="py-3 px-2 align-middle text-xs">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="max-w-[500px] overflow-hidden relative cursor-help">
+                                  <div className="line-clamp-3 break-words">
+                                    {optimizeDescription(qualitativeData.description)}
+                                  </div>
                                 </div>
-                                <div>
-                                  <span className="text-muted-foreground">Revenue Growth:</span>
-                                  <span className={cn(
-                                    "ml-1 font-medium",
-                                    performanceData?.revenueGrowth && performanceData.revenueGrowth >= 0 
-                                      ? "text-green-600 dark:text-green-400" 
-                                      : "text-red-600 dark:text-red-400"
-                                  )}>
-                                    {performanceData?.revenueGrowth ? `${performanceData.revenueGrowth.toFixed(1)}%` : 'N/A'}
-                                  </span>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-md">
+                                <p className="text-xs break-words">{qualitativeData.description}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </td>
+                        <td className="py-3 px-2 align-middle text-xs">{qualitativeData.geographicMix}</td>
+                        <td className="py-3 px-2 align-middle text-xs">{qualitativeData.segmentMix}</td>
+                      </tr>
+                    );
+                  })}
+                  
+                  {/* Manual tickers */}
+                  {manualTickers.map((ticker) => {
+                    const isSelected = selectedPeers.includes(ticker);
+                    const qualitativeInfo = data?.peerQualitativeData?.find(q => q.ticker === ticker);
+                    
+                    return (
+                      <tr key={ticker} className={cn(
+                        "hover:bg-muted/50 transition-colors text-xs border-b border-border/30",
+                        isSelected && "bg-blue-50/50 dark:bg-blue-950/20"
+                      )}>
+                        <td className="py-3 px-2 text-center align-middle">
+                          {isSelected ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <div className="w-5 h-5 rounded-full bg-blue-600 dark:bg-blue-400 flex items-center justify-center">
+                                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">Included in analysis</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <div className="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600" />
+                          )}
+                        </td>
+                        <td className="py-3 px-2 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline align-middle">{ticker}</td>
+                        <td className="py-3 px-2 align-middle">{qualitativeInfo?.company || ticker}</td>
+                        <td className="py-3 px-2 align-middle">{getFullCountryName(qualitativeInfo?.country || "-")}</td>
+                        <td className="py-3 px-2 align-middle text-xs">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="max-w-[500px] overflow-hidden relative cursor-help">
+                                  <div className="line-clamp-3 break-words">
+                                    {qualitativeInfo?.description ? optimizeDescription(qualitativeInfo.description) : "Data loading..."}
+                                  </div>
                                 </div>
-                                <div>
-                                  <span className="text-muted-foreground">EV/EBITDA:</span>
-                                  <span className="ml-1 font-medium">
-                                    {valuationData?.evToEbitda ? `${valuationData.evToEbitda.toFixed(1)}x` : 'N/A'}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">ROE:</span>
-                                  <span className="ml-1 font-medium">
-                                    {performanceData?.roe ? `${performanceData.roe.toFixed(1)}%` : 'N/A'}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant={isSelected ? "default" : "outline"}
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  togglePeer(peer.id);
-                                }}
-                              >
-                                {isSelected ? "Selected" : "Select"}
-                              </Button>
-                            </div>
-                          </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-md">
+                                <p className="text-xs break-words">{qualitativeInfo?.description || "Data loading..."}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </td>
+                        <td className="py-3 px-2 align-middle text-xs">{qualitativeInfo?.geographicMix || "-"}</td>
+                        <td className="py-3 px-2 align-middle text-xs">{qualitativeInfo?.segmentMix || "-"}</td>
+                      </tr>
+                    );
+                  })}
+                  
+                  {/* Separator before subject company */}
+                  <tr className="h-4"/>
+                  
+                  {/* Subject company row */}
+                  {currentSymbol && (
+                    <tr className="border-2 border-blue-600 dark:border-blue-400 bg-green-25 dark:bg-green-900/20">
+                      <td className="py-3 px-3 text-center">
+                        <div className="w-5 h-5 rounded-full bg-green-600 dark:bg-green-400 flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
                         </div>
-                      );
-                    })}
-                  </div>
+                      </td>
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-green-25 dark:bg-green-900/20">
+                        {currentSymbol}
+                      </td>
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                        {data?.peerValuationData?.find(c => c.ticker === currentSymbol)?.company || currentSymbol}
+                      </td>
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                        {getFullCountryName(data?.peerQualitativeData?.find(q => q.ticker === currentSymbol)?.country || "-")}
+                      </td>
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                        {(() => {
+                          const subjectQualitative = data?.peerQualitativeData?.find(q => q.ticker === currentSymbol);
+                          return (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="max-w-[500px] overflow-hidden relative cursor-help">
+                                    <div className="line-clamp-3 break-words">
+                                      {subjectQualitative?.description ? optimizeDescription(subjectQualitative.description) : "Subject company for analysis"}
+                                    </div>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-md">
+                                  <p className="text-xs break-words">{subjectQualitative?.description || "Subject company for analysis"}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          );
+                        })()}
+                      </td>
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                        {data?.peerQualitativeData?.find(q => q.ticker === currentSymbol)?.geographicMix || "-"}
+                      </td>
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                        {data?.peerQualitativeData?.find(q => q.ticker === currentSymbol)?.segmentMix || "-"}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            {/* Legend */}
+            <div className="mt-4 flex items-center gap-6 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-blue-600 dark:bg-blue-400 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
-
-                {/* Additional Peers */}
-                {data?.peerCompanies && data.peerCompanies.length > 5 && (
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-sm">📋 Additional Peer Options</h4>
-                    <div className="grid gap-2">
-                      {data.peerCompanies.slice(5).map((peer) => {
-                        const isSelected = selectedPeers.includes(peer.id);
-                        const valuationData = data?.peerValuationData?.find(v => v.ticker === peer.id);
-                        
-                        return (
-                          <div 
-                            key={peer.id}
-                            className={cn(
-                              "flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all hover:shadow-sm",
-                              isSelected 
-                                ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" 
-                                : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                            )}
-                            onClick={() => togglePeer(peer.id)}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Badge 
-                                variant={isSelected ? "default" : "outline"}
-                                className="text-xs"
-                              >
-                                {peer.id}
-                              </Badge>
-                                                             <div>
-                                 <p className="text-sm font-medium">{peer.name}</p>
-                                 <p className="text-xs text-muted-foreground">
-                                   {valuationData?.sector || 'Sector N/A'} • {valuationData?.marketCap ? `$${(valuationData.marketCap / 1000000000).toFixed(1)}B` : 'N/A'}
-                                 </p>
-                               </div>
-                            </div>
-                            <Button
-                              variant={isSelected ? "default" : "outline"}
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                togglePeer(peer.id);
-                              }}
-                            >
-                              {isSelected ? "Selected" : "Select"}
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Selection Summary */}
-                <div className="bg-gray-50 dark:bg-gray-900/50 border rounded-lg p-4">
-                  <h4 className="font-medium text-sm mb-2">📊 Selection Summary</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>• <strong>{selectedPeers.length} peers selected</strong> for comparison analysis</p>
-                    <p>• Selected peers will be used across Valuation Comparables and Operating Benchmarks tabs</p>
-                    <p>• You can modify your selection at any time using the controls above or in this tab</p>
-                  </div>
-                </div>
+                <span>Selected for analysis</span>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600" />
+                <span>Available but not selected</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-green-600 dark:bg-green-400 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </div>
+                <span>Subject company</span>
+              </div>
+            </div>
+          </div>
         </TabsContent>
         
-        <TabsContent value="valuation" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold">Valuation Comparables</CardTitle>
-              <CardDescription>Compare key valuation metrics with industry peers</CardDescription>
-            </CardHeader>
-        <CardContent>
-          {valuationMode === 'forward' && loadingForward ? (
-            <div className="py-8 text-center text-muted-foreground flex items-center justify-center">
-              <span className="animate-pulse">Crunching forward estimates...</span>
-            </div>
-          ) : (
-            <div className="overflow-x-auto rounded-lg">
-              <div className="flex justify-start mb-2">
+        <TabsContent value="valuation" className="mt-3">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold">Valuation Comparables</h3>
+                <p className="text-sm text-muted-foreground">Compare key valuation metrics with industry peers</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
                 <ToggleGroup type="single" value={valuationMode} onValueChange={v => v && setValuationMode(v as 'ttm' | 'forward')}>
                   <ToggleGroupItem value="ttm">TTM</ToggleGroupItem>
                   <ToggleGroupItem value="forward">Forward</ToggleGroupItem>
                 </ToggleGroup>
               </div>
+            </div>
+            <div className="overflow-x-auto rounded-lg">
               <table className="w-full border-collapse comps-table">
                 <thead>
                   <tr className="border-b-2 border-black dark:border-white text-xs">
@@ -1042,197 +1172,191 @@ export function CompetitorAnalysis() {
                 </tbody>
               </table>
             </div>
-          )}
-        </CardContent>
-      </Card>
-        </TabsContent>
-        
-        <TabsContent value="operating" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Operating Benchmarks</CardTitle>
-              <CardDescription>Compare key operating metrics with industry peers</CardDescription>
-            </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto rounded-lg">
-            <table className="w-full border-collapse comps-table">
-              <thead>
-                <tr className="border-b-2 border-black dark:border-white text-xs">
-                  <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Ticker</th>
-                  <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Company</th>
-                  <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Sector</th>
-                  <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
-                    Rev. Growth
-                  </th>
-                  <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
-                    Gross Margin
-                  </th>
-                  <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
-                    Op. Margin
-                  </th>
-                  <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
-                    Net Margin
-                  </th>
-                  <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
-                    ROIC
-                  </th>
-                  <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
-                    ROE
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Peer companies */}
-                {filteredPerformanceData.map((company) => (
-                  <tr key={company.ticker} className="hover:bg-muted/50 transition-colors text-xs h-10 border-b border-border/30">
-                    <td className="py-2 px-2 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline align-middle">{company.ticker}</td>
-                    <td className="py-2 px-2 align-middle">{company.company}</td>
-                    <td className="py-2 px-2 text-muted-foreground align-middle">{company.sector}</td>
-                    <td className={cn(
-                      "text-right py-2 px-2 tabular-nums align-middle",
-                      company.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                    )}>{formatPercentage(company.revenueGrowth)}</td>
-                    <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.grossMargin)}</td>
-                    <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.operatingMargin)}</td>
-                    <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.netMargin)}</td>
-                    <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.roic)}</td>
-                    <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.roe)}</td>
-                  </tr>
-                ))}
-                
-                {/* Separator */}
-                <tr className="h-2"/>
-                
-                {/* Median row */}
-                {filteredPerformanceData.length > 0 && (
-                  <>
-                    <tr className="border-b-2 border-border bg-blue-25 dark:bg-blue-900/20">
-                      <td className="py-2 px-2 text-xs font-bold text-blue-600 dark:text-blue-400 align-middle">Median</td>
-                      <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
-                      <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
-                      <td className={cn(
-                        "text-right py-2 px-2 text-xs tabular-nums font-bold align-middle",
-                        calculateMetrics(filteredPerformanceData).median.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                      )}>
-                        {formatPercentage(calculateMetrics(filteredPerformanceData).median.revenueGrowth)}
-                      </td>
-                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                        {formatPercentage(calculateMetrics(filteredPerformanceData).median.grossMargin)}
-                      </td>
-                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                        {formatPercentage(calculateMetrics(filteredPerformanceData).median.operatingMargin)}
-                      </td>
-                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                        {formatPercentage(calculateMetrics(filteredPerformanceData).median.netMargin)}
-                      </td>
-                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                        {formatPercentage(calculateMetrics(filteredPerformanceData).median.roic)}
-                      </td>
-                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                        {formatPercentage(calculateMetrics(filteredPerformanceData).median.roe)}
-                      </td>
-                    </tr>
-                    <tr className="border-b-2 border-border bg-yellow-25 dark:bg-yellow-900/20">
-                      <td className="py-2 px-2 text-xs font-bold text-yellow-600 dark:text-yellow-400 align-middle">Average</td>
-                      <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
-                      <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
-                      <td className={cn(
-                        "text-right py-2 px-2 text-xs tabular-nums font-bold align-middle",
-                        calculateMetrics(filteredPerformanceData).average.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                      )}>
-                        {formatPercentage(calculateMetrics(filteredPerformanceData).average.revenueGrowth)}
-                      </td>
-                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                        {formatPercentage(calculateMetrics(filteredPerformanceData).average.grossMargin)}
-                      </td>
-                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                        {formatPercentage(calculateMetrics(filteredPerformanceData).average.operatingMargin)}
-                      </td>
-                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                        {formatPercentage(calculateMetrics(filteredPerformanceData).average.netMargin)}
-                      </td>
-                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                        {formatPercentage(calculateMetrics(filteredPerformanceData).average.roic)}
-                      </td>
-                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                        {formatPercentage(calculateMetrics(filteredPerformanceData).average.roe)}
-                      </td>
-                    </tr>
-                  </>
-                )}
-                
-                {/* Separator before subject company */}
-                <tr className="h-4"/>
-                
-                {/* Subject company row */}
-                {data?.peerPerformanceData.find(company => company.ticker === currentSymbol) && (
-                  <tr className="border-2 border-blue-600 dark:border-blue-400 bg-green-25 dark:bg-green-900/20">
-                    <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-green-25 dark:bg-green-900/20">
-                      {currentSymbol}
-                    </td>
-                    <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
-                      {data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.company}
-                    </td>
-                    <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
-                      {data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.sector}
-                    </td>
-                    <td className={cn(
-                      "text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold",
-                      (data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.revenueGrowth || 0) >= 0 
-                        ? "text-green-600 dark:text-green-400" 
-                        : "text-red-600 dark:text-red-400"
-                    )}>
-                      {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.revenueGrowth || 0)}
-                    </td>
-                    <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
-                      {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.grossMargin || 0)}
-                    </td>
-                    <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
-                      {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.operatingMargin || 0)}
-                    </td>
-                    <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
-                      {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.netMargin || 0)}
-                    </td>
-                    <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
-                      {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.roic || 0)}
-                    </td>
-                    <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
-                      {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.roe || 0)}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
           </div>
-        </CardContent>
-      </Card>
-
         </TabsContent>
         
-        <TabsContent value="correlation-charts" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold">Correlation Charts</CardTitle>
-              <CardDescription>Visualize correlations between selected peer companies</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="text-sm text-muted-foreground">
-                  <p>Correlation analysis charts will be displayed here. This feature is coming soon.</p>
-                </div>
-                
-                <div className="flex items-center justify-center h-64 border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                  <div className="text-center text-muted-foreground">
-                    <div className="text-lg font-medium mb-2">Correlation Charts</div>
-                    <div className="text-sm">Interactive correlation analysis between peer companies</div>
-                    <div className="text-xs mt-2">Feature in development</div>
-                  </div>
+        <TabsContent value="operating" className="mt-3">
+          <div className="space-y-4">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold">Operating Benchmarks</h3>
+              <p className="text-sm text-muted-foreground">Compare key operating metrics with industry peers</p>
+            </div>
+            <div className="overflow-x-auto rounded-lg">
+              <table className="w-full border-collapse comps-table">
+                <thead>
+                  <tr className="border-b-2 border-black dark:border-white text-xs">
+                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Ticker</th>
+                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Company</th>
+                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Sector</th>
+                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
+                      Rev. Growth
+                    </th>
+                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
+                      Gross Margin
+                    </th>
+                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
+                      Op. Margin
+                    </th>
+                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
+                      Net Margin
+                    </th>
+                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
+                      ROIC
+                    </th>
+                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
+                      ROE
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Peer companies */}
+                  {filteredPerformanceData.map((company) => (
+                    <tr key={company.ticker} className="hover:bg-muted/50 transition-colors text-xs h-10 border-b border-border/30">
+                      <td className="py-2 px-2 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline align-middle">{company.ticker}</td>
+                      <td className="py-2 px-2 align-middle">{company.company}</td>
+                      <td className="py-2 px-2 text-muted-foreground align-middle">{company.sector}</td>
+                      <td className={cn(
+                        "text-right py-2 px-2 tabular-nums align-middle",
+                        company.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                      )}>{formatPercentage(company.revenueGrowth)}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.grossMargin)}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.operatingMargin)}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.netMargin)}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.roic)}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.roe)}</td>
+                    </tr>
+                  ))}
+                  
+                  {/* Separator */}
+                  <tr className="h-2"/>
+                  
+                  {/* Median row */}
+                  {filteredPerformanceData.length > 0 && (
+                    <>
+                      <tr className="border-b-2 border-border bg-blue-25 dark:bg-blue-900/20">
+                        <td className="py-2 px-2 text-xs font-bold text-blue-600 dark:text-blue-400 align-middle">Median</td>
+                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
+                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
+                        <td className={cn(
+                          "text-right py-2 px-2 text-xs tabular-nums font-bold align-middle",
+                          calculateMetrics(filteredPerformanceData).median.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                        )}>
+                          {formatPercentage(calculateMetrics(filteredPerformanceData).median.revenueGrowth)}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {formatPercentage(calculateMetrics(filteredPerformanceData).median.grossMargin)}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {formatPercentage(calculateMetrics(filteredPerformanceData).median.operatingMargin)}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {formatPercentage(calculateMetrics(filteredPerformanceData).median.netMargin)}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {formatPercentage(calculateMetrics(filteredPerformanceData).median.roic)}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {formatPercentage(calculateMetrics(filteredPerformanceData).median.roe)}
+                        </td>
+                      </tr>
+                      <tr className="border-b-2 border-border bg-yellow-25 dark:bg-yellow-900/20">
+                        <td className="py-2 px-2 text-xs font-bold text-yellow-600 dark:text-yellow-400 align-middle">Average</td>
+                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
+                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
+                        <td className={cn(
+                          "text-right py-2 px-2 text-xs tabular-nums font-bold align-middle",
+                          calculateMetrics(filteredPerformanceData).average.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                        )}>
+                          {formatPercentage(calculateMetrics(filteredPerformanceData).average.revenueGrowth)}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {formatPercentage(calculateMetrics(filteredPerformanceData).average.grossMargin)}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {formatPercentage(calculateMetrics(filteredPerformanceData).average.operatingMargin)}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {formatPercentage(calculateMetrics(filteredPerformanceData).average.netMargin)}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {formatPercentage(calculateMetrics(filteredPerformanceData).average.roic)}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {formatPercentage(calculateMetrics(filteredPerformanceData).average.roe)}
+                        </td>
+                      </tr>
+                    </>
+                  )}
+                  
+                  {/* Separator before subject company */}
+                  <tr className="h-4"/>
+                  
+                  {/* Subject company row */}
+                  {data?.peerPerformanceData.find(company => company.ticker === currentSymbol) && (
+                    <tr className="border-2 border-blue-600 dark:border-blue-400 bg-green-25 dark:bg-green-900/20">
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-green-25 dark:bg-green-900/20">
+                        {currentSymbol}
+                      </td>
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                        {data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.company}
+                      </td>
+                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                        {data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.sector}
+                      </td>
+                      <td className={cn(
+                        "text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold",
+                        (data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.revenueGrowth || 0) >= 0 
+                          ? "text-green-600 dark:text-green-400" 
+                          : "text-red-600 dark:text-red-400"
+                      )}>
+                        {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.revenueGrowth || 0)}
+                      </td>
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.grossMargin || 0)}
+                      </td>
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.operatingMargin || 0)}
+                      </td>
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.netMargin || 0)}
+                      </td>
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.roic || 0)}
+                      </td>
+                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                        {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.roe || 0)}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="correlation-charts" className="mt-3">
+          <div className="space-y-4">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold">Correlation Charts</h3>
+              <p className="text-sm text-muted-foreground">Visualize correlations between selected peer companies</p>
+            </div>
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                <p>Correlation analysis charts will be displayed here. This feature is coming soon.</p>
+              </div>
+              
+              <div className="flex items-center justify-center h-64 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                <div className="text-center text-muted-foreground">
+                  <div className="text-lg font-medium mb-2">Correlation Charts</div>
+                  <div className="text-sm">Interactive correlation analysis between peer companies</div>
+                  <div className="text-xs mt-2">Feature in development</div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </CardContent>
+  </Card>
   );
 }

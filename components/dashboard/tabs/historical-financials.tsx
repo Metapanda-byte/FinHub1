@@ -17,7 +17,6 @@ import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import { TableLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
-import { TableScrollHint } from "@/components/ui/table-scroll-hint";
 
 const expenseMetrics = new Set([
   "Cost of Revenue",
@@ -118,7 +117,7 @@ const isPeriodInFuture = (period: string, lastReportedPeriod: string | null, sel
 // Helper function to format the last reported period for display
 const formatLastReportedPeriod = (period: string | null, selectedPeriod: 'annual' | 'quarter' | 'semi-annual'): string => {
   if (!period) return '';
-  return 'Last reported';
+  return 'LFY';
 };
 
 // Helper function to find the last reported period
@@ -835,23 +834,23 @@ export function HistoricalFinancials() {
           <thead className="sticky top-0 z-[100] bg-slate-50 dark:bg-slate-900/90 backdrop-blur border-b-2 border-slate-300 dark:border-slate-600">
             <tr className="">
               <th className={cn(
-                "text-left py-1 px-2 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom",
+                "text-left py-0.5 px-2 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom",
                 "min-w-48 sticky left-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700"
               )}>
                 {title}
               </th>
               {selectedPeriod === 'quarter'
                 ? years.map(year => (
-                    <th key={year} colSpan={4} className="text-center py-1 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
+                    <th key={year} colSpan={4} className="text-center py-0.5 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
                   ))
                 : selectedPeriod === 'semi-annual'
                 ? years.map(year => (
-                    <th key={year} colSpan={2} className="text-center py-1 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
+                    <th key={year} colSpan={2} className="text-center py-0.5 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
                   ))
                 : [...years.map(year => (
-                    <th key={year} className="text-center py-1 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '50px' }}>{`FY ${year}`}</th>
+                    <th key={year} className="text-center py-0.5 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '50px' }}>{`FY ${year}`}</th>
                   )), 
-                  <th key="ltm" className="text-center py-1 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '50px' }}>LTM</th>]}
+                  <th key="ltm" className="text-center py-0.5 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '50px' }}>LTM</th>]}
             </tr>
             {(selectedPeriod === 'quarter' || selectedPeriod === 'semi-annual') && (() => {
               const periods = selectedPeriod === 'semi-annual' ? ["H1", "H2"] : ["Q1","Q2","Q3","Q4"];
@@ -871,7 +870,7 @@ export function HistoricalFinancials() {
                         <div className="flex flex-col">
                           <span>{period}</span>
                           {lastReportedPeriod && shouldShowLastReported && (
-                            <span className="text-xs text-muted-foreground italic mt-0.5">
+                            <span className="text-xs text-muted-foreground italic">
                               {formatLastReportedPeriod(lastReportedPeriod, selectedPeriod)}
                             </span>
                           )}
@@ -929,7 +928,7 @@ export function HistoricalFinancials() {
                   )}
                 >
                   <td className={cn(
-                    "py-1 text-xs flex items-center gap-1",
+                    "py-0.5 text-xs flex items-center gap-1",
                     row.isIndented ? "px-3" : "px-2",
                     row.isImportant ? "font-semibold" : "",
                     row.isBold ? "font-bold" : "",
@@ -948,7 +947,7 @@ export function HistoricalFinancials() {
                           
                         return (
                           <td key={`${year}-${period}`} className={cn(
-                            "text-right py-1 px-1 text-xs tabular-nums relative z-10",
+                            "text-right py-0.5 px-1 text-xs tabular-nums relative z-10",
                             row.isImportant ? "font-semibold" : "",
                             row.isMargin ? "text-slate-500 dark:text-slate-400" : "",
                             isUnavailable && !isFuture ? "bg-muted/20" : ""
@@ -969,7 +968,7 @@ export function HistoricalFinancials() {
                           
                         return (
                           <td key={`${year}-${period}`} className={cn(
-                            "text-right py-1 px-1 text-xs tabular-nums relative z-10",
+                            "text-right py-0.5 px-1 text-xs tabular-nums relative z-10",
                             row.isImportant ? "font-semibold" : "",
                             row.isMargin ? "text-slate-500 dark:text-slate-400" : "",
                             isUnavailable && !isFuture ? "bg-muted/20" : ""
@@ -984,7 +983,7 @@ export function HistoricalFinancials() {
                         const isFuture = isPeriodInFuture(year, lastReportedPeriod, selectedPeriod);
                         return (
                         <td key={year} className={cn(
-                          "text-right py-1 px-1 text-xs tabular-nums relative z-10",
+                          "text-right py-0.5 px-1 text-xs tabular-nums relative z-10",
                           row.isImportant ? "font-semibold" : "",
                           row.isMargin ? "text-slate-500 dark:text-slate-400" : "",
                           isUnavailable && !isFuture ? "bg-muted/20" : ""
@@ -993,7 +992,7 @@ export function HistoricalFinancials() {
                         </td>
                       )}),
                       <td key="ltm" className={cn(
-                        "text-right py-1 px-1 text-xs tabular-nums font-medium bg-blue-50 dark:bg-blue-900/30 relative z-10",
+                        "text-right py-0.5 px-1 text-xs tabular-nums font-medium bg-blue-50 dark:bg-blue-900/30 relative z-10",
                         row.isImportant ? "font-semibold" : "",
                         row.isMargin ? "text-slate-500 dark:text-slate-400" : "text-slate-900 dark:text-slate-100"
                       )} style={{ minWidth: '50px' }}>
@@ -2167,20 +2166,18 @@ export function HistoricalFinancials() {
   };
 
   return (
-    <div className="space-y-6">
-      <TableScrollHint />
-      <Card>
-        <CardHeader className="pb-3">
+    <Card>
+        <CardHeader className="pb-2">
           <div>
-            <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical Financials</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-2xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical Financials</CardTitle>
+            <CardDescription className="text-sm">
               Financial statements for {currentSymbol}
             </CardDescription>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-3">
           {showSubscriptionWarning && (
-            <Alert className="border-amber-200 bg-amber-50 mb-6">
+            <Alert className="border-amber-200 bg-amber-50 mb-3">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-800">
                 <strong>{selectedPeriod === 'quarter' ? 'Quarterly' : 'Semi-annual'} data not available:</strong> Your current API subscription doesn&apos;t include {selectedPeriod} financial data. 
@@ -2189,7 +2186,7 @@ export function HistoricalFinancials() {
             </Alert>
           )}
           
-          <Tabs value={activeFinancialTab} onValueChange={setActiveFinancialTab} className="space-y-6">
+          <Tabs value={activeFinancialTab} onValueChange={setActiveFinancialTab} className="space-y-3">
             <div className="premium-tabs flex flex-row items-center justify-between">
               <TabsList className="h-10 bg-transparent border-none p-0 gap-0 justify-start">
                 <TabsTrigger 
@@ -2248,7 +2245,7 @@ export function HistoricalFinancials() {
               </div>
             </div>
             
-            <TabsContent value="income-statement" className="mt-6">
+            <TabsContent value="income-statement" className="mt-3">
               {incomeLoading ? (
                 <TableLoadingSkeleton rows={12} />
               ) : (
@@ -2256,7 +2253,7 @@ export function HistoricalFinancials() {
               )}
             </TabsContent>
             
-            <TabsContent value="cash-flow" className="mt-6">
+            <TabsContent value="cash-flow" className="mt-3">
               {cashFlowLoading ? (
                 <TableLoadingSkeleton rows={8} />
               ) : (
@@ -2264,7 +2261,7 @@ export function HistoricalFinancials() {
               )}
             </TabsContent>
             
-            <TabsContent value="balance-sheet" className="mt-6">
+            <TabsContent value="balance-sheet" className="mt-3">
               {balanceSheetLoading ? (
                 <TableLoadingSkeleton rows={10} />
               ) : (
@@ -2274,6 +2271,5 @@ export function HistoricalFinancials() {
           </Tabs>
         </CardContent>
       </Card>
-    </div>
   );
 }
