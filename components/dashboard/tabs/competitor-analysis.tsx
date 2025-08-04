@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CrunchingNumbersCardWithHeader } from "@/components/ui/crunching-numbers-loader";
+import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -516,10 +516,7 @@ export function CompetitorAnalysis() {
 
   if (isLoading) {
     return (
-      <CrunchingNumbersCardWithHeader 
-        title="Peer Comparison"
-        message="Crunching the numbers"
-      />
+      <CrunchingNumbersCard />
     );
   }
 
@@ -679,7 +676,9 @@ export function CompetitorAnalysis() {
             </CardHeader>
         <CardContent>
           {valuationMode === 'forward' && loadingForward ? (
-            <div className="py-8 text-center text-muted-foreground">Loading forward estimates...</div>
+            <div className="py-8 text-center text-muted-foreground flex items-center justify-center">
+              <span className="animate-pulse">Crunching forward estimates...</span>
+            </div>
           ) : (
             <div className="overflow-x-auto rounded-lg">
               <div className="flex justify-start mb-2">

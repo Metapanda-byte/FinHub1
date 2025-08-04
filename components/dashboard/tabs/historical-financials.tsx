@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import { TableLoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 import { TableScrollHint } from "@/components/ui/table-scroll-hint";
 
 const expenseMetrics = new Set([
@@ -436,23 +437,7 @@ export function HistoricalFinancials() {
   }
 
   if (!currentSymbol || incomeLoading || cashFlowLoading || balanceSheetLoading) {
-    return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xl font-bold">Loading...</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[200px] flex items-center justify-center">
-              <div className="animate-pulse space-y-4">
-                <div className="h-4 w-48 bg-muted rounded"></div>
-                <div className="h-4 w-36 bg-muted rounded"></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <CrunchingNumbersCard />;
   }
 
   if (!incomeStatements || !cashFlowStatements || !balanceSheets) {

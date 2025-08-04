@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { CrunchingNumbersLoader, CrunchingNumbersCard, CrunchingNumbersCardWithHeader } from "./crunching-numbers-loader";
+import { CrunchingNumbersLoader, CrunchingNumbersCard, SkeletonTable } from "./crunching-numbers-loader";
 
 interface LoadingSkeletonProps {
   className?: string;
@@ -32,9 +32,9 @@ export function CardLoadingSkeleton() {
 }
 
 export function ChartLoadingSkeleton() {
-  return <CrunchingNumbersCard message="Crunching the numbers" />;
+  return <CrunchingNumbersCard />;
 }
 
-export function TableLoadingSkeleton({ rows = 5 }: { rows?: number }) {
-  return <CrunchingNumbersCard message="Crunching the numbers" />;
+export function TableLoadingSkeleton({ rows = 8 }: { rows?: number }) {
+  return <SkeletonTable rows={rows} />;
 }

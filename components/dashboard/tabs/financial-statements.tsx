@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useBalanceSheets, useIncomeStatements, useCashFlows } from "@/lib/api/financial";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CrunchingNumbersCardWithHeader } from "@/components/ui/crunching-numbers-loader";
+import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
 import { useSearchStore } from "@/lib/store/search-store";
@@ -38,10 +39,7 @@ export function FinancialStatements() {
 
   if (!currentSymbol || balanceSheetsLoading || incomeStatementsLoading || cashFlowsLoading) {
     return (
-      <CrunchingNumbersCardWithHeader 
-        title="Financial Statements"
-        message="Crunching the numbers"
-      />
+      <CrunchingNumbersCard />
     );
   }
 

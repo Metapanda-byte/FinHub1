@@ -163,16 +163,22 @@ export function Dashboard() {
     }
   };
 
-  // Handle mobile navigation tab changes
+  // Handle mobile navigation tab changes and watchlist tab switching
   useEffect(() => {
     const handleTabChange = (event: CustomEvent) => {
       setActiveTab(event.detail.tab);
     };
 
+    const handleSwitchTab = (event: CustomEvent) => {
+      setActiveTab(event.detail.tab);
+    };
+
     window.addEventListener('mobileTabChange', handleTabChange as EventListener);
+    window.addEventListener('switch-tab', handleSwitchTab as EventListener);
 
     return () => {
       window.removeEventListener('mobileTabChange', handleTabChange as EventListener);
+      window.removeEventListener('switch-tab', handleSwitchTab as EventListener);
     };
   }, []);
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpDown, TrendingUp, TrendingDown, Eye, X, Download, Filter } from "lucide-react";
+import { ArrowUpDown, TrendingUp, TrendingDown, Eye, X, Download, Filter, Lightbulb } from "lucide-react";
 import { useWatchlistStore } from "@/lib/store/watchlist-store";
 import { useSearchStore } from "@/lib/store/search-store";
 import { cn } from "@/lib/utils";
@@ -231,14 +231,24 @@ export function WatchlistTable() {
 
   if (stocks.length === 0) {
     return (
-      <div className="text-center py-8">
-        <Eye className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-semibold mb-2">No stocks in portfolio</h3>
-        <p className="text-muted-foreground mb-4">
-          Add stocks to your portfolio to track them here
+      <div className="text-center py-12">
+        <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
+        <h3 className="text-xl font-semibold mb-3">Build Your Investment Portfolio</h3>
+        <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+          Discover and track promising investment opportunities with our AI-powered tools
         </p>
-        <Button variant="outline">
-          Browse Stocks
+        <Button 
+          size="lg" 
+          className="bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white font-semibold px-8 py-3 text-base shadow-lg hover:shadow-xl transition-all duration-200"
+          onClick={() => {
+            const event = new CustomEvent('switch-tab', {
+              detail: { tab: 'idea-generation' }
+            });
+            window.dispatchEvent(event);
+          }}
+        >
+          <Lightbulb className="h-5 w-5 mr-2" />
+          Generate New Ideas
         </Button>
       </div>
     );

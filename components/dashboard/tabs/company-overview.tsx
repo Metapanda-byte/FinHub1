@@ -26,7 +26,7 @@ import { useTheme } from 'next-themes';
 import clsx from 'clsx';
 import useSWR from 'swr';
 import { ChartLoadingSkeleton, CardLoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { CrunchingNumbersCardWithHeader } from "@/components/ui/crunching-numbers-loader";
+import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 
 // Define a consistent FinHub blue palette (dark to light)
 const finhubBluePalette = [
@@ -457,10 +457,8 @@ export function CompanyOverview() {
   if (!currentSymbol || profileLoading || statementsLoading || pricesLoading || segmentsLoading || regionsLoading) {
     return (
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <CrunchingNumbersCardWithHeader 
+        <CrunchingNumbersCard 
           className="col-span-full"
-          title="Company Overview"
-          message="Crunching the numbers"
         />
       </div>
     );
@@ -469,10 +467,8 @@ export function CompanyOverview() {
   if (!revenueData || !ebitdaData || !ltmRefDate) {
     return (
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <CrunchingNumbersCardWithHeader 
+        <CrunchingNumbersCard 
           className="col-span-full"
-          title="No Data Available"
-          message="Unable to fetch company data"
         />
       </div>
     );
@@ -624,7 +620,7 @@ export function CompanyOverview() {
                   <p className="text-xs text-muted-foreground">Employees</p>
                   <p className="text-sm font-medium tabular-nums">
                     {employeeCountLoading
-                      ? <span className="animate-pulse text-muted-foreground">Loading...</span>
+                      ? <span className="animate-pulse text-muted-foreground">•••</span>
                       : (employeeCount !== null && employeeCount !== undefined)
                         ? employeeCount.toLocaleString()
                         : 'N/A'}

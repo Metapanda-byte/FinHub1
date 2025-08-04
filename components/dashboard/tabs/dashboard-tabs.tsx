@@ -23,23 +23,23 @@ const ScreeningTool = lazy(() => import("./screening-tool").then(m => ({ default
 
 // Tab-specific loading skeletons
 function OverviewLoadingSkeleton() {
-  return <CrunchingNumbersCard message="Crunching the numbers" />;
+  return <CrunchingNumbersCard />;
 }
 
 function FinancialsLoadingSkeleton() {
-  return <CrunchingNumbersCard message="Crunching the numbers" />;
+  return <TableLoadingSkeleton rows={12} />;
 }
 
 function ValuationLoadingSkeleton() {
-  return <CrunchingNumbersCard message="Crunching the numbers" />;
+  return <TableLoadingSkeleton rows={8} />;
 }
 
 function PeerComparisonLoadingSkeleton() {
-  return <CrunchingNumbersCard message="Crunching the numbers" />;
+  return <TableLoadingSkeleton rows={6} />;
 }
 
 function ScreeningLoadingSkeleton() {
-  return <CrunchingNumbersCard message="Loading screening data" />;
+  return <CrunchingNumbersCard />;
 }
 
 export function DashboardTabs() {

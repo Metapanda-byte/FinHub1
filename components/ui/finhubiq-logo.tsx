@@ -33,10 +33,10 @@ const variantColors = {
     graphicAccent: 'text-white',
   },
   black: {
-    finhub: 'text-black',
-    iq: 'text-black',
-    graphic: 'text-black',
-    graphicAccent: 'text-black',
+    finhub: 'text-foreground',
+    iq: 'text-orange-500',
+    graphic: 'text-foreground',
+    graphicAccent: 'text-orange-500',
   },
   icon: {
     finhub: 'text-white',
@@ -76,7 +76,7 @@ export function FinHubIQLogo({
           y1="40" 
           x2="30" 
           y2="30" 
-          stroke={variant === 'black' ? '#1f2937' : '#ffffff'} 
+          stroke={variant === 'black' ? '#000000' : '#ffffff'} 
           strokeWidth="1" 
         />
         <line 
@@ -94,13 +94,13 @@ export function FinHubIQLogo({
           cx="20" 
           cy="40" 
           r="3" 
-          fill={variant === 'black' ? '#1f2937' : '#ffffff'}
+          fill={variant === 'black' ? '#000000' : '#ffffff'}
         />
         <circle 
           cx="30" 
           cy="30" 
           r="4" 
-          fill={variant === 'black' ? '#1f2937' : '#ffffff'}
+          fill={variant === 'black' ? '#000000' : '#ffffff'}
         />
         <circle 
           cx="40" 

@@ -1,7 +1,8 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CrunchingNumbersCardWithHeader } from "@/components/ui/crunching-numbers-loader";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 import { useSearchStore } from "@/lib/store/search-store";
 import useSWR from "swr";
 import { formatDistanceToNow } from "date-fns";
@@ -52,10 +53,7 @@ export function RecentNews() {
 
   if (isLoading) {
     return (
-      <CrunchingNumbersCardWithHeader 
-        title="Recent News"
-        message="Crunching the numbers"
-      />
+      <CrunchingNumbersCard />
     );
   }
 
