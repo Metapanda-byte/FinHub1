@@ -265,9 +265,9 @@ export function Dashboard() {
     <>
       <div data-dashboard className="flex flex-col h-screen overflow-hidden">
         {/* Dashboard-Specific Sticky Header Only */}
-        <div className="sticky top-10 z-40 bg-background/95 backdrop-blur-sm border-b border-border shrink-0 -mt-px">
+        <div className="sticky top-9 z-40 bg-background/95 backdrop-blur-sm border-b border-border shrink-0">
           {/* Company Info Section */}
-          <div className="px-mobile pt-0.5 pb-1 border-b border-border/30">
+          <div className="px-mobile pt-0 pb-0.5 border-b border-border/30">
             <div className="flex items-center justify-between gap-4">
               {/* Left: Company Name and Controls */}
               <div>

@@ -28,6 +28,161 @@ import useSWR from 'swr';
 import { ChartLoadingSkeleton, CardLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 
+// Enhanced LTM calculation following the new specification
+function calculateAdvancedLTM(
+  quarterlyStatements: any[],
+  annualStatements: any[],
+  field: string
+): { value: number | null; date: string | null } {
+  if (!quarterlyStatements || quarterlyStatements.length === 0) {
+    return { value: null, date: null };
+  }
+
+  // Create quarterly map by fiscal year
+  const quarterlyByYear: Record<string, any[]> = {};
+  quarterlyStatements.forEach(stmt => {
+    const year = stmt.calendarYear;
+    if (!quarterlyByYear[year]) {
+      quarterlyByYear[year] = [];
+    }
+    quarterlyByYear[year].push(stmt);
+  });
+
+  // Find the most recent fiscal year with complete annual data
+  let lastCompleteFY: string | null = null;
+  let lastCompleteFYValue: number | null = null;
+
+  // Check annual statements first
+  if (annualStatements && annualStatements.length > 0) {
+    const sortedAnnual = annualStatements
+      .filter(stmt => stmt.calendarYear && stmt[field] !== null && stmt[field] !== undefined)
+      .sort((a, b) => parseInt(b.calendarYear) - parseInt(a.calendarYear));
+    
+    if (sortedAnnual.length > 0) {
+      const lastAnnual = sortedAnnual[0];
+      lastCompleteFY = lastAnnual.calendarYear;
+      lastCompleteFYValue = lastAnnual[field];
+    }
+  }
+
+  // If no annual data, try to construct from quarterly data
+  if (lastCompleteFY === null) {
+    const fiscalYears = Object.keys(quarterlyByYear).sort((a, b) => parseInt(b) - parseInt(a));
+    
+    for (const year of fiscalYears) {
+      const quartersForYear = quarterlyByYear[year];
+      if (quartersForYear.length === 4) {
+        // Calculate annual value from quarters
+        let annualValue = 0;
+        let hasAllQuarters = true;
+        
+        for (const quarter of quartersForYear) {
+          const quarterValue = quarter[field];
+          if (quarterValue === null || quarterValue === undefined || isNaN(quarterValue)) {
+            hasAllQuarters = false;
+            break;
+          }
+          annualValue += quarterValue;
+        }
+        
+        if (hasAllQuarters) {
+          lastCompleteFY = year;
+          lastCompleteFYValue = annualValue;
+          break;
+        }
+      }
+    }
+  }
+
+  if (lastCompleteFY === null || lastCompleteFYValue === null) {
+    // Fallback to simple 4-quarter rolling sum
+    if (quarterlyStatements.length < 4) return { value: null, date: null };
+    
+    const recentPeriods = quarterlyStatements.slice(0, 4);
+    let values: number[] = [];
+    
+    for (const stmt of recentPeriods) {
+      const value = stmt[field];
+      if (value !== null && value !== undefined && !isNaN(value)) {
+        values.push(value);
+      }
+    }
+    
+    if (values.length !== 4) return { value: null, date: null };
+    return { 
+      value: values.reduce((sum, val) => sum + val, 0),
+      date: recentPeriods[0].date
+    };
+  }
+
+  // Now we have the last complete FY, check for partial quarters in the next FY
+  const nextFY = (parseInt(lastCompleteFY) + 1).toString();
+  const priorFY = (parseInt(lastCompleteFY) - 1).toString();
+
+  // Get quarters for next FY (most recent partial year)
+  const nextFYQuarters = quarterlyByYear[nextFY] || [];
+  const priorFYQuarters = quarterlyByYear[priorFY] || [];
+
+  // Case 1: No quarterly data for next FY - LTM equals last complete FY
+  if (nextFYQuarters.length === 0) {
+    // Find the date from the last complete FY
+    const lastFYStatement = annualStatements?.find(stmt => stmt.calendarYear === lastCompleteFY);
+    return { 
+      value: lastCompleteFYValue, 
+      date: lastFYStatement?.date || quarterlyStatements[0]?.date 
+    };
+  }
+
+  // Case 2: We have some quarters in next FY - apply the formula
+  // LTM = Last FY + Recent quarters in next FY - Equivalent quarters in prior FY
+  
+  let nextFYValue = 0;
+  let priorFYValue = 0;
+  
+  // Sort quarters by date to ensure proper matching
+  const sortedNextFYQuarters = nextFYQuarters.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const sortedPriorFYQuarters = priorFYQuarters.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  // Sum the available quarters in next FY
+  for (const quarter of sortedNextFYQuarters) {
+    const value = quarter[field];
+    if (value !== null && value !== undefined && !isNaN(value)) {
+      nextFYValue += value;
+    }
+  }
+
+  // Sum the equivalent quarters in prior FY
+  const quartersToMatch = Math.min(sortedNextFYQuarters.length, sortedPriorFYQuarters.length);
+  
+  for (let i = 0; i < quartersToMatch; i++) {
+    const value = sortedPriorFYQuarters[i][field];
+    if (value !== null && value !== undefined && !isNaN(value)) {
+      priorFYValue += value;
+    }
+  }
+
+  // Apply the LTM formula
+  const ltmValue = lastCompleteFYValue + nextFYValue - priorFYValue;
+  
+  return { 
+    value: ltmValue,
+    date: sortedNextFYQuarters[0]?.date || quarterlyStatements[0]?.date
+  };
+}
+
+// Helper to get the LTM reference date for display
+function getLTMReferenceDate(quarterlyStatements: any[]): string {
+  if (!quarterlyStatements || quarterlyStatements.length === 0) return 'LTM';
+  
+  // Get the most recent quarter date
+  const mostRecentQuarter = quarterlyStatements[0];
+  if (mostRecentQuarter?.date) {
+    return format(new Date(mostRecentQuarter.date), 'MMM-yy');
+  }
+  
+  return 'LTM';
+}
+
 // Define a consistent FinHub blue palette (dark to light)
 const finhubBluePalette = [
   '#1e3a8a', // Dark blue
@@ -227,7 +382,8 @@ export function CompanyOverview() {
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
   const { profile, isLoading: profileLoading } = useCompanyProfile(currentSymbol || '');
   const { quote, loading: quoteLoading } = useStockQuote(currentSymbol || '');
-  const { statements, isLoading: statementsLoading } = useIncomeStatements(currentSymbol || '');
+  const { statements, isLoading: statementsLoading } = useIncomeStatements(currentSymbol || '', 'annual');
+  const { statements: quarterlyStatements, isLoading: quarterlyStatementsLoading } = useIncomeStatements(currentSymbol || '', 'quarter');
   const { prices, isLoading: pricesLoading } = useStockPriceData(currentSymbol || '', timeframe);
   const { segments: ttmSegmentData, referenceDate: ttmSegmentRefDate, isLoading: segmentsLoading } = useRevenueSegmentsTTM(currentSymbol || '');
   const { regions: ttmGeographyData, referenceDate: ttmGeoRefDate, isLoading: regionsLoading } = useGeographicRevenueTTM(currentSymbol || '');
@@ -261,22 +417,21 @@ export function CompanyOverview() {
     console.log('[DEBUG] TTM date:', ttm.date);
   }
   
-  // Calculate the canonical LTM revenue that all displays should use
+  // Get the most recent fiscal year for pie chart labels
+  const mostRecentFY = statements && statements.length > 0 ? statements[0].calendarYear : null;
+  const fyLabel = mostRecentFY ? `FY${mostRecentFY.slice(-2)}` : 'Annual';
+
+  // Calculate the canonical LTM revenue using enhanced calculation
+  const ltmRevenueCalc = calculateAdvancedLTM(quarterlyStatements || [], statements || [], 'revenue');
+  const ltmEbitdaCalc = calculateAdvancedLTM(quarterlyStatements || [], statements || [], 'ebitda');
+  
   let canonicalLTMRevenue: number | null = null;
   let canonicalLTMDate: string | null = null;
   
-  if (ttm && typeof ttm.revenue === 'number') {
-    // Prefer TTM endpoint if available
-    canonicalLTMRevenue = ttm.revenue / 1e9;
-    canonicalLTMDate = ttm.date;
-    console.log('[DEBUG] Using TTM endpoint for canonical revenue:', canonicalLTMRevenue);
-  } else if (statements && statements.length >= 4) {
-    // Fallback to summing 4 quarters
-    const latestFour = statements.slice(0, 4);
-    const ltmRevenue = latestFour.reduce((sum, s) => sum + (s.revenue || 0), 0);
-    canonicalLTMRevenue = ltmRevenue / 1e9;
-    canonicalLTMDate = latestFour[0].date;
-    console.log('[DEBUG] Using 4-quarter sum for canonical revenue:', canonicalLTMRevenue);
+  if (ltmRevenueCalc.value !== null) {
+    canonicalLTMRevenue = ltmRevenueCalc.value / 1e9;
+    canonicalLTMDate = ltmRevenueCalc.date;
+    console.log('[DEBUG] Using enhanced LTM calculation for canonical revenue:', canonicalLTMRevenue);
   }
   
   // Log revenue consistency check
@@ -315,50 +470,28 @@ export function CompanyOverview() {
     isLTM: false
   }));
 
-  // LTM logic: use TTM endpoint if up-to-date, otherwise sum latest 4 quarters
+  // LTM logic using enhanced calculation
   let ltmBar = null;
   let ltmEbitdaBar = null;
   let ltmRefDate = null;
   let ltmLabel = 'LTM¹';
   let ltmFootnoteDate = null;
 
-  // Check if TTM endpoint is up-to-date
-  if (
-    ttm && typeof ttm.revenue === 'number' &&
-    ttm.date && latestQuarterDate && ttm.date === latestQuarterDate
-  ) {
-    // Use TTM endpoint
+  // Use enhanced LTM calculations
+  if (ltmRevenueCalc.value !== null && ltmEbitdaCalc.value !== null) {
     ltmBar = {
       year: ltmLabel,
-      value: ttm.revenue / 1e9,
+      value: ltmRevenueCalc.value / 1e9,
       isLTM: true
     };
     ltmEbitdaBar = {
       year: ltmLabel,
-      value: ttm.ebitda / 1e9,
-      margin: ttm.revenue && ttm.ebitda ? (ttm.ebitda / ttm.revenue) * 100 : null,
+      value: ltmEbitdaCalc.value / 1e9,
+      margin: ltmRevenueCalc.value > 0 ? (ltmEbitdaCalc.value / ltmRevenueCalc.value) * 100 : null,
       isLTM: true
     };
-    ltmRefDate = ttm.date ? new Date(ttm.date) : null;
-    ltmFootnoteDate = ttm.date;
-  } else if (statements && statements.length >= 4) {
-    // Sum latest 4 quarters
-    const latestFour = statements.slice(0, 4);
-    const ltmRevenue = latestFour.reduce((sum, s) => sum + (s.revenue || 0), 0);
-    const ltmEbitda = latestFour.reduce((sum, s) => sum + (s.ebitda || 0), 0);
-    ltmBar = {
-      year: ltmLabel,
-      value: ltmRevenue / 1e9,
-      isLTM: true
-    };
-    ltmEbitdaBar = {
-      year: ltmLabel,
-      value: ltmEbitda / 1e9,
-      margin: ltmRevenue > 0 ? (ltmEbitda / ltmRevenue) * 100 : null,
-      isLTM: true
-    };
-    ltmRefDate = latestFour[0].date ? new Date(latestFour[0].date) : null;
-    ltmFootnoteDate = latestFour[0].date;
+    ltmRefDate = ltmRevenueCalc.date ? new Date(ltmRevenueCalc.date) : null;
+    ltmFootnoteDate = ltmRevenueCalc.date;
   }
 
   const revenueData = ltmBar ? [...annualBars, ltmBar] : annualBars;
@@ -772,7 +905,7 @@ export function CompanyOverview() {
                 <Card>
                   <CardHeader className="pb-3 flex flex-row items-center justify-between">
                     <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>
-                      LTM Revenue by Segment<sup style={{ fontWeight: 700, fontSize: '0.55em', verticalAlign: 'super', marginLeft: 2 }}>1</sup>
+                      {fyLabel} Revenue by Segment
                       {canonicalLTMRevenue && (
                         <span className="text-sm font-normal text-muted-foreground ml-2">
                           (Total: ${canonicalLTMRevenue.toFixed(1)}B)
@@ -799,11 +932,6 @@ export function CompanyOverview() {
                           formatter={(value) => `$${value.toFixed(1)}B`}
                           labelColor={pieLabelColor}
                         />
-                        {ltmRefDate && (
-                          <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
-                            <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
-                          </div>
-                        )}
                       </>
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">
@@ -819,7 +947,7 @@ export function CompanyOverview() {
                 <Card>
                   <CardHeader className="pb-3 flex flex-row items-center justify-between">
                     <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>
-                      LTM Revenue by Geography<sup style={{ fontWeight: 700, fontSize: '0.55em', verticalAlign: 'super', marginLeft: 2 }}>1</sup>
+                      {fyLabel} Revenue by Geography
                       {canonicalLTMRevenue && (
                         <span className="text-sm font-normal text-muted-foreground ml-2">
                           (Total: ${canonicalLTMRevenue.toFixed(1)}B)
@@ -846,15 +974,10 @@ export function CompanyOverview() {
                         labelColor={pieLabelColor}
                       />
                     ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        Not enough data to display geographic split.
-                      </div>
-                    )}
-                    {ltmRefDate && (
-                      <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
-                        <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
-                      </div>
-                    )}
+                                              <div className="text-center py-8 text-muted-foreground">
+                          Not enough data to display geographic split.
+                        </div>
+                      )}
                   </CardContent>
                 </Card>
               )}
