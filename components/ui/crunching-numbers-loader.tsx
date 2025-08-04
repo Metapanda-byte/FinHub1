@@ -13,12 +13,12 @@ interface CrunchingNumbersLoaderProps {
 
 // Wall Street-inspired loading messages
 const LOADING_MESSAGES = [
+  "Scanning for Alpha",
   "Crunching the numbers",
   "Analyzing market data",
   "Processing financial metrics",
   "Calculating valuations",
   "Reading the tape",
-  "Scanning for alpha",
   "Parsing SEC filings",
   "Computing risk metrics",
   "Analyzing price action",

@@ -1303,18 +1303,17 @@
     top: 0;
   }
   
-  /* Stronger borders for sticky columns */
+  /* Simple sticky column - same background as other columns */
   .financial-table-wrapper th[style*="left: 0"] {
-    border-right: 2px solid rgba(148, 163, 184, 0.3) !important;
-    /* Headers with solid background to hide content behind */
-    background-color: rgb(248 250 252) !important;
-    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 10 !important;
   }
   
   .financial-table-wrapper td[style*="left: 0"] {
-    border-right: 2px solid rgba(148, 163, 184, 0.3) !important;
-    /* Data cells use the same background as the page */
-    background-color: hsl(var(--background)) !important;
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 10 !important;
   }
   
   /* Enhanced mobile support for horizontal scrolling */
@@ -1343,11 +1342,6 @@
       position: sticky !important;
       left: 0 !important;
       z-index: 10 !important;
-      background-color: rgb(248 250 252) !important;
-    }
-    
-    .financial-table-wrapper td.sticky.left-0 {
-      background-color: hsl(var(--background)) !important;
     }
   }
   
@@ -1358,26 +1352,21 @@
     }
     
     .financial-table-wrapper th[style*="left: 0"] {
-      border-right: 2px solid rgba(71, 85, 105, 0.4) !important;
-      /* Headers with solid dark background to hide content behind */
-      background-color: rgb(15 23 42) !important;
-      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3);
+      position: sticky !important;
+      left: 0 !important;
+      z-index: 10 !important;
     }
     
     .financial-table-wrapper td[style*="left: 0"] {
-      border-right: 2px solid rgba(71, 85, 105, 0.4) !important;
-      /* Data cells use the same background as the page (auto dark mode) */
-      background-color: hsl(var(--background)) !important;
+      position: sticky !important;
+      left: 0 !important;
+      z-index: 10 !important;
     }
     
     /* Mobile-specific dark mode sticky positioning */
     @media (max-width: 768px) {
       .financial-table-wrapper .sticky.left-0 {
-        background-color: rgb(15 23 42) !important;
-      }
-      
-      .financial-table-wrapper td.sticky.left-0 {
-        background-color: hsl(var(--background)) !important;
+        z-index: 10 !important;
       }
     }
   }

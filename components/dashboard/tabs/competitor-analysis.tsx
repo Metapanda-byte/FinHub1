@@ -140,6 +140,7 @@ const formatMarketCap = (value: number): string => {
 };
 
 export function CompetitorAnalysis() {
+  console.log("🔍 CompetitorAnalysis component rendering");
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
   const [selectedPeers, setSelectedPeers] = useState<string[]>([]);
   const [manualTicker, setManualTicker] = useState("");
@@ -497,7 +498,10 @@ export function CompetitorAnalysis() {
   };
 
   // Early return if no symbol is selected
+  console.log("🔍 CompetitorAnalysis - currentSymbol:", currentSymbol);
+  
   if (!currentSymbol) {
+    console.log("🔍 CompetitorAnalysis - No currentSymbol, showing select company message");
     return (
       <div className="space-y-4">
         <Card>
@@ -514,7 +518,10 @@ export function CompetitorAnalysis() {
     );
   }
 
+  console.log("🔍 CompetitorAnalysis - isLoading:", isLoading, "swrError:", swrError);
+  
   if (isLoading) {
+    console.log("🔍 CompetitorAnalysis - Loading, showing CrunchingNumbersCard");
     return (
       <CrunchingNumbersCard />
     );
@@ -662,23 +669,224 @@ export function CompetitorAnalysis() {
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="valuation" className="w-full">
+      <Tabs defaultValue="peer-selection" className="w-full">
         <div className="premium-tabs">
-          <TabsList className="h-12 bg-transparent border-none p-0 gap-0 w-full justify-start">
+          <TabsList className="h-10 bg-transparent border-none p-0 gap-0 w-full justify-start">
+            <TabsTrigger 
+              value="peer-selection" 
+              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+            >
+              Peer Selection
+            </TabsTrigger>
             <TabsTrigger 
               value="valuation" 
-              className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
             >
               Valuation Comparables
             </TabsTrigger>
             <TabsTrigger 
               value="operating" 
-              className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
             >
               Operating Benchmarks
             </TabsTrigger>
+            <TabsTrigger 
+              value="correlation-charts" 
+              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+            >
+              Correlation Charts
+            </TabsTrigger>
           </TabsList>
         </div>
+        
+        <TabsContent value="peer-selection" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold">Peer Selection</CardTitle>
+              <CardDescription>Select the most relevant peer companies for your comparative analysis</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Guidance Section */}
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">💡 How to Select Relevant Peers</h4>
+                  <div className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                    <p>• <strong>Size Similarity:</strong> Choose peers with comparable market capitalization</p>
+                    <p>• <strong>Geographic Focus:</strong> Consider companies in similar markets/regions</p>
+                    <p>• <strong>Business Model:</strong> Select peers with similar revenue streams and customer bases</p>
+                    <p>• <strong>Growth Stage:</strong> Match companies at similar stages of development</p>
+                  </div>
+                </div>
+
+                {/* Suggested Peer Group */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-sm">🎯 Suggested Peer Group</h4>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const suggestedPeers = data?.peerCompanies?.slice(0, 5).map(p => p.id) || [];
+                        setSelectedPeers(suggestedPeers);
+                      }}
+                    >
+                      Select All Suggested
+                    </Button>
+                  </div>
+                  <div className="grid gap-3">
+                    {data?.peerCompanies?.slice(0, 5).map((peer, index) => {
+                      const isSelected = selectedPeers.includes(peer.id);
+                      const valuationData = data?.peerValuationData?.find(v => v.ticker === peer.id);
+                      const performanceData = data?.peerPerformanceData?.find(p => p.ticker === peer.id);
+                      
+                      return (
+                        <div 
+                          key={peer.id}
+                          className={cn(
+                            "border rounded-lg p-4 cursor-pointer transition-all hover:shadow-sm",
+                            isSelected 
+                              ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" 
+                              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                          )}
+                          onClick={() => togglePeer(peer.id)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge 
+                                  variant={isSelected ? "default" : "outline"}
+                                  className="text-xs"
+                                >
+                                  {peer.id}
+                                </Badge>
+                                {index < 3 && (
+                                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    Top Match
+                                  </Badge>
+                                )}
+                              </div>
+                              <h5 className="font-medium text-sm mb-1">{peer.name}</h5>
+                              <p className="text-xs text-muted-foreground mb-3">
+                                {valuationData?.sector || performanceData?.sector || 'Sector N/A'} • {valuationData?.marketCap ? `$${(valuationData.marketCap / 1000000000).toFixed(1)}B Market Cap` : 'Market cap N/A'}
+                              </p>
+                              
+                              {/* Key Metrics Preview */}
+                              <div className="grid grid-cols-2 gap-4 text-xs">
+                                <div>
+                                  <span className="text-muted-foreground">P/E Ratio:</span>
+                                  <span className="ml-1 font-medium">
+                                    {valuationData?.peRatio ? `${valuationData.peRatio.toFixed(1)}x` : 'N/A'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Revenue Growth:</span>
+                                  <span className={cn(
+                                    "ml-1 font-medium",
+                                    performanceData?.revenueGrowth && performanceData.revenueGrowth >= 0 
+                                      ? "text-green-600 dark:text-green-400" 
+                                      : "text-red-600 dark:text-red-400"
+                                  )}>
+                                    {performanceData?.revenueGrowth ? `${performanceData.revenueGrowth.toFixed(1)}%` : 'N/A'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">EV/EBITDA:</span>
+                                  <span className="ml-1 font-medium">
+                                    {valuationData?.evToEbitda ? `${valuationData.evToEbitda.toFixed(1)}x` : 'N/A'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">ROE:</span>
+                                  <span className="ml-1 font-medium">
+                                    {performanceData?.roe ? `${performanceData.roe.toFixed(1)}%` : 'N/A'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant={isSelected ? "default" : "outline"}
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  togglePeer(peer.id);
+                                }}
+                              >
+                                {isSelected ? "Selected" : "Select"}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Additional Peers */}
+                {data?.peerCompanies && data.peerCompanies.length > 5 && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm">📋 Additional Peer Options</h4>
+                    <div className="grid gap-2">
+                      {data.peerCompanies.slice(5).map((peer) => {
+                        const isSelected = selectedPeers.includes(peer.id);
+                        const valuationData = data?.peerValuationData?.find(v => v.ticker === peer.id);
+                        
+                        return (
+                          <div 
+                            key={peer.id}
+                            className={cn(
+                              "flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all hover:shadow-sm",
+                              isSelected 
+                                ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" 
+                                : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                            )}
+                            onClick={() => togglePeer(peer.id)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Badge 
+                                variant={isSelected ? "default" : "outline"}
+                                className="text-xs"
+                              >
+                                {peer.id}
+                              </Badge>
+                                                             <div>
+                                 <p className="text-sm font-medium">{peer.name}</p>
+                                 <p className="text-xs text-muted-foreground">
+                                   {valuationData?.sector || 'Sector N/A'} • {valuationData?.marketCap ? `$${(valuationData.marketCap / 1000000000).toFixed(1)}B` : 'N/A'}
+                                 </p>
+                               </div>
+                            </div>
+                            <Button
+                              variant={isSelected ? "default" : "outline"}
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                togglePeer(peer.id);
+                              }}
+                            >
+                              {isSelected ? "Selected" : "Select"}
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Selection Summary */}
+                <div className="bg-gray-50 dark:bg-gray-900/50 border rounded-lg p-4">
+                  <h4 className="font-medium text-sm mb-2">📊 Selection Summary</h4>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>• <strong>{selectedPeers.length} peers selected</strong> for comparison analysis</p>
+                    <p>• Selected peers will be used across Valuation Comparables and Operating Benchmarks tabs</p>
+                    <p>• You can modify your selection at any time using the controls above or in this tab</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         <TabsContent value="valuation" className="space-y-4">
           <Card>
@@ -999,6 +1207,30 @@ export function CompetitorAnalysis() {
         </CardContent>
       </Card>
 
+        </TabsContent>
+        
+        <TabsContent value="correlation-charts" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold">Correlation Charts</CardTitle>
+              <CardDescription>Visualize correlations between selected peer companies</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  <p>Correlation analysis charts will be displayed here. This feature is coming soon.</p>
+                </div>
+                
+                <div className="flex items-center justify-center h-64 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                  <div className="text-center text-muted-foreground">
+                    <div className="text-lg font-medium mb-2">Correlation Charts</div>
+                    <div className="text-sm">Interactive correlation analysis between peer companies</div>
+                    <div className="text-xs mt-2">Feature in development</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

@@ -32,17 +32,17 @@ export default function SECFilingsTranscripts({ ticker }: SECFilingsTranscriptsP
       {/* Sub-tabs */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
         <div className="premium-tabs">
-          <TabsList className="h-12 bg-transparent border-none p-0 gap-0 w-full justify-start">
+          <TabsList className="h-10 bg-transparent border-none p-0 gap-0 w-full justify-start">
             <TabsTrigger 
               value="sec-filings" 
-              className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-2"
+              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-2"
             >
               <FileText className="h-4 w-4" />
               SEC Filings
             </TabsTrigger>
             <TabsTrigger 
               value="earnings-transcripts" 
-              className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-2"
+              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-2"
             >
               <Building className="h-4 w-4" />
               Earnings Transcripts

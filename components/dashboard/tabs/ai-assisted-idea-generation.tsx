@@ -206,38 +206,38 @@ export default function AIAssistedIdeaGeneration() {
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <div className="premium-tabs">
-          <TabsList className="h-10 bg-transparent border-none p-0 gap-0 w-full justify-start">
+          <TabsList className="h-8 bg-transparent border-none p-0 gap-0 w-full justify-start">
             <TabsTrigger 
               value="discover" 
-              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
+              className="premium-tab-trigger h-8 px-3 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
             >
               <Sparkles className="h-3 w-3" />
               Discover
             </TabsTrigger>
             <TabsTrigger 
               value="themes" 
-              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
+              className="premium-tab-trigger h-8 px-3 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
             >
               <Globe className="h-3 w-3" />
               Themes
             </TabsTrigger>
             <TabsTrigger 
               value="contrarian" 
-              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
+              className="premium-tab-trigger h-8 px-3 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
             >
               <Shuffle className="h-3 w-3" />
               Contrarian
             </TabsTrigger>
             <TabsTrigger 
               value="supply-chain" 
-              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
+              className="premium-tab-trigger h-8 px-3 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
             >
               <Network className="h-3 w-3" />
               Supply Chain
             </TabsTrigger>
             <TabsTrigger 
               value="ai-chat" 
-              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
+              className="premium-tab-trigger h-8 px-3 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
             >
               <Bot className="h-3 w-3" />
               AI Chat

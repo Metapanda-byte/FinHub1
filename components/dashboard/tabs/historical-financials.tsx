@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Download, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSearchStore } from "@/lib/store/search-store";
@@ -1904,170 +1905,230 @@ export function HistoricalFinancials() {
     return data;
   };
 
-  const exportToExcel = async () => {
+  // Helper function to format data for export
+  const formatDataForExport = (data: any[], title: string) => {
+    const exportData: any[] = [];
+    
+    // Create header row
+    const headerRow = ['Financial Metric'];
+    years.forEach(year => {
+      if (selectedPeriod === 'quarter') {
+        ['Q1', 'Q2', 'Q3', 'Q4'].forEach(q => {
+          headerRow.push(`${year} ${q}`);
+        });
+      } else if (selectedPeriod === 'semi-annual') {
+        ['H1', 'H2'].forEach(h => {
+          headerRow.push(`${year} ${h}`);
+        });
+      } else {
+        headerRow.push(year);
+      }
+    });
+    // Add LTM column for quarterly data
+    if (selectedPeriod === 'quarter') {
+      headerRow.push('LTM');
+    }
+    exportData.push(headerRow);
+    
+    // Add data rows
+    data.forEach(row => {
+      const dataRow = [row.label];
+      years.forEach(year => {
+        if (selectedPeriod === 'quarter') {
+          ['Q1', 'Q2', 'Q3', 'Q4'].forEach(q => {
+            const period = `${year}-${q}`;
+            const value = row[period];
+            dataRow.push(value !== null && value !== undefined 
+              ? typeof value === 'number' 
+                ? value
+                : value
+              : null);
+          });
+        } else if (selectedPeriod === 'semi-annual') {
+          ['H1', 'H2'].forEach(h => {
+            const period = `${year}-${h}`;
+            const value = row[period];
+            dataRow.push(value !== null && value !== undefined 
+              ? typeof value === 'number' 
+                ? value
+                : value
+              : null);
+          });
+        } else {
+          const value = row[year];
+          dataRow.push(value !== null && value !== undefined 
+            ? typeof value === 'number' 
+              ? value
+              : value
+            : null);
+        }
+      });
+      // Add LTM value for quarterly data
+      if (selectedPeriod === 'quarter') {
+        const ltmValue = row.ltm;
+        dataRow.push(ltmValue !== null && ltmValue !== undefined 
+          ? typeof ltmValue === 'number' 
+            ? ltmValue
+            : ltmValue
+          : null);
+      }
+      exportData.push(dataRow);
+    });
+    
+    return exportData;
+  };
+
+  const exportToCSV = (data: any[], filename: string) => {
+    // Convert data to CSV format
+    const csvContent = data.map(row => 
+      row.map((cell: any) => {
+        if (cell === null || cell === undefined) return '';
+        if (typeof cell === 'number') {
+          return cell.toLocaleString('en-US', { 
+            minimumFractionDigits: 0, 
+            maximumFractionDigits: 2 
+          });
+        }
+        return `"${String(cell).replace(/"/g, '""')}"`;
+      }).join(',')
+    ).join('\n');
+    
+    // Create and download CSV file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportToExcel = (allData: { incomeData: any[], cashFlowData: any[], balanceSheetData: any[] }, filename: string) => {
+    const wb = XLSX.utils.book_new();
+    
+    // Helper function to format data for Excel with proper structure
+    const formatDataForExcel = (data: any[], title: string) => {
+      const excelData: any[] = [];
+      
+      // Add title and metadata
+      excelData.push([`${title} - ${currentSymbol}`]);
+      excelData.push([`Period: ${selectedPeriod.toUpperCase()}`]);
+      excelData.push([`Export Date: ${new Date().toLocaleDateString()}`]);
+      excelData.push([]); // Empty row
+      
+             // Add the formatted data
+       data.forEach(row => {
+         excelData.push(row.map((cell: any) => {
+           if (cell === null || cell === undefined) return '-';
+           if (typeof cell === 'number') {
+             return cell.toLocaleString('en-US', { 
+               minimumFractionDigits: 0, 
+               maximumFractionDigits: 2 
+             });
+           }
+           return cell;
+         }));
+       });
+      
+      return excelData;
+    };
+    
+    // Convert data to Excel format with proper structure
+    const incomeSheet = XLSX.utils.aoa_to_sheet(formatDataForExcel(allData.incomeData, "Income Statement"));
+    const cashFlowSheet = XLSX.utils.aoa_to_sheet(formatDataForExcel(allData.cashFlowData, "Cash Flow Statement"));
+    const balanceSheet = XLSX.utils.aoa_to_sheet(formatDataForExcel(allData.balanceSheetData, "Balance Sheet"));
+    
+    // Set column widths for better readability
+    const setColumnWidths = (sheet: XLSX.WorkSheet) => {
+      const numDataColumns = years.length * (selectedPeriod === 'quarter' ? 4 : selectedPeriod === 'semi-annual' ? 2 : 1);
+      sheet['!cols'] = [
+        { width: 35 }, // First column (Financial Metric) - wider for longer names
+        ...Array(numDataColumns + (selectedPeriod === 'quarter' ? 1 : 0)).fill({ width: 18 }) // Data columns + LTM
+      ];
+    };
+    
+    setColumnWidths(incomeSheet);
+    setColumnWidths(cashFlowSheet);
+    setColumnWidths(balanceSheet);
+    
+    // Create summary sheet
+    const summaryData = [
+      ['Financial Summary Report'],
+      [],
+      [`Company: ${currentSymbol}`],
+      [`Period: ${selectedPeriod.toUpperCase()}`],
+      [`Export Date: ${new Date().toLocaleDateString()}`],
+      [`Export Time: ${new Date().toLocaleTimeString()}`],
+      [],
+      ['Available Data:'],
+      [`• Income Statement: ${allData.incomeData.length - 1} metrics`],
+      [`• Cash Flow Statement: ${allData.cashFlowData.length - 1} metrics`],
+      [`• Balance Sheet: ${allData.balanceSheetData.length - 1} metrics`],
+      [`• Time Periods: ${years.length} years`],
+      [],
+      ['Note: All values are in millions of USD unless otherwise specified'],
+      [],
+      ['Data Source: Financial Modeling Prep API'],
+      ['Generated by: FinHubIQ Financial Dashboard']
+    ];
+    
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    summarySheet['!cols'] = [{ width: 60 }];
+    
+    // Add sheets to workbook
+    XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+    XLSX.utils.book_append_sheet(wb, incomeSheet, "Income Statement");
+    XLSX.utils.book_append_sheet(wb, cashFlowSheet, "Cash Flow");
+    XLSX.utils.book_append_sheet(wb, balanceSheet, "Balance Sheet");
+    
+    // Generate Excel file
+    XLSX.writeFile(wb, filename);
+  };
+
+  const handleExport = async (format: 'csv' | 'excel') => {
     if (isExporting) return; // Prevent multiple exports
     
     setIsExporting(true);
     try {
-      // Create workbook
-      const wb = XLSX.utils.book_new();
-      
       // Process and export each statement type
-      const incomeData = processIncomeStatements();
-      const cashFlowData = processCashFlowStatements();
-      const balanceSheetData = processBalanceSheets();
-      
-      // Helper function to format data for Excel with proper structure
-      const formatDataForExcel = (data: any[], title: string) => {
-        // Create proper Excel structure with clear headers
-        const excelData: any[] = [];
-        
-        // Add title and metadata
-        excelData.push([`${title} - ${currentSymbol}`]);
-        excelData.push([`Period: ${selectedPeriod.toUpperCase()}`]);
-        excelData.push([`Export Date: ${new Date().toLocaleDateString()}`]);
-        excelData.push([]); // Empty row
-        
-        // Create header row
-        const headerRow = ['Financial Metric'];
-        years.forEach(year => {
-          if (selectedPeriod === 'quarter') {
-            ['Q1', 'Q2', 'Q3', 'Q4'].forEach(q => {
-              headerRow.push(`${year} ${q}`);
-            });
-          } else {
-            headerRow.push(year);
-          }
-        });
-        // Add LTM column for quarterly data
-        if (selectedPeriod === 'quarter') {
-          headerRow.push('LTM');
-        }
-        excelData.push(headerRow);
-        
-        // Add data rows
-        data.forEach(row => {
-          const dataRow = [row.label];
-          years.forEach(year => {
-            if (selectedPeriod === 'quarter') {
-              ['Q1', 'Q2', 'Q3', 'Q4'].forEach(q => {
-                const period = `${year}-${q}`;
-                const value = row[period];
-                dataRow.push(value !== null && value !== undefined 
-                  ? typeof value === 'number' 
-                    ? value.toLocaleString('en-US', { 
-                        minimumFractionDigits: 0, 
-                        maximumFractionDigits: 2 
-                      })
-                    : value
-                  : '-');
-              });
-            } else {
-              const value = row[year];
-              dataRow.push(value !== null && value !== undefined 
-                ? typeof value === 'number' 
-                  ? value.toLocaleString('en-US', { 
-                      minimumFractionDigits: 0, 
-                      maximumFractionDigits: 2 
-                    })
-                  : value
-                : '-');
-            }
-          });
-          // Add LTM value for quarterly data
-          if (selectedPeriod === 'quarter') {
-            const ltmValue = row.ltm;
-            dataRow.push(ltmValue !== null && ltmValue !== undefined 
-              ? typeof ltmValue === 'number' 
-                ? ltmValue.toLocaleString('en-US', { 
-                    minimumFractionDigits: 0, 
-                    maximumFractionDigits: 2 
-                  })
-                : ltmValue
-              : '-');
-          }
-          excelData.push(dataRow);
-        });
-        
-        return excelData;
-      };
-      
-      // Convert data to Excel format with proper structure
-      const incomeSheet = XLSX.utils.aoa_to_sheet(formatDataForExcel(incomeData, "Income Statement"));
-      const cashFlowSheet = XLSX.utils.aoa_to_sheet(formatDataForExcel(cashFlowData, "Cash Flow Statement"));
-      const balanceSheet = XLSX.utils.aoa_to_sheet(formatDataForExcel(balanceSheetData, "Balance Sheet"));
-      
-      // Set column widths for better readability
-      const setColumnWidths = (sheet: XLSX.WorkSheet) => {
-        const numDataColumns = years.length * (selectedPeriod === 'quarter' ? 4 : 1);
-        sheet['!cols'] = [
-          { width: 35 }, // First column (Financial Metric) - wider for longer names
-          ...Array(numDataColumns).fill({ width: 18 }) // Data columns
-        ];
-      };
-      
-      // Apply formatting and styling
-      const applySheetFormatting = (sheet: XLSX.WorkSheet, title: string) => {
-        setColumnWidths(sheet);
-        
-        // Add some basic styling if needed
-        // Note: XLSX library has limited styling support, but we can set column widths
-        // For more advanced styling, you'd need a library like ExcelJS
-      };
-      
-      applySheetFormatting(incomeSheet, "Income Statement");
-      applySheetFormatting(cashFlowSheet, "Cash Flow Statement");
-      applySheetFormatting(balanceSheet, "Balance Sheet");
-      
-      // Create summary sheet with proper structure
-      const summaryData = [
-        ['Financial Summary Report'],
-        [],
-        [`Company: ${currentSymbol}`],
-        [`Period: ${selectedPeriod.toUpperCase()}`],
-        [`Export Date: ${new Date().toLocaleDateString()}`],
-        [`Export Time: ${new Date().toLocaleTimeString()}`],
-        [],
-        ['Available Data:'],
-        [`• Income Statement: ${incomeData.length} metrics`],
-        [`• Cash Flow Statement: ${cashFlowData.length} metrics`],
-        [`• Balance Sheet: ${balanceSheetData.length} metrics`],
-        [`• Time Periods: ${years.length} years`],
-        [],
-        ['Note: All values are in millions of USD unless otherwise specified'],
-        [],
-        ['Data Source: Financial Modeling Prep API'],
-        ['Generated by: FinHubIQ Financial Dashboard']
-      ];
-      
-      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-      summarySheet['!cols'] = [{ width: 60 }];
-      
-      // Add sheets to workbook
-      XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
-      XLSX.utils.book_append_sheet(wb, incomeSheet, "Income Statement");
-      XLSX.utils.book_append_sheet(wb, cashFlowSheet, "Cash Flow");
-      XLSX.utils.book_append_sheet(wb, balanceSheet, "Balance Sheet");
+      const incomeData = formatDataForExport(processIncomeStatements(incomeQuarterlyMap, incomeStatementsAnnual), "Income Statement");
+      const cashFlowData = formatDataForExport(processCashFlowStatements(cashFlowQuarterlyMap, cashFlowStatementsAnnual), "Cash Flow Statement");
+      const balanceSheetData = formatDataForExport(processBalanceSheets(balanceQuarterlyMap, balanceSheetsAnnual), "Balance Sheet");
       
       // Generate filename with timestamp
       const timestamp = new Date().toISOString().split('T')[0];
-      const filename = `${currentSymbol}_Financial_Statements_${selectedPeriod}_${timestamp}.xlsx`;
+      const fileExtension = format === 'csv' ? 'csv' : 'xlsx';
+      const filename = `${currentSymbol}_Financial_Statements_${selectedPeriod}_${timestamp}.${fileExtension}`;
       
-      // Generate Excel file
-      XLSX.writeFile(wb, filename);
-      
-      // Show success feedback
-      toast({
-        title: "Export Successful",
-        description: `Financial statements exported to ${filename}`,
-        variant: "default",
-      });
+      if (format === 'csv') {
+        // Export each statement as separate CSV files
+        exportToCSV(incomeData, `${currentSymbol}_Income_Statement_${selectedPeriod}_${timestamp}.csv`);
+        exportToCSV(cashFlowData, `${currentSymbol}_Cash_Flow_${selectedPeriod}_${timestamp}.csv`);
+        exportToCSV(balanceSheetData, `${currentSymbol}_Balance_Sheet_${selectedPeriod}_${timestamp}.csv`);
+        
+        toast({
+          title: "CSV Export Successful",
+          description: `Financial statements exported as 3 separate CSV files`,
+          variant: "default",
+        });
+      } else {
+        // Export as Excel
+        exportToExcel({ incomeData, cashFlowData, balanceSheetData }, filename);
+        
+        toast({
+          title: "Excel Export Successful",
+          description: `Financial statements exported to ${filename}`,
+          variant: "default",
+        });
+      }
       
     } catch (error) {
-      console.error('❌ Error exporting to Excel:', error);
+      console.error('❌ Error exporting data:', error);
       toast({
         title: "Export Failed",
-        description: "Error exporting to Excel. Please try again.",
+        description: `Error exporting to ${format.toUpperCase()}. Please try again.`,
         variant: "destructive",
       });
     } finally {
@@ -2079,33 +2140,12 @@ export function HistoricalFinancials() {
     <div className="space-y-6">
       <TableScrollHint />
       <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
+        <CardHeader className="pb-3">
           <div>
             <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical Financials</CardTitle>
             <CardDescription>
               Financial statements for {currentSymbol}
             </CardDescription>
-          </div>
-          <div className="flex items-center gap-4">
-            <Select value={selectedPeriod} onValueChange={(value: 'annual' | 'semi-annual' | 'quarter') => setSelectedPeriod(value)}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Select period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="annual">Annual</SelectItem>
-                <SelectItem value="semi-annual">Semi-Annual</SelectItem>
-                <SelectItem value="quarter">Quarterly</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={exportToExcel}
-              disabled={isExporting}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              {isExporting ? "Exporting..." : "Export to Excel"}
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -2120,8 +2160,8 @@ export function HistoricalFinancials() {
           )}
           
           <Tabs value={activeFinancialTab} onValueChange={setActiveFinancialTab} className="space-y-6">
-            <div className="premium-tabs">
-              <TabsList className="h-12 bg-transparent border-none p-0 gap-0 w-full justify-start">
+            <div className="premium-tabs flex flex-row items-center justify-between">
+              <TabsList className="h-12 bg-transparent border-none p-0 gap-0 justify-start">
                 <TabsTrigger 
                   value="income-statement"
                   className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
@@ -2141,6 +2181,41 @@ export function HistoricalFinancials() {
                   Balance Sheet
                 </TabsTrigger>
               </TabsList>
+              
+                            <div className="flex items-center gap-3">
+                <Select value={selectedPeriod} onValueChange={(value: 'annual' | 'semi-annual' | 'quarter') => setSelectedPeriod(value)}>
+                  <SelectTrigger className="w-36 h-10">
+                    <SelectValue placeholder="Select period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="annual">Annual</SelectItem>
+                    <SelectItem value="semi-annual">Semi-Annual</SelectItem>
+                    <SelectItem value="quarter">Quarterly</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      disabled={isExporting}
+                      className="h-10"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      {isExporting ? "Exporting..." : "Export"}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleExport('excel')}>
+                      Excel
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExport('csv')}>
+                      CSV
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
             
             <TabsContent value="income-statement" className="mt-6">
