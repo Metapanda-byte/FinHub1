@@ -663,10 +663,22 @@ export function CompetitorAnalysis() {
       </Card>
 
       <Tabs defaultValue="valuation" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="valuation" className="text-sm">Valuation Comparables</TabsTrigger>
-          <TabsTrigger value="operating" className="text-sm">Operating Benchmarks</TabsTrigger>
-        </TabsList>
+        <div className="premium-tabs">
+          <TabsList className="h-12 bg-transparent border-none p-0 gap-0 w-full justify-start">
+            <TabsTrigger 
+              value="valuation" 
+              className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+            >
+              Valuation Comparables
+            </TabsTrigger>
+            <TabsTrigger 
+              value="operating" 
+              className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+            >
+              Operating Benchmarks
+            </TabsTrigger>
+          </TabsList>
+        </div>
         
         <TabsContent value="valuation" className="space-y-4">
           <Card>

@@ -14,11 +14,28 @@ export function ValuationAnalysis({ symbol }: ValuationAnalysisProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="relative" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="relative">Relative Valuation</TabsTrigger>
-            <TabsTrigger value="intrinsic">Intrinsic Valuation</TabsTrigger>
-            <TabsTrigger value="dcf">DCF Analysis</TabsTrigger>
-          </TabsList>
+          <div className="premium-tabs">
+            <TabsList className="h-12 bg-transparent border-none p-0 gap-0 w-full justify-start">
+              <TabsTrigger 
+                value="relative" 
+                className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+              >
+                Relative Valuation
+              </TabsTrigger>
+              <TabsTrigger 
+                value="intrinsic" 
+                className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+              >
+                Intrinsic Valuation
+              </TabsTrigger>
+              <TabsTrigger 
+                value="dcf" 
+                className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+              >
+                DCF Analysis
+              </TabsTrigger>
+            </TabsList>
+          </div>
           <TabsContent value="relative" className="mt-4">
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">

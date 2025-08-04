@@ -201,7 +201,7 @@ export function StockSearch({ className, placeholder = "Search companies...", sh
         onBlur={() => setTimeout(() => setOpen(false), 200)} // Delay to allow clicking on dropdown items
         className={cn(
           "w-full h-8 px-2 py-1 pr-16 text-sm bg-transparent rounded-md",
-          "placeholder:text-muted-foreground placeholder:italic",
+          "placeholder:text-orange-500/60 placeholder:italic",
           "focus:outline-none",
           "disabled:cursor-not-allowed disabled:opacity-50",
           className

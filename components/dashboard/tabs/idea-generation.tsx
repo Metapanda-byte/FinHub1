@@ -40,16 +40,24 @@ export default function IdeaGeneration() {
 
       {/* Sub-tabs */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="screening" className="flex items-center gap-2">
-            <Search className="h-4 w-4" />
-            Screening Tool
-          </TabsTrigger>
-          <TabsTrigger value="ai-ideas" className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            AI Assisted Ideas
-          </TabsTrigger>
-        </TabsList>
+        <div className="premium-tabs">
+          <TabsList className="h-12 bg-transparent border-none p-0 gap-0 w-full justify-start">
+            <TabsTrigger 
+              value="screening" 
+              className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-2"
+            >
+              <Search className="h-4 w-4" />
+              Screening Tool
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ai-ideas" 
+              className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-2"
+            >
+              <Brain className="h-4 w-4" />
+              AI Assisted Ideas
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="screening" className="mt-6">
           <Suspense fallback={<ScreeningLoadingSkeleton />}>

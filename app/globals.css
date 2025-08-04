@@ -558,15 +558,18 @@
   .financial-table-wrapper {
     @apply relative;
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
     overscroll-behavior-x: contain;
+    overscroll-behavior-y: contain;
     width: 100%;
     max-width: 100%;
     /* Ensure full width usage */
     min-width: 100%;
     box-sizing: border-box;
+    /* Ensure proper stacking context for sticky elements */
+    contain: layout style;
   }
   
   .financial-table-wrapper table {
@@ -1220,8 +1223,161 @@
   animation: fade-in 0.5s ease-out;
 }
 
-.animate-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-  background-size: 200px 100%;
-  animation: shimmer 2s infinite;
-}
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    background-size: 200px 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  /* Premium Workstation Tab Styling */
+  .premium-tabs {
+    position: relative;
+  }
+  
+  .premium-tabs::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
+    opacity: 0.3;
+  }
+  
+  .premium-tab-trigger {
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .premium-tab-trigger::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, hsl(var(--finhub-orange)), hsl(var(--finhub-orange) / 0.8));
+    transform: scaleX(0);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .premium-tab-trigger[data-state="active"]::after {
+    transform: scaleX(1);
+  }
+  
+  .premium-tab-trigger:hover::after {
+    transform: scaleX(0.5);
+  }
+  
+  /* Enhanced mobile support for premium tabs */
+  @media (max-width: 768px) {
+    .premium-tabs {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .premium-tab-trigger {
+      flex-shrink: 0;
+      min-width: 120px;
+    }
+  }
+
+  /* Enhanced sticky header styling for financial tables */
+  .financial-table-wrapper thead {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .financial-table-wrapper thead th {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  /* Ensure sticky headers work properly with both top and left positioning */
+  .financial-table-wrapper thead th[style*="left: 0"] {
+    position: sticky;
+    left: 0;
+    top: 0;
+  }
+  
+  /* Stronger borders for sticky columns */
+  .financial-table-wrapper th[style*="left: 0"] {
+    border-right: 2px solid rgba(148, 163, 184, 0.3) !important;
+    /* Headers with solid background to hide content behind */
+    background-color: rgb(248 250 252) !important;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .financial-table-wrapper td[style*="left: 0"] {
+    border-right: 2px solid rgba(148, 163, 184, 0.3) !important;
+    /* Data cells use the same background as the page */
+    background-color: hsl(var(--background)) !important;
+  }
+  
+  /* Enhanced mobile support for horizontal scrolling */
+  .financial-table-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Ensure first column stays locked during horizontal scroll */
+  .financial-table-wrapper .sticky.left-0 {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 10 !important;
+  }
+  
+  /* Mobile-specific sticky positioning */
+  @media (max-width: 768px) {
+    .financial-table-wrapper {
+      overflow-x: scroll;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .financial-table-wrapper .sticky.left-0 {
+      position: sticky !important;
+      left: 0 !important;
+      z-index: 10 !important;
+      background-color: rgb(248 250 252) !important;
+    }
+    
+    .financial-table-wrapper td.sticky.left-0 {
+      background-color: hsl(var(--background)) !important;
+    }
+  }
+  
+  /* Enhanced shadow for header separation */
+  @media (prefers-color-scheme: dark) {
+    .financial-table-wrapper thead {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    
+    .financial-table-wrapper th[style*="left: 0"] {
+      border-right: 2px solid rgba(71, 85, 105, 0.4) !important;
+      /* Headers with solid dark background to hide content behind */
+      background-color: rgb(15 23 42) !important;
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3);
+    }
+    
+    .financial-table-wrapper td[style*="left: 0"] {
+      border-right: 2px solid rgba(71, 85, 105, 0.4) !important;
+      /* Data cells use the same background as the page (auto dark mode) */
+      background-color: hsl(var(--background)) !important;
+    }
+    
+    /* Mobile-specific dark mode sticky positioning */
+    @media (max-width: 768px) {
+      .financial-table-wrapper .sticky.left-0 {
+        background-color: rgb(15 23 42) !important;
+      }
+      
+      .financial-table-wrapper td.sticky.left-0 {
+        background-color: hsl(var(--background)) !important;
+      }
+    }
+  }

@@ -117,16 +117,7 @@ const isPeriodInFuture = (period: string, lastReportedPeriod: string | null, sel
 // Helper function to format the last reported period for display
 const formatLastReportedPeriod = (period: string | null, selectedPeriod: 'annual' | 'quarter' | 'semi-annual'): string => {
   if (!period) return '';
-  
-  if (selectedPeriod === 'annual') {
-    return `Last reported: FY ${period}`;
-  } else if (selectedPeriod === 'quarter') {
-    const [year, quarter] = period.split('-');
-    return `Last reported: ${quarter} ${year}`;
-  } else {
-    const [year, half] = period.split('-');
-    return `Last reported: ${half} ${year}`;
-  }
+  return 'Last reported';
 };
 
 // Helper function to find the last reported period
@@ -788,52 +779,67 @@ export function HistoricalFinancials() {
     return (
       <div 
         ref={(el) => { tableContainerRefs.current[title] = el; }}
-        className="financial-table-wrapper table-scroll-container rounded-lg shadow-sm"
+        className="financial-table-wrapper table-scroll-container rounded-lg shadow-sm overflow-auto max-h-[70vh] touch-scroll-x"
       >
         <table className="financial-table border-collapse" style={{ minWidth: 'max-content' }}>
-          <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur">
+          <thead className="sticky top-0 z-[100] bg-slate-50 dark:bg-slate-900/90 backdrop-blur border-b-2 border-slate-300 dark:border-slate-600">
             <tr className="">
               <th className={cn(
-                "text-left py-3 px-3 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom",
-                "min-w-40 md:min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90"
+                "text-left py-1.5 px-3 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom",
+                "min-w-40 md:min-w-80 sticky left-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700"
               )}>
                 {title}
               </th>
               {selectedPeriod === 'quarter'
                 ? years.map(year => (
-                    <th key={year} colSpan={4} className="text-center py-3 px-2 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
+                    <th key={year} colSpan={4} className="text-center py-1.5 px-2 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
                   ))
                 : selectedPeriod === 'semi-annual'
                 ? [...years.map(year => (
-                    <th key={year} colSpan={2} className="text-center py-3 px-2 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
+                    <th key={year} colSpan={2} className="text-center py-1.5 px-2 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
                   )), 
-                  <th key="ltm" className="text-center py-3 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>LTM</th>]
+                  <th key="ltm" className="text-center py-1.5 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>LTM</th>]
                 : [...years.map(year => (
-                    <th key={year} className="text-center py-3 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '60px' }}>{`FY ${year}`}</th>
+                    <th key={year} className="text-center py-1.5 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '60px' }}>{`FY ${year}`}</th>
                   )), 
-                  <th key="ltm" className="text-center py-3 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>LTM</th>]}
+                  <th key="ltm" className="text-center py-1.5 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>LTM</th>]}
             </tr>
-{(selectedPeriod === 'quarter' || selectedPeriod === 'semi-annual') && (() => {
+            {(selectedPeriod === 'quarter' || selectedPeriod === 'semi-annual') && (() => {
               const periods = selectedPeriod === 'semi-annual' ? ["H1", "H2"] : ["Q1","Q2","Q3","Q4"];
               
               return (
                 <tr className="border-none">
-                  <th className="text-left py-1.5 px-3 md:px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-40 md:min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90">
+                  <th className="text-left py-1 px-3 md:px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-40 md:min-w-80 sticky left-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700">
                     <div className="flex flex-col">
-                      <span>{getCurrencyDisplayText(incomeStatements)}</span>
-                      {lastReportedPeriod && (
-                        <span className="text-xs text-muted-foreground italic mt-0.5">
-                          {formatLastReportedPeriod(lastReportedPeriod, selectedPeriod)}
-                        </span>
-                      )}
+                      <span className="text-xs text-muted-foreground italic">{getCurrencyDisplayText(incomeStatements)}</span>
                     </div>
                   </th>
-                  {years.map(year => periods.map(period => (
-                    <th key={year+period} className="text-center py-1.5 px-2 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none" style={{ minWidth: '80px' }}>{period}</th>
-                  ))).flat()}
+                  {years.flatMap((year, yearIndex) => periods.map((period, periodIndex) => {
+                    const currentPeriod = `${year}-${period}`;
+                    const shouldShowLastReported = selectedPeriod === 'quarter' && currentPeriod === lastReportedPeriod;
+                    return (
+                      <th key={year+period} className="text-center py-1 px-2 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none" style={{ minWidth: '80px' }}>
+                        <div className="flex flex-col">
+                          <span>{period}</span>
+                          {lastReportedPeriod && shouldShowLastReported && (
+                            <span className="text-xs text-muted-foreground italic mt-0.5">
+                              {formatLastReportedPeriod(lastReportedPeriod, selectedPeriod)}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                    );
+                  }))}
                   {selectedPeriod === 'semi-annual' && (
-                    <th key="ltm-sub" className="text-center py-1.5 px-1 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>
-                      {quarterlyMap ? getLTMReferenceDate(quarterlyMap) : 'LTM'}
+                    <th key="ltm-sub" className="text-center py-1 px-1 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>
+                      <div className="flex flex-col">
+                        <span className="text-xs text-muted-foreground italic">{quarterlyMap ? getLTMReferenceDate(quarterlyMap) : 'LTM'}</span>
+                        {lastReportedPeriod && (
+                          <span className="text-xs text-muted-foreground italic mt-0.5">
+                            {formatLastReportedPeriod(lastReportedPeriod, selectedPeriod)}
+                          </span>
+                        )}
+                      </div>
                     </th>
                   )}
                 </tr>
@@ -841,21 +847,26 @@ export function HistoricalFinancials() {
             })()}
             {selectedPeriod === 'annual' && (
               <tr className="border-none">
-                <th className="text-left py-1.5 px-3 md:px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-40 md:min-w-80 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900/90">
+                <th className="text-left py-1 px-3 md:px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-40 md:min-w-80 sticky left-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700">
                   <div className="flex flex-col">
-                    <span>{getCurrencyDisplayText(incomeStatements)}</span>
-                    {lastReportedPeriod && (
-                      <span className="text-xs text-muted-foreground italic mt-0.5">
-                        {formatLastReportedPeriod(lastReportedPeriod, selectedPeriod)}
-                      </span>
-                    )}
+                    <span className="text-xs text-muted-foreground italic">{getCurrencyDisplayText(incomeStatements)}</span>
                   </div>
                 </th>
-                {years.map(year => (
-                  <th key={year} className="text-center py-1.5 px-1 md:px-4 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none" style={{ minWidth: '60px' }}></th>
+                {years.map((year, index) => (
+                  <th key={year} className="text-center py-1 px-1 md:px-4 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none" style={{ minWidth: '60px' }}>
+                    {lastReportedPeriod && year === lastReportedPeriod && (
+                      <div className="flex flex-col">
+                        <span className="text-xs text-muted-foreground italic">
+                          {formatLastReportedPeriod(lastReportedPeriod, selectedPeriod)}
+                        </span>
+                      </div>
+                    )}
+                  </th>
                 ))}
-                <th key="ltm-sub" className="text-center py-1.5 px-1 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>
-                  {quarterlyMap ? getLTMReferenceDate(quarterlyMap) : 'LTM'}
+                <th key="ltm-sub" className="text-center py-1 px-1 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground italic">{quarterlyMap ? getLTMReferenceDate(quarterlyMap) : 'LTM'}</span>
+                  </div>
                 </th>
               </tr>
             )}
@@ -880,12 +891,12 @@ export function HistoricalFinancials() {
                   )}
                 >
                   <td className={cn(
-                    "py-1.5 text-xs md:text-sm flex items-center gap-1 md:gap-2 relative z-10",
+                    "py-1.5 text-xs md:text-sm flex items-center gap-1 md:gap-2",
                     row.isIndented ? "px-4 md:px-8" : "px-3 md:px-6",
                     row.isImportant ? "font-semibold" : "",
                     row.isBold ? "font-bold" : "",
                     row.isMargin ? "text-slate-500 dark:text-slate-400" : "",
-                    "min-w-40 md:min-w-80 sticky left-0 z-30 bg-white dark:bg-slate-950 shadow-sm"
+                    "min-w-40 md:min-w-80 sticky left-0 z-0 border-r border-slate-200 dark:border-slate-700"
                   )}>
                     {row.label}
                   </td>
@@ -2108,27 +2119,29 @@ export function HistoricalFinancials() {
             </Alert>
           )}
           
-          <Tabs value={activeFinancialTab} onValueChange={setActiveFinancialTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger 
-                value="income-statement"
-                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all"
-              >
-                Income Statement
-              </TabsTrigger>
-              <TabsTrigger 
-                value="cash-flow"
-                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all"
-              >
-                Cash Flow
-              </TabsTrigger>
-              <TabsTrigger 
-                value="balance-sheet"
-                className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none transition-all"
-              >
-                Balance Sheet
-              </TabsTrigger>
-            </TabsList>
+          <Tabs value={activeFinancialTab} onValueChange={setActiveFinancialTab} className="space-y-6">
+            <div className="premium-tabs">
+              <TabsList className="h-12 bg-transparent border-none p-0 gap-0 w-full justify-start">
+                <TabsTrigger 
+                  value="income-statement"
+                  className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+                >
+                  Income Statement
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="cash-flow"
+                  className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+                >
+                  Cash Flow
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="balance-sheet"
+                  className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+                >
+                  Balance Sheet
+                </TabsTrigger>
+              </TabsList>
+            </div>
             
             <TabsContent value="income-statement" className="mt-6">
               {incomeLoading ? (

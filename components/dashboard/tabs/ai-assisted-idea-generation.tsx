@@ -205,28 +205,45 @@ export default function AIAssistedIdeaGeneration() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="discover" className="text-xs">
-            <Sparkles className="h-3 w-3 mr-1" />
-            Discover
-          </TabsTrigger>
-          <TabsTrigger value="themes" className="text-xs">
-            <Globe className="h-3 w-3 mr-1" />
-            Themes
-          </TabsTrigger>
-          <TabsTrigger value="contrarian" className="text-xs">
-            <Shuffle className="h-3 w-3 mr-1" />
-            Contrarian
-          </TabsTrigger>
-          <TabsTrigger value="supply-chain" className="text-xs">
-            <Network className="h-3 w-3 mr-1" />
-            Supply Chain
-          </TabsTrigger>
-          <TabsTrigger value="ai-chat" className="text-xs">
-            <Bot className="h-3 w-3 mr-1" />
-            AI Chat
-          </TabsTrigger>
-        </TabsList>
+        <div className="premium-tabs">
+          <TabsList className="h-10 bg-transparent border-none p-0 gap-0 w-full justify-start">
+            <TabsTrigger 
+              value="discover" 
+              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
+            >
+              <Sparkles className="h-3 w-3" />
+              Discover
+            </TabsTrigger>
+            <TabsTrigger 
+              value="themes" 
+              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
+            >
+              <Globe className="h-3 w-3" />
+              Themes
+            </TabsTrigger>
+            <TabsTrigger 
+              value="contrarian" 
+              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
+            >
+              <Shuffle className="h-3 w-3" />
+              Contrarian
+            </TabsTrigger>
+            <TabsTrigger 
+              value="supply-chain" 
+              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
+            >
+              <Network className="h-3 w-3" />
+              Supply Chain
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ai-chat" 
+              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-1"
+            >
+              <Bot className="h-3 w-3" />
+              AI Chat
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Discovery Tab - Personalized Feed */}
         <TabsContent value="discover" className="space-y-4">

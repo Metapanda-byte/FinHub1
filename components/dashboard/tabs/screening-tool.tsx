@@ -370,23 +370,40 @@ export function ScreeningTool() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Tabs value={activeFilterTab} onValueChange={setActiveFilterTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5 h-8">
-              <TabsTrigger value="basic" className="text-xs p-1">
-                <Filter className="h-3 w-3" />
-              </TabsTrigger>
-              <TabsTrigger value="valuation" className="text-xs p-1">
-                <DollarSign className="h-3 w-3" />
-              </TabsTrigger>
-              <TabsTrigger value="growth" className="text-xs p-1">
-                <TrendingUp className="h-3 w-3" />
-              </TabsTrigger>
-              <TabsTrigger value="quality" className="text-xs p-1">
-                <Shield className="h-3 w-3" />
-              </TabsTrigger>
-              <TabsTrigger value="technical" className="text-xs p-1">
-                <Activity className="h-3 w-3" />
-              </TabsTrigger>
-            </TabsList>
+            <div className="premium-tabs">
+              <TabsList className="h-10 bg-transparent border-none p-0 gap-0 w-full justify-start">
+                <TabsTrigger 
+                  value="basic" 
+                  className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+                >
+                  <Filter className="h-3 w-3" />
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="valuation" 
+                  className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+                >
+                  <DollarSign className="h-3 w-3" />
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="growth" 
+                  className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+                >
+                  <TrendingUp className="h-3 w-3" />
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="quality" 
+                  className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+                >
+                  <Shield className="h-3 w-3" />
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="technical" 
+                  className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+                >
+                  <Activity className="h-3 w-3" />
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="basic" className="space-y-3 mt-3">
               <div className="grid grid-cols-1 gap-3">
