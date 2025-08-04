@@ -365,7 +365,8 @@ function calculateLTM(
   }
 }
 
-// Advanced LTM calculation following the new specification
+// Advanced LTM calculation following the specification:
+// LTM = Last Complete FY + YTD of Current FY - YTD of Prior FY
 function calculateAdvancedLTM(
   quarterlyMap: Record<string, any>,
   field: string,
@@ -373,43 +374,63 @@ function calculateAdvancedLTM(
 ): number | null {
   if (!quarterlyMap || Object.keys(quarterlyMap).length === 0) return null;
 
-  // Get all available fiscal years from quarterly data, sorted chronologically
-  const quarterlyPeriods = Object.keys(quarterlyMap).sort();
-  const fiscalYears = new Set<number>();
-  
-  // Extract fiscal years from quarterly periods
-  quarterlyPeriods.forEach(period => {
-    const statement = quarterlyMap[period];
-    if (statement?.calendarYear) {
-      fiscalYears.add(parseInt(statement.calendarYear));
-    }
+  // Get all available quarterly periods sorted by date
+  const quarterlyPeriods = Object.keys(quarterlyMap).sort((a, b) => {
+    const dateA = quarterlyMap[a]?.date;
+    const dateB = quarterlyMap[b]?.date;
+    if (!dateA || !dateB) return 0;
+    return new Date(dateA).getTime() - new Date(dateB).getTime();
   });
   
-  const sortedFiscalYears = Array.from(fiscalYears).sort((a, b) => a - b);
-  if (sortedFiscalYears.length === 0) return null;
-
+  if (quarterlyPeriods.length === 0) return null;
+  
+  // Find the most recent quarter to determine current position
+  const mostRecentQuarter = quarterlyPeriods[quarterlyPeriods.length - 1];
+  const mostRecentData = quarterlyMap[mostRecentQuarter];
+  if (!mostRecentData) return null;
+  
+  // Determine the current fiscal year and last complete fiscal year
+  const currentDate = new Date(mostRecentData.date);
+  const currentFY = parseInt(mostRecentData.calendarYear);
+  
   // Find the most recent fiscal year with complete annual data
   let lastCompleteFY: number | null = null;
   let lastCompleteFYValue: number | null = null;
 
-  // Check annual statements first if available
+  // First, try to get from annual statements if available
   if (annualStatements && annualStatements.length > 0) {
     const sortedAnnual = annualStatements
       .filter(stmt => stmt.calendarYear && stmt[field] !== null && stmt[field] !== undefined)
-      .sort((a, b) => parseInt(a.calendarYear) - parseInt(b.calendarYear));
+      .sort((a, b) => parseInt(b.calendarYear) - parseInt(a.calendarYear));
     
-    if (sortedAnnual.length > 0) {
-      const lastAnnual = sortedAnnual[sortedAnnual.length - 1];
-      lastCompleteFY = parseInt(lastAnnual.calendarYear);
-      lastCompleteFYValue = lastAnnual[field];
+    // Find the most recent complete fiscal year (should be at least one year before current)
+    for (const stmt of sortedAnnual) {
+      const fyYear = parseInt(stmt.calendarYear);
+      if (fyYear < currentFY) {
+        lastCompleteFY = fyYear;
+        lastCompleteFYValue = stmt[field];
+        break;
+      }
     }
   }
 
   // If no annual data, try to construct from quarterly data
   if (lastCompleteFY === null) {
-    // Look for the most recent year with 4 complete quarters
-    for (let i = sortedFiscalYears.length - 1; i >= 0; i--) {
-      const year = sortedFiscalYears[i];
+    // Get all fiscal years from quarterly data
+    const fiscalYears = new Set<number>();
+    quarterlyPeriods.forEach(period => {
+      const statement = quarterlyMap[period];
+      if (statement?.calendarYear) {
+        fiscalYears.add(parseInt(statement.calendarYear));
+      }
+    });
+    
+    const sortedFiscalYears = Array.from(fiscalYears).sort((a, b) => b - a);
+    
+    // Look for the most recent complete fiscal year before current
+    for (const year of sortedFiscalYears) {
+      if (year >= currentFY) continue; // Skip current year
+      
       const quartersForYear = quarterlyPeriods.filter(period => {
         const statement = quarterlyMap[period];
         return statement?.calendarYear === year.toString();
@@ -456,54 +477,73 @@ function calculateAdvancedLTM(
     return values.reduce((sum, val) => sum + val, 0);
   }
 
-  // Now we have the last complete FY, check for partial quarters in the next FY
-  const nextFY = lastCompleteFY + 1;
-  const priorFY = lastCompleteFY - 1;
-
-  // Get quarters for next FY (most recent partial year)
-  const nextFYQuarters = quarterlyPeriods.filter(period => {
+  // Now calculate LTM using the formula:
+  // LTM = Last Complete FY + YTD of Current FY - YTD of Prior FY
+  
+  // Get YTD quarters for current fiscal year
+  const currentFYQuarters = quarterlyPeriods.filter(period => {
     const statement = quarterlyMap[period];
-    return statement?.calendarYear === nextFY.toString();
-  }).sort();
+    return statement?.calendarYear === currentFY.toString();
+  }).sort((a, b) => {
+    // Sort by date to ensure proper quarter order
+    const dateA = new Date(quarterlyMap[a]?.date);
+    const dateB = new Date(quarterlyMap[b]?.date);
+    return dateA.getTime() - dateB.getTime();
+  });
 
-  // Get quarters for prior FY (year before the complete FY)
-  const priorFYQuarters = quarterlyPeriods.filter(period => {
-    const statement = quarterlyMap[period];
-    return statement?.calendarYear === priorFY.toString();
-  }).sort();
-
-  // Case 1: No quarterly data for next FY - LTM equals last complete FY
-  if (nextFYQuarters.length === 0) {
+  // If no quarters in current FY, LTM equals last complete FY
+  if (currentFYQuarters.length === 0) {
     return lastCompleteFYValue;
   }
 
-  // Case 2: We have some quarters in next FY - apply the formula
-  // LTM = Last FY + Recent quarters in next FY - Equivalent quarters in prior FY
+  // Calculate YTD for current fiscal year
+  let currentYTD = 0;
+  const currentYTDQuarters: string[] = [];
   
-  let nextFYValue = 0;
-  let priorFYValue = 0;
-  
-  // Sum the available quarters in next FY
-  for (const quarter of nextFYQuarters) {
+  for (const quarter of currentFYQuarters) {
     const value = quarterlyMap[quarter]?.[field];
     if (value !== null && value !== undefined && !isNaN(value)) {
-      nextFYValue += value;
+      currentYTD += value;
+      currentYTDQuarters.push(quarter);
     }
   }
 
-  // Sum the equivalent quarters in prior FY
-  // We need the same number of quarters from the beginning of prior FY
-  const quartersToMatch = Math.min(nextFYQuarters.length, priorFYQuarters.length);
+  // Get the same quarters from the prior fiscal year (lastCompleteFY)
+  // We need to match the quarters (e.g., if we have Q1-Q3 of current year, get Q1-Q3 of prior year)
+  let priorYTD = 0;
   
-  for (let i = 0; i < quartersToMatch; i++) {
-    const value = quarterlyMap[priorFYQuarters[i]]?.[field];
-    if (value !== null && value !== undefined && !isNaN(value)) {
-      priorFYValue += value;
+  // Determine which quarters we have in current year
+  const currentQuarterPeriods = currentYTDQuarters.map(q => {
+    const parts = q.split('-');
+    return parts[parts.length - 1]; // Get Q1, Q2, Q3, or Q4
+  });
+  
+  // Get the same quarters from lastCompleteFY
+  for (const quarterPeriod of currentQuarterPeriods) {
+    const priorQuarterKey = `${lastCompleteFY}-${quarterPeriod}`;
+    const priorValue = quarterlyMap[priorQuarterKey]?.[field];
+    
+    if (priorValue !== null && priorValue !== undefined && !isNaN(priorValue)) {
+      priorYTD += priorValue;
     }
   }
 
   // Apply the LTM formula
-  const ltmValue = lastCompleteFYValue + nextFYValue - priorFYValue;
+  const ltmValue = lastCompleteFYValue + currentYTD - priorYTD;
+  
+  // Debug logging for LTM calculation
+  if (field === 'revenue') {
+    console.log('LTM Calculation Debug:', {
+      field,
+      currentFY,
+      lastCompleteFY,
+      lastCompleteFYValue,
+      currentYTD,
+      priorYTD,
+      ltmValue,
+      currentQuarters: currentYTDQuarters.length
+    });
+  }
   
   return ltmValue;
 }
@@ -701,20 +741,29 @@ export function HistoricalFinancials() {
       }
     });
   } else {
-    // Annual - Always show last 10 years consistently
-    const currentYear = new Date().getFullYear();
-    const targetYears = [];
-    for (let i = 9; i >= 0; i--) {
-      targetYears.push((currentYear - i).toString());
-    }
-    
-    // Get available years from data
+    // Annual - Show only years with actual data, up to the last reported fiscal year
     const availableYears = Array.from(new Set(incomeStatements.map(s => s.calendarYear)))
       .filter(y => y)
       .sort((a, b) => Number(a) - Number(b));
     
-    // Use consistent 10-year structure
-    years = targetYears;
+    if (availableYears.length > 0) {
+      // Get the last reported fiscal year
+      const lastReportedYear = availableYears[availableYears.length - 1];
+      
+      // Show up to 10 years, but not beyond the last reported fiscal year
+      const startYear = Math.max(
+        Number(lastReportedYear) - 9, 
+        Number(availableYears[0])
+      );
+      
+      years = [];
+      for (let year = startYear; year <= Number(lastReportedYear); year++) {
+        years.push(year.toString());
+      }
+    } else {
+      // Fallback if no data available
+      years = [];
+    }
   }
 
   // Create periodMaps for LTM date calculation
@@ -786,31 +835,30 @@ export function HistoricalFinancials() {
           <thead className="sticky top-0 z-[100] bg-slate-50 dark:bg-slate-900/90 backdrop-blur border-b-2 border-slate-300 dark:border-slate-600">
             <tr className="">
               <th className={cn(
-                "text-left py-1.5 px-3 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom",
-                "min-w-40 md:min-w-80 sticky left-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700"
+                "text-left py-1 px-2 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom",
+                "min-w-48 sticky left-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700"
               )}>
                 {title}
               </th>
               {selectedPeriod === 'quarter'
                 ? years.map(year => (
-                    <th key={year} colSpan={4} className="text-center py-1.5 px-2 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
+                    <th key={year} colSpan={4} className="text-center py-1 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
                   ))
                 : selectedPeriod === 'semi-annual'
-                ? [...years.map(year => (
-                    <th key={year} colSpan={2} className="text-center py-1.5 px-2 md:px-6 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
-                  )), 
-                  <th key="ltm" className="text-center py-1.5 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>LTM</th>]
+                ? years.map(year => (
+                    <th key={year} colSpan={2} className="text-center py-1 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom">FY{year.slice(-2)}</th>
+                  ))
                 : [...years.map(year => (
-                    <th key={year} className="text-center py-1.5 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '60px' }}>{`FY ${year}`}</th>
+                    <th key={year} className="text-center py-1 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '50px' }}>{`FY ${year}`}</th>
                   )), 
-                  <th key="ltm" className="text-center py-1.5 px-2 md:px-4 font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>LTM</th>]}
+                  <th key="ltm" className="text-center py-1 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '50px' }}>LTM</th>]}
             </tr>
             {(selectedPeriod === 'quarter' || selectedPeriod === 'semi-annual') && (() => {
               const periods = selectedPeriod === 'semi-annual' ? ["H1", "H2"] : ["Q1","Q2","Q3","Q4"];
               
               return (
                 <tr className="border-none">
-                  <th className="text-left py-1 px-3 md:px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-40 md:min-w-80 sticky left-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700">
+                  <th className="text-left py-0.5 px-2 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-48 sticky left-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700">
                     <div className="flex flex-col">
                       <span className="text-xs text-muted-foreground italic">{getCurrencyDisplayText(incomeStatements)}</span>
                     </div>
@@ -819,7 +867,7 @@ export function HistoricalFinancials() {
                     const currentPeriod = `${year}-${period}`;
                     const shouldShowLastReported = selectedPeriod === 'quarter' && currentPeriod === lastReportedPeriod;
                     return (
-                      <th key={year+period} className="text-center py-1 px-2 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none" style={{ minWidth: '80px' }}>
+                      <th key={year+period} className="text-center py-0.5 px-1 text-xs font-medium text-slate-700 dark:text-slate-300 align-bottom border-none" style={{ minWidth: '50px' }}>
                         <div className="flex flex-col">
                           <span>{period}</span>
                           {lastReportedPeriod && shouldShowLastReported && (
@@ -831,30 +879,19 @@ export function HistoricalFinancials() {
                       </th>
                     );
                   }))}
-                  {selectedPeriod === 'semi-annual' && (
-                    <th key="ltm-sub" className="text-center py-1 px-1 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>
-                      <div className="flex flex-col">
-                        <span className="text-xs text-muted-foreground italic">{quarterlyMap ? getLTMReferenceDate(quarterlyMap) : 'LTM'}</span>
-                        {lastReportedPeriod && (
-                          <span className="text-xs text-muted-foreground italic mt-0.5">
-                            {formatLastReportedPeriod(lastReportedPeriod, selectedPeriod)}
-                          </span>
-                        )}
-                      </div>
-                    </th>
-                  )}
+
                 </tr>
               );
             })()}
             {selectedPeriod === 'annual' && (
               <tr className="border-none">
-                <th className="text-left py-1 px-3 md:px-6 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-40 md:min-w-80 sticky left-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700">
+                <th className="text-left py-0.5 px-2 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-48 sticky left-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700">
                   <div className="flex flex-col">
                     <span className="text-xs text-muted-foreground italic">{getCurrencyDisplayText(incomeStatements)}</span>
                   </div>
                 </th>
                 {years.map((year, index) => (
-                  <th key={year} className="text-center py-1 px-1 md:px-4 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none" style={{ minWidth: '60px' }}>
+                  <th key={year} className="text-center py-0.5 px-1 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none" style={{ minWidth: '50px' }}>
                     {lastReportedPeriod && year === lastReportedPeriod && (
                       <div className="flex flex-col">
                         <span className="text-xs text-muted-foreground italic">
@@ -864,7 +901,7 @@ export function HistoricalFinancials() {
                     )}
                   </th>
                 ))}
-                <th key="ltm-sub" className="text-center py-1 px-1 md:px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 align-bottom border-none bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '60px' }}>
+                <th key="ltm-sub" className="text-center py-0.5 px-1 text-xs font-medium text-slate-700 dark:text-slate-300 align-bottom border-none bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '50px' }}>
                   <div className="flex flex-col">
                     <span className="text-xs text-muted-foreground italic">{quarterlyMap ? getLTMReferenceDate(quarterlyMap) : 'LTM'}</span>
                   </div>
@@ -892,12 +929,12 @@ export function HistoricalFinancials() {
                   )}
                 >
                   <td className={cn(
-                    "py-1.5 text-xs md:text-sm flex items-center gap-1 md:gap-2",
-                    row.isIndented ? "px-4 md:px-8" : "px-3 md:px-6",
+                    "py-1 text-xs flex items-center gap-1",
+                    row.isIndented ? "px-3" : "px-2",
                     row.isImportant ? "font-semibold" : "",
                     row.isBold ? "font-bold" : "",
                     row.isMargin ? "text-slate-500 dark:text-slate-400" : "",
-                    "min-w-40 md:min-w-80 sticky left-0 z-0 border-r border-slate-200 dark:border-slate-700"
+                    "min-w-48 sticky left-0 z-0 border-r border-slate-200 dark:border-slate-700"
                   )}>
                     {row.label}
                   </td>
@@ -911,11 +948,11 @@ export function HistoricalFinancials() {
                           
                         return (
                           <td key={`${year}-${period}`} className={cn(
-                            "text-right py-1.5 px-2 md:px-4 text-xs md:text-sm tabular-nums relative z-10",
+                            "text-right py-1 px-1 text-xs tabular-nums relative z-10",
                             row.isImportant ? "font-semibold" : "",
                             row.isMargin ? "text-slate-500 dark:text-slate-400" : "",
                             isUnavailable && !isFuture ? "bg-muted/20" : ""
-                          )} style={{ minWidth: '80px' }}>
+                          )} style={{ minWidth: '50px' }}>
                             {formatMetric(row[dataPeriod], row.label, row.isHeaderRow, isUnavailable, isFuture)}
                           </td>
                         );
@@ -932,41 +969,34 @@ export function HistoricalFinancials() {
                           
                         return (
                           <td key={`${year}-${period}`} className={cn(
-                            "text-right py-1.5 px-2 md:px-4 text-xs md:text-sm tabular-nums relative z-10",
+                            "text-right py-1 px-1 text-xs tabular-nums relative z-10",
                             row.isImportant ? "font-semibold" : "",
                             row.isMargin ? "text-slate-500 dark:text-slate-400" : "",
                             isUnavailable && !isFuture ? "bg-muted/20" : ""
-                          )} style={{ minWidth: '80px' }}>
+                          )} style={{ minWidth: '50px' }}>
                             {formatMetric(row[dataPeriod], row.label, row.isHeaderRow, isUnavailable, isFuture)}
                           </td>
                         );
-                      })), 
-                      <td key="ltm" className={cn(
-                        "text-right py-1.5 px-1 md:px-4 text-xs md:text-sm tabular-nums font-medium bg-blue-50 dark:bg-blue-900/30 relative z-10",
-                        row.isImportant ? "font-semibold" : "",
-                        row.isMargin ? "text-slate-500 dark:text-slate-400" : "text-slate-900 dark:text-slate-100"
-                      )} style={{ minWidth: '60px' }}>
-                        {formatMetric(row.ltm, row.label, row.isHeaderRow)}
-                      </td>];
+                      }))];
                     })()
                     : [...years.map(year => {
                         const isUnavailable = isPeriodDataUnavailable(periodMap || {}, year);
                         const isFuture = isPeriodInFuture(year, lastReportedPeriod, selectedPeriod);
                         return (
                         <td key={year} className={cn(
-                          "text-right py-1.5 px-1 md:px-4 text-xs md:text-sm tabular-nums relative z-10",
+                          "text-right py-1 px-1 text-xs tabular-nums relative z-10",
                           row.isImportant ? "font-semibold" : "",
                           row.isMargin ? "text-slate-500 dark:text-slate-400" : "",
                           isUnavailable && !isFuture ? "bg-muted/20" : ""
-                        )} style={{ minWidth: '60px' }}>
+                        )} style={{ minWidth: '50px' }}>
                           {formatMetric(row[year], row.label, row.isHeaderRow, isUnavailable, isFuture)}
                         </td>
                       )}),
                       <td key="ltm" className={cn(
-                        "text-right py-1.5 px-1 md:px-4 text-xs md:text-sm tabular-nums font-medium bg-blue-50 dark:bg-blue-900/30 relative z-10",
+                        "text-right py-1 px-1 text-xs tabular-nums font-medium bg-blue-50 dark:bg-blue-900/30 relative z-10",
                         row.isImportant ? "font-semibold" : "",
                         row.isMargin ? "text-slate-500 dark:text-slate-400" : "text-slate-900 dark:text-slate-100"
-                      )} style={{ minWidth: '60px' }}>
+                      )} style={{ minWidth: '50px' }}>
                         {formatMetric(row.ltm, row.label, row.isHeaderRow)}
                       </td>]}
                 </tr>
@@ -2161,30 +2191,30 @@ export function HistoricalFinancials() {
           
           <Tabs value={activeFinancialTab} onValueChange={setActiveFinancialTab} className="space-y-6">
             <div className="premium-tabs flex flex-row items-center justify-between">
-              <TabsList className="h-12 bg-transparent border-none p-0 gap-0 justify-start">
+              <TabsList className="h-10 bg-transparent border-none p-0 gap-0 justify-start">
                 <TabsTrigger 
                   value="income-statement"
-                  className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+                  className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
                 >
                   Income Statement
                 </TabsTrigger>
                 <TabsTrigger 
                   value="cash-flow"
-                  className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+                  className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
                 >
                   Cash Flow
                 </TabsTrigger>
                 <TabsTrigger 
                   value="balance-sheet"
-                  className="premium-tab-trigger h-12 px-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+                  className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
                 >
                   Balance Sheet
                 </TabsTrigger>
               </TabsList>
               
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                 <Select value={selectedPeriod} onValueChange={(value: 'annual' | 'semi-annual' | 'quarter') => setSelectedPeriod(value)}>
-                  <SelectTrigger className="w-36 h-10">
+                  <SelectTrigger className="w-28 h-8 text-xs">
                     <SelectValue placeholder="Select period" />
                   </SelectTrigger>
                   <SelectContent>
@@ -2200,9 +2230,9 @@ export function HistoricalFinancials() {
                       variant="outline" 
                       size="sm" 
                       disabled={isExporting}
-                      className="h-10"
+                      className="h-8 px-3 text-xs"
                     >
-                      <Download className="h-4 w-4 mr-2" />
+                      <Download className="h-3 w-3 mr-1.5" />
                       {isExporting ? "Exporting..." : "Export"}
                     </Button>
                   </DropdownMenuTrigger>
