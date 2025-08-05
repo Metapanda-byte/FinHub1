@@ -20,32 +20,120 @@
 
 /* Mobile Table Optimizations */
 @media (max-width: 768px) {
-  /* Prevent horizontal scrolling */
+  /* Prevent body horizontal scrolling but allow table scrolling */
   body {
     overflow-x: hidden;
   }
   
-  /* Force tables to not exceed viewport width */
-  table {
-    max-width: 100%;
-    width: 100% !important;
+  /* Optimized mobile font sizes for readability */
+  .text-sm {
+    font-size: 0.875rem; /* 14px - more readable on mobile */
   }
   
-  /* Hide overflow on table containers */
-  .table-container,
-  .financial-table-wrapper,
-  .table-scroll-container {
-    overflow-x: hidden !important;
-    max-width: 100vw;
+  .text-xs {
+    font-size: 0.8125rem; /* 13px - slightly larger for mobile */
   }
   
-  /* Responsive table cells */
+  /* Table-specific mobile optimizations */
   table th,
   table td {
-    font-size: 0.75rem;
-    padding: 0.5rem 0.25rem;
-    word-break: break-word;
-    white-space: normal;
+    font-size: 0.875rem; /* 14px base font size */
+    padding: 0.625rem 0.75rem; /* More padding for touch targets */
+  }
+  
+  /* Financial tables on mobile */
+  .financial-table th,
+  .financial-table td {
+    font-size: 0.875rem; /* 14px for better readability */
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* First column styling */
+  .financial-table th:first-child,
+  .financial-table td:first-child {
+    font-weight: 500;
+    position: relative;
+  }
+  
+  /* Tabular numbers for better alignment */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  
+  /* Ensure minimum touch target size */
+  table tr {
+    min-height: 44px;
+  }
+  
+  /* Better scrollbar for mobile */
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+  
+  /* Smooth scrolling */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Clean table borders */
+  .border-border {
+    border-color: hsl(var(--border));
+  }
+  
+  /* Financial table specific styles */
+  .financial-table-wrapper {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .financial-table {
+    border-collapse: collapse;
+  }
+  
+  /* Sticky first column with clean border */
+  .financial-table th:first-child,
+  .financial-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background-color: hsl(var(--background));
+  }
+  
+  /* Add border when scrolled */
+  .financial-table-wrapper.scrolled th:first-child::after,
+  .financial-table-wrapper.scrolled td:first-child::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background-color: hsl(var(--border));
+  }
+  
+  /* Hide scrollbar on mobile for cleaner look */
+  .financial-table-wrapper::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  .financial-table-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .financial-table-wrapper::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 3px;
   }
   
   /* Hide less important columns */
@@ -209,6 +297,74 @@
   
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Mobile Card Optimizations */
+  @media (max-width: 768px) {
+    /* Remove card borders for cleaner mobile look */
+    .mobile-borderless .card {
+      border: none;
+      box-shadow: none;
+      background: transparent;
+    }
+    
+    .mobile-borderless .card-header {
+      padding-left: 0;
+      padding-right: 0;
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+    }
+    
+    .mobile-borderless .card-content {
+      padding: 0;
+    }
+    
+    /* Section dividers instead of cards */
+    .mobile-section {
+      padding-bottom: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid hsl(var(--border) / 0.3);
+    }
+    
+    .mobile-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+    
+    /* Clean tabs on mobile */
+    .tabs-list {
+      background: transparent;
+      border-bottom: 1px solid hsl(var(--border) / 0.3);
+      height: auto;
+      padding: 0;
+      gap: 0;
+      border-radius: 0;
+    }
+    
+    .mobile-borderless .tabs-trigger {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+    }
+    
+    .mobile-borderless .tabs-trigger[data-state="active"] {
+      background-color: hsl(var(--primary) / 0.1);
+      color: hsl(var(--primary));
+    }
+    
+    /* Integrate table headers with content */
+    .mobile-borderless .card-header + .card-content {
+      padding-top: 0;
+    }
+    
+    /* Remove excessive spacing in tab content */
+    .space-y-responsive.mobile-borderless > * {
+      margin-top: 0;
+    }
+    
+    .space-y-responsive.mobile-borderless > * + * {
+      margin-top: 1rem;
+    }
   }
 
   /* Mobile Navigation Styles */

@@ -828,7 +828,18 @@ export function HistoricalFinancials() {
     
     return (
       <div 
-        ref={(el) => { tableContainerRefs.current[title] = el; }}
+        ref={(el) => { 
+          tableContainerRefs.current[title] = el;
+          if (el) {
+            el.addEventListener('scroll', () => {
+              if (el.scrollLeft > 0) {
+                el.classList.add('scrolled');
+              } else {
+                el.classList.remove('scrolled');
+              }
+            });
+          }
+        }}
         className="financial-table-wrapper table-scroll-container rounded-lg shadow-sm overflow-auto max-h-[70vh] touch-scroll-x"
       >
         <table className="financial-table border-collapse" style={{ minWidth: 'max-content' }}>
@@ -836,7 +847,7 @@ export function HistoricalFinancials() {
             <tr className="">
               <th className={cn(
                 "text-left py-0.5 px-2 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom",
-                "min-w-48 sticky left-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700"
+                "min-w-48 sticky left-0 bg-slate-50 dark:bg-slate-900"
               )}>
                 {title}
               </th>
@@ -858,7 +869,7 @@ export function HistoricalFinancials() {
               
               return (
                 <tr className="border-none">
-                  <th className="text-left py-0.5 px-2 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-48 sticky left-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700">
+                  <th className="text-left py-0.5 px-2 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-48 sticky left-0 bg-slate-50 dark:bg-slate-900">
                     <div className="flex flex-col">
                       <span className="text-xs text-muted-foreground italic">{getCurrencyDisplayText(incomeStatements)}</span>
                     </div>
@@ -885,7 +896,7 @@ export function HistoricalFinancials() {
             })()}
             {selectedPeriod === 'annual' && (
               <tr className="border-none">
-                <th className="text-left py-0.5 px-2 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-48 sticky left-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700">
+                <th className="text-left py-0.5 px-2 text-xs font-medium text-slate-600 dark:text-slate-400 align-bottom border-none min-w-48 sticky left-0 bg-slate-50 dark:bg-slate-900">
                   <div className="flex flex-col">
                     <span className="text-xs text-muted-foreground italic">{getCurrencyDisplayText(incomeStatements)}</span>
                   </div>
@@ -934,7 +945,7 @@ export function HistoricalFinancials() {
                     row.isImportant ? "font-semibold" : "",
                     row.isBold ? "font-bold" : "",
                     row.isMargin ? "text-slate-500 dark:text-slate-400" : "",
-                    "min-w-48 sticky left-0 z-0 border-r border-slate-200 dark:border-slate-700"
+                    "min-w-48 sticky left-0 z-0"
                   )}>
                     {row.label}
                   </td>

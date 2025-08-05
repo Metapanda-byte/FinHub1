@@ -110,7 +110,7 @@ export function DashboardTabs() {
         </div>
       </div>
       
-      <TabsContent value="overview" className="space-y-responsive mobile-card">
+      <TabsContent value="overview" className="space-y-responsive mobile-borderless">
         <div id="tab-content-overview">
           <Suspense fallback={<OverviewLoadingSkeleton />}>
             <Overview />
@@ -118,7 +118,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
-      <TabsContent value="financials" className="space-y-responsive mobile-card">
+      <TabsContent value="financials" className="space-y-responsive mobile-borderless">
         <div id="tab-content-financials">
           <Suspense fallback={<FinancialsLoadingSkeleton />}>
             <Financials />
@@ -126,7 +126,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
-      <TabsContent value="credit-analysis" className="space-y-responsive mobile-card">
+      <TabsContent value="credit-analysis" className="space-y-responsive mobile-borderless">
         <div id="tab-content-credit-analysis">
           <Suspense fallback={<FinancialsLoadingSkeleton />}>
             <CreditAnalysis />
@@ -134,7 +134,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
-      <TabsContent value="valuation" className="space-y-responsive mobile-card">
+      <TabsContent value="valuation" className="space-y-responsive mobile-borderless">
         <div id="tab-content-valuation">
           <Suspense fallback={<ValuationLoadingSkeleton />}>
             <ValuationConsiderations />
@@ -142,7 +142,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
-      <TabsContent value="recent-news" className="space-y-responsive mobile-card">
+      <TabsContent value="recent-news" className="space-y-responsive mobile-borderless">
         <div id="tab-content-recent-news">
           <Suspense fallback={<CardLoadingSkeleton />}>
             <RecentNews />
@@ -150,7 +150,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
-      <TabsContent value="idea-generation" className="space-y-responsive mobile-card">
+      <TabsContent value="idea-generation" className="space-y-responsive mobile-borderless">
         <div id="tab-content-idea-generation">
           <Suspense fallback={<CardLoadingSkeleton />}>
             <IdeaGeneration />
@@ -158,7 +158,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
       
-      <TabsContent value="competitors" className="space-y-responsive mobile-card">
+      <TabsContent value="competitors" className="space-y-responsive mobile-borderless">
         <div id="tab-content-competitors">
           <Suspense fallback={<PeerComparisonLoadingSkeleton />}>
             <CompetitorAnalysis />
@@ -166,7 +166,7 @@ export function DashboardTabs() {
         </div>
       </TabsContent>
 
-      <TabsContent value="screening" className="space-y-responsive mobile-card">
+      <TabsContent value="screening" className="space-y-responsive mobile-borderless">
         <div id="tab-content-screening">
           <Suspense fallback={<ScreeningLoadingSkeleton />}>
             <ScreeningTool />

@@ -170,7 +170,7 @@ export function CompanyOverviewMobile() {
   }
 
   return (
-    <div className="space-y-3 px-2">
+    <div className="space-y-3 px-2 mobile-borderless">
       {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -193,7 +193,7 @@ export function CompanyOverviewMobile() {
       </div>
 
       {/* Stock Price & Chart */}
-      <Card className="p-3">
+      <div className="mobile-section">
         <div className="flex items-center justify-between mb-2">
           <div>
             <div className="flex items-baseline gap-2">
@@ -217,13 +217,13 @@ export function CompanyOverviewMobile() {
         </div>
         
         {/* Compact Chart */}
-        <div className="h-[120px] -mx-3 -mb-3">
+        <div className="h-[120px]">
           <StockChart symbol={currentSymbol} timeframe="YTD" />
         </div>
-      </Card>
+      </div>
 
       {/* Company Info */}
-      <Card className="p-3">
+      <div className="mobile-section">
         <div className="space-y-2">
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
@@ -252,10 +252,10 @@ export function CompanyOverviewMobile() {
             )}
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Key Metrics Carousel */}
-      <Card className="p-3">
+      <div className="mobile-section">
         <h3 className="text-sm font-semibold mb-2">Key Metrics</h3>
         <SwipeableCarousel 
           activeIndex={activeMetricIndex} 
@@ -283,7 +283,7 @@ export function CompanyOverviewMobile() {
             />
           ))}
         </div>
-      </Card>
+      </div>
 
       {/* Additional Info Tabs */}
       <Tabs defaultValue="overview" className="w-full">
