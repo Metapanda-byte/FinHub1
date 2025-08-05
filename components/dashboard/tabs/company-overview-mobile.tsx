@@ -170,7 +170,7 @@ export function CompanyOverviewMobile() {
   }
 
   return (
-    <div className="space-y-3 px-2 mobile-borderless">
+    <div className="space-y-3 px-0 mobile-borderless">
       {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -234,7 +234,7 @@ export function CompanyOverviewMobile() {
             </Badge>
           </div>
           
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground leading-relaxed">
             {showFullDescription ? description : truncatedDescription}
             {description.length > maxDescriptionLength && (
               <Button

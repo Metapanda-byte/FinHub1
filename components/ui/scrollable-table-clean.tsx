@@ -91,7 +91,7 @@ export function ScrollableTableClean({
   }
 
   return (
-    <div className={cn("relative w-full", className)}>
+    <div className={cn("relative w-full mobile-table-container", className)}>
       <table className="w-full">
         <thead>
           <tr className="border-b">
@@ -137,7 +137,7 @@ export function ScrollableTableClean({
                 {/* Sticky cell */}
                 <td
                   className={cn(
-                    "sticky left-0 z-10 bg-background px-4 py-3 text-sm",
+                    "sticky left-0 z-20 bg-background px-4 py-3 text-sm",
                     isScrolled && "after:absolute after:right-0 after:top-0 after:h-full after:w-px after:bg-border"
                   )}
                   style={{ minWidth: stickyColumn.minWidth }}

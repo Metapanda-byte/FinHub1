@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, BarChartBig, X } from "lucide-react";
 import Link from "next/link";
@@ -47,7 +47,7 @@ export default function Home() {
           </Alert>
         </div>
       )}
-
+      
       {/* Hero Section */}
       <section className="py-20 bg-gradient-to-b from-background to-muted/30">
         <div className="container">
@@ -130,8 +130,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-
 
       {/* CTA Section */}
       <section className="py-20">

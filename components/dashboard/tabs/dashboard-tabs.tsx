@@ -12,6 +12,7 @@ import { ChatFAB } from "@/components/ui/chat-fab";
 import { useIncomeStatements, useCashFlows, useBalanceSheets } from "@/lib/api/financial";
 
 // Lazy load tab components to improve initial load time
+const Home = lazy(() => import("./home").then(m => ({ default: m.Home })));
 const Overview = lazy(() => import("./overview").then(m => ({ default: m.Overview })));
 const Financials = lazy(() => import("./financials").then(m => ({ default: m.Financials })));
 const CreditAnalysis = lazy(() => import("./credit-analysis"));
@@ -22,6 +23,10 @@ const CompetitorAnalysis = lazy(() => import("./competitor-analysis").then(m => 
 const ScreeningTool = lazy(() => import("./screening-tool").then(m => ({ default: m.ScreeningTool })));
 
 // Tab-specific loading skeletons
+function HomeLoadingSkeleton() {
+  return <CrunchingNumbersCard />;
+}
+
 function OverviewLoadingSkeleton() {
   return <CrunchingNumbersCard />;
 }
@@ -43,7 +48,7 @@ function ScreeningLoadingSkeleton() {
 }
 
 export function DashboardTabs() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("home");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
 
@@ -61,6 +66,7 @@ export function DashboardTabs() {
 
   // Map tab values to readable names for PDF filename
   const tabNames: Record<string, string> = {
+    home: "Market Overview",
     overview: "Company Overview",
     financials: "Financial Statements",
     valuation: "Valuation Analysis",
@@ -81,16 +87,17 @@ export function DashboardTabs() {
       <div className="flex flex-col gap-4 mb-4">
         {/* Mobile-first tab navigation */}
         <div className="flex items-center justify-between w-full">
-          <div className="flex-1 overflow-hidden">
-            <TabsList className="mobile-tabs w-full bg-transparent border-b border-border px-0 py-0 h-auto justify-start rounded-none">
-              <TabsTrigger value="overview" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Overview</TabsTrigger>
+          <div className="flex-1 overflow-x-auto">
+            <TabsList className="mobile-tabs w-full bg-transparent border-b border-border px-0 py-0 h-auto justify-start rounded-none min-w-max">
+              <TabsTrigger value="home" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none text-finhub-orange font-bold bg-blue-500 text-white">🏠 HOME ONLY</TabsTrigger>
+              {/* <TabsTrigger value="overview" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Overview</TabsTrigger>
               <TabsTrigger value="financials" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Financials</TabsTrigger>
               <TabsTrigger value="credit-analysis" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Credit</TabsTrigger>
               <TabsTrigger value="valuation" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Valuation</TabsTrigger>
               <TabsTrigger value="competitors" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Competitors</TabsTrigger>
               <TabsTrigger value="idea-generation" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Ideas</TabsTrigger>
               <TabsTrigger value="recent-news" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">News</TabsTrigger>
-              <TabsTrigger value="screening" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Screening</TabsTrigger>
+              <TabsTrigger value="screening" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Screening</TabsTrigger> */}
             </TabsList>
           </div>
           <div className="flex-shrink-0 ml-4">
@@ -109,6 +116,14 @@ export function DashboardTabs() {
           </div>
         </div>
       </div>
+      
+      <TabsContent value="home" className="space-y-responsive mobile-borderless">
+        <div id="tab-content-home">
+          <Suspense fallback={<HomeLoadingSkeleton />}>
+            <Home />
+          </Suspense>
+        </div>
+      </TabsContent>
       
       <TabsContent value="overview" className="space-y-responsive mobile-borderless">
         <div id="tab-content-overview">

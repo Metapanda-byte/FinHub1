@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Home } from "@/components/dashboard/tabs/home";
 import { CompanyOverview } from "@/components/dashboard/tabs/company-overview";
 import { HistoricalFinancials } from "@/components/dashboard/tabs/historical-financials";
 import { CompetitorAnalysis } from "@/components/dashboard/tabs/competitor-analysis";
@@ -47,6 +48,12 @@ import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { StockSearch } from "@/components/search/stock-search";
 
 const tabConfig = [
+  { 
+    id: "home", 
+    label: "Home", 
+    icon: Building2,
+    description: "Market overview and discovery"
+  },
   { 
     id: "company-snapshot", 
     label: "Overview", 
@@ -104,7 +111,7 @@ const tabConfig = [
 ];
 
 export function Dashboard() {
-  const [activeTab, setActiveTab] = useState("company-snapshot");
+  const [activeTab, setActiveTab] = useState("home");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [highlightQuery, setHighlightQuery] = useState('');
@@ -349,6 +356,9 @@ export function Dashboard() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               {/* Tab Content with Vertical Scrolling */}
               <div className="animate-fade-in">
+                <TabsContent value="home" className="mt-0 space-y-3">
+                  <Home />
+                </TabsContent>
                 <TabsContent value="company-snapshot" className="mt-0 space-y-3">
                   <CompanyOverview />
                 </TabsContent>

@@ -110,6 +110,48 @@
     background-color: hsl(var(--background));
   }
   
+  /* Mobile table optimizations */
+  @media (max-width: 768px) {
+    /* Ensure full width usage */
+    .mobile-table-container {
+      width: 100vw;
+      margin-left: calc(-1 * (100vw - 100%));
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    
+    /* Optimize sticky columns for mobile */
+    .sticky.left-0 {
+      position: sticky !important;
+      left: 0 !important;
+      z-index: 20 !important;
+      background-color: hsl(var(--background)) !important;
+      box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Ensure sticky columns work in all table contexts */
+    .mobile-table-container .sticky.left-0,
+    .financial-table-wrapper .sticky.left-0 {
+      position: sticky !important;
+      left: 0 !important;
+      z-index: 20 !important;
+      background-color: hsl(var(--background)) !important;
+    }
+    
+    /* Ensure proper table width */
+    .mobile-table-container table {
+      min-width: max-content;
+      width: 100%;
+    }
+    
+    /* Optimize cell padding for mobile */
+    .mobile-table-container td,
+    .mobile-table-container th {
+      padding: 0.5rem 0.75rem;
+      white-space: nowrap;
+    }
+  }
+  
   /* Add border when scrolled */
   .financial-table-wrapper.scrolled th:first-child::after,
   .financial-table-wrapper.scrolled td:first-child::after {
@@ -299,6 +341,10 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
   
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+  
   /* Mobile Card Optimizations */
   @media (max-width: 768px) {
     /* Remove card borders for cleaner mobile look */
@@ -324,11 +370,20 @@
       padding-bottom: 1.5rem;
       margin-bottom: 1.5rem;
       border-bottom: 1px solid hsl(var(--border) / 0.3);
+      width: 100%;
     }
     
     .mobile-section:last-child {
       border-bottom: none;
       margin-bottom: 0;
+    }
+    
+    /* Full width content on mobile */
+    .mobile-borderless .mobile-section {
+      padding-left: 1rem;
+      padding-right: 1rem;
+      margin-left: -1rem;
+      margin-right: -1rem;
     }
     
     /* Clean tabs on mobile */

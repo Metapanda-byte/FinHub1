@@ -52,7 +52,7 @@ export function ScrollableTable({
   const scrollableColumns = columns.filter(col => !col.sticky);
 
   return (
-    <div className={cn("relative w-full overflow-hidden", className)}>
+    <div className={cn("relative w-full overflow-hidden mobile-table-container", className)}>
       <div className="flex">
         {/* Sticky columns */}
         {stickyColumns.length > 0 && (
@@ -69,7 +69,7 @@ export function ScrollableTable({
                     <th
                       key={column.key}
                       className={cn(
-                        "px-4 py-3 font-medium text-left bg-background",
+                        "px-4 py-3 font-medium text-left bg-background sticky left-0 z-20",
                         mobileOptimized ? "text-sm" : "text-sm"
                       )}
                       style={{ 
@@ -89,7 +89,7 @@ export function ScrollableTable({
                       <td
                         key={column.key}
                         className={cn(
-                          "px-4 py-3 bg-background",
+                          "px-4 py-3 bg-background sticky left-0 z-20",
                           mobileOptimized ? "text-sm" : "text-sm"
                         )}
                       >
