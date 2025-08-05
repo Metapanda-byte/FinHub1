@@ -12,11 +12,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, Star } from "lucide-react";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import { useSearchStore } from "@/lib/store/search-store";
+import { useWatchlistStore } from "@/lib/store/watchlist-store";
 
 
 export default function Header() {
@@ -155,12 +157,40 @@ export default function Header() {
 
           {/* Center: Ticker Search - Desktop Only */}
           <div className="hidden sm:flex flex-1 justify-center max-w-lg mx-8">
-            <div className="w-full max-w-md">
+            <div className="w-full max-w-md flex items-center gap-2">
               <StockSearch 
-                className="border-0 bg-muted/30 hover:bg-muted/40 focus-within:bg-muted/50 transition-colors duration-200 shadow-sm" 
+                className="border-0 bg-muted/30 hover:bg-muted/40 focus-within:bg-muted/50 transition-colors duration-200 shadow-sm flex-1" 
                 placeholder="Search Company or Ticker"
                 showSelectedTicker={false}
               />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-muted/60 transition-colors"
+                onClick={() => {
+                  // Toggle watchlist for current symbol
+                  const currentSymbol = useSearchStore.getState().currentSymbol;
+                  if (currentSymbol) {
+                    const watchlistStore = useWatchlistStore.getState();
+                    if (watchlistStore.hasStock(currentSymbol)) {
+                      watchlistStore.removeStock(currentSymbol);
+                    } else {
+                      watchlistStore.addStock({ 
+                        symbol: currentSymbol, 
+                        name: currentSymbol, 
+                        lastPrice: 0, 
+                        change: 0, 
+                        changePercent: 0, 
+                        marketCap: 0, 
+                        peRatio: 0 
+                      });
+                    }
+                  }
+                }}
+                title="Toggle Watchlist"
+              >
+                <Star className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+              </Button>
             </div>
           </div>
 
@@ -200,11 +230,41 @@ export default function Header() {
         {/* Mobile Search Row - Compact */}
         {isDashboard && (
           <div className="sm:hidden border-t border-border/20 py-1">
-            <StockSearch 
-              className="w-full border-0 bg-muted/20 hover:bg-muted/30 focus-within:bg-muted/40 transition-colors duration-200" 
-              placeholder="Search Company or Ticker"
-              showSelectedTicker={false}
-            />
+            <div className="flex items-center gap-2">
+              <StockSearch 
+                className="flex-1 border-0 bg-muted/20 hover:bg-muted/30 focus-within:bg-muted/40 transition-colors duration-200" 
+                placeholder="Search Company or Ticker"
+                showSelectedTicker={false}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-muted/60 transition-colors"
+                onClick={() => {
+                  // Toggle watchlist for current symbol
+                  const currentSymbol = useSearchStore.getState().currentSymbol;
+                  if (currentSymbol) {
+                    const watchlistStore = useWatchlistStore.getState();
+                    if (watchlistStore.hasStock(currentSymbol)) {
+                      watchlistStore.removeStock(currentSymbol);
+                    } else {
+                      watchlistStore.addStock({ 
+                        symbol: currentSymbol, 
+                        name: currentSymbol, 
+                        lastPrice: 0, 
+                        change: 0, 
+                        changePercent: 0, 
+                        marketCap: 0, 
+                        peRatio: 0 
+                      });
+                    }
+                  }
+                }}
+                title="Toggle Watchlist"
+              >
+                <Star className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+              </Button>
+            </div>
           </div>
         )}
       </div>

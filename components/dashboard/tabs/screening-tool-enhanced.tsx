@@ -294,33 +294,28 @@ export function ScreeningToolEnhanced() {
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <p className="text-red-500">Error loading screening data. Please try again later.</p>
-        </CardContent>
-      </Card>
+      <div className="p-8 text-center">
+        <p className="text-red-500">Error loading screening data. Please try again later.</p>
+      </div>
     );
   }
 
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Stock Screener</CardTitle>
-            <CardDescription>
-              Screen {universeData?.totalCount?.toLocaleString() || '80,000+'} global stocks across all major exchanges
-            </CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={exportToCsv} variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
-          </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Stock Screener</h1>
+          <p className="text-muted-foreground">
+            Screen {universeData?.totalCount?.toLocaleString() || '80,000+'} global stocks across all major exchanges
+          </p>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        <div className="flex gap-2">
+          <Button onClick={exportToCsv} variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
+      </div>
         {/* Quick Presets */}
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => applyPreset('value')} variant="outline" size="sm">
@@ -573,7 +568,6 @@ export function ScreeningToolEnhanced() {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
-  );
+      </div>
+    );
 }

@@ -13,14 +13,13 @@ import { StockChart } from "@/components/dashboard/charts/stock-chart";
 import { ShareholdersTable } from "@/components/dashboard/tables/shareholders-table";
 import { useState, useMemo } from "react";
 import { useSearchStore } from "@/lib/store/search-store";
-import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegmentsTTM, useGeographicRevenueTTM, useEmployeeCount, useBalanceSheets, useFinancialRatios, usePriceTarget, useAnalystRatings, useInstitutionalOwnership, useESGScore } from "@/lib/api/financial";
+import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegmentsTTM, useGeographicRevenueTTM, useEmployeeCount, useBalanceSheets, useFinancialRatios, useKeyMetrics, usePriceTarget, useAnalystRatings, useInstitutionalOwnership, useESGScore } from "@/lib/api/financial";
 import { formatFinancialNumber, formatLargeNumber } from "@/lib/utils/formatters";
 import { Star, StarOff } from "lucide-react";
 import { useWatchlistStore } from "@/lib/store/watchlist-store";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useStockQuote } from "@/lib/api/stock";
 import { format } from "date-fns";
 import { useTheme } from 'next-themes';
 import clsx from 'clsx';
@@ -419,12 +418,15 @@ function getGeoLabel(region: string): string {
   return formatted || region;
 }
 
-export function CompanyOverview() {
+interface CompanyOverviewProps {
+  onOpenChat?: () => void;
+}
+
+export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   const [timeframe, setTimeframe] = useState<'YTD' | '1Y' | '5Y'>('YTD');
   const { hasStock, addStock, removeStock } = useWatchlistStore();
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
   const { profile, isLoading: profileLoading } = useCompanyProfile(currentSymbol || '');
-  const { quote, loading: quoteLoading } = useStockQuote(currentSymbol || '');
   const { statements, isLoading: statementsLoading } = useIncomeStatements(currentSymbol || '', 'annual');
   const { statements: quarterlyStatements, isLoading: quarterlyStatementsLoading } = useIncomeStatements(currentSymbol || '', 'quarter');
   const { prices, isLoading: pricesLoading } = useStockPriceData(currentSymbol || '', timeframe);
@@ -439,6 +441,7 @@ export function CompanyOverview() {
   
   // New API hooks for additional data
   const { ratios, isLoading: ratiosLoading } = useFinancialRatios(currentSymbol || '');
+  const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(currentSymbol || '');
   const { priceTarget, isLoading: priceTargetLoading } = usePriceTarget(currentSymbol || '');
   const { ratings, isLoading: ratingsLoading } = useAnalystRatings(currentSymbol || '');
   const { ownership, isLoading: ownershipLoading } = useInstitutionalOwnership(currentSymbol || '');
@@ -447,11 +450,8 @@ export function CompanyOverview() {
   console.log('Debug:', {
     currentSymbol,
     profileLoading,
-    quoteLoading,
     hasProfile: !!profile,
-    hasQuote: !!quote,
-    profile,
-    quote
+    profile
   });
 
   // Debug: Log the TTM API response and date
@@ -562,15 +562,13 @@ export function CompanyOverview() {
     console.log('Watchlist toggle clicked:', {
       currentSymbol,
       hasStock: hasStock(currentSymbol || ''),
-      profile,
-      quote
+      profile
     });
     
-    if (!currentSymbol || !profile || !quote) {
+    if (!currentSymbol || !profile) {
       console.log('Cannot toggle watchlist:', {
         missingSymbol: !currentSymbol,
-        missingProfile: !profile,
-        missingQuote: !quote
+        missingProfile: !profile
       });
       return;
     }
@@ -581,11 +579,11 @@ export function CompanyOverview() {
       addStock({
         symbol: currentSymbol,
         name: profile?.companyName,
-        lastPrice: quote.price,
-        change: quote.change,
-        changePercent: quote.changesPercentage,
-        marketCap: quote.marketCap,
-        peRatio: quote.pe
+        lastPrice: 0,
+        change: 0,
+        changePercent: 0,
+        marketCap: 0,
+        peRatio: 0
       });
     }
   };
@@ -740,73 +738,35 @@ export function CompanyOverview() {
   console.log('[DEBUG] Final consolidated geography data:', consolidatedGeographyData);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="space-y-1">
-                        <CardTitle className="text-2xl font-bold">Company Overview</CardTitle>
-          <CardDescription>
-            Key information about {profile?.companyName || 'the company'}
-          </CardDescription>
-        </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleWatchlistToggle}
-                className={cn(
-                  "transition-colors hover:bg-yellow-100 dark:hover:bg-yellow-900",
-                  hasStock(currentSymbol) && "text-yellow-500"
-                )}
-                disabled={!currentSymbol || profileLoading || quoteLoading}
-              >
-                {hasStock(currentSymbol) ? (
-                  <Star className="h-5 w-5 fill-current" />
-                ) : (
-                  <StarOff className="h-5 w-5" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {hasStock(currentSymbol) ? "Remove from watchlist" : "Add to watchlist"}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-3">
+    <div className="space-y-4">
+      <div className="grid gap-3">
           <div className="flex items-start space-x-4 rounded-md border p-3">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={profile?.image} alt={profile?.companyName} />
-              <AvatarFallback>{profile?.symbol}</AvatarFallback>
-            </Avatar>
             <div className="space-y-2 flex-1">
               <div className="space-y-0.5">
-                <h3 className="text-base font-semibold leading-none tracking-tight">
+                <h3 className="text-sm font-semibold leading-none tracking-tight">
                   {profile?.companyName} ({profile?.symbol})
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-[10px]">
                     {profile?.sector}
                   </Badge>
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-[10px]">
                     {profile?.industry}
                   </Badge>
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-[10px]">
                     {profile?.exchangeShortName}
                   </Badge>
                 </div>
               </div>
-              <p className="text-sm">{profile?.description}</p>
+              <p className="text-xs text-justify leading-relaxed">{profile?.description}</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
                 <div>
-                  <p className="text-xs text-muted-foreground">Market Cap</p>
-                  <p className="text-sm font-medium tabular-nums">{formatMarketCapBillions(marketCap || 0)}</p>
+                  <p className="text-[10px] text-muted-foreground">Market Cap</p>
+                  <p className="text-xs font-medium tabular-nums">{formatMarketCapBillions(marketCap || 0)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Employees</p>
-                  <p className="text-sm font-medium tabular-nums">
+                  <p className="text-[10px] text-muted-foreground">Employees</p>
+                  <p className="text-xs font-medium tabular-nums">
                     {employeeCountLoading
                       ? <span className="animate-pulse text-muted-foreground">•••</span>
                       : (employeeCount !== null && employeeCount !== undefined)
@@ -815,17 +775,18 @@ export function CompanyOverview() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">CEO</p>
-                  <p className="text-sm font-medium">{profile?.ceo || 'N/A'}</p>
+                  <p className="text-[10px] text-muted-foreground">CEO</p>
+                  <p className="text-xs font-medium">{profile?.ceo || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Location</p>
-                  <p className="text-sm font-medium">
+                  <p className="text-[10px] text-muted-foreground">Location</p>
+                  <p className="text-xs font-medium">
                     {profile?.city && profile?.state ? `${profile?.city}, ${profile?.state}` : 'N/A'}
                   </p>
                 </div>
               </div>
             </div>
+
           </div>
           <div className="grid gap-3">
             {/* Share Price Performance and Capital Structure */}
@@ -879,7 +840,7 @@ export function CompanyOverview() {
                     <div className="space-y-0">
                       <div className="flex justify-between items-center py-1.5 px-6 text-sm">
                         <span>P/E Ratio</span>
-                        <span className="text-right tabular-nums">{formatRatio(quote && quote.pe ? quote.pe : null)}</span>
+                        <span className="text-right tabular-nums">{formatRatio(null)}</span>
                       </div>
                       <div className="flex justify-between items-center py-1.5 px-6 text-sm">
                         <span>EV / EBITDA</span>
@@ -1236,7 +1197,6 @@ export function CompanyOverview() {
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
-  );
+      </div>
+    );
 }

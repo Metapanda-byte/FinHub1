@@ -2179,14 +2179,6 @@ export function HistoricalFinancials() {
 
   return (
     <Card>
-        <CardHeader className="pb-2">
-          <div>
-            <CardTitle className="text-2xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical Financials</CardTitle>
-            <CardDescription className="text-sm">
-              Financial statements for {currentSymbol}
-            </CardDescription>
-          </div>
-        </CardHeader>
         <CardContent className="pt-3">
           {showSubscriptionWarning && (
             <Alert className="border-amber-200 bg-amber-50 mb-3">

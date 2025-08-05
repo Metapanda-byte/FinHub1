@@ -46,6 +46,7 @@ import { useWatchlistStore } from "@/lib/store/watchlist-store";
 import { SwipeableView } from "@/components/ui/swipeable-view";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { StockSearch } from "@/components/search/stock-search";
+import { CompanyHeader } from "@/components/dashboard/company-header";
 
 const tabConfig = [
   { 
@@ -230,6 +231,33 @@ export function Dashboard() {
     setIsChatOpen(true);
   };
 
+  // Function to get tagline for each tab
+  const getTabTagline = (tabId: string) => {
+    switch (tabId) {
+      case 'company-snapshot':
+        return 'Company Overview';
+      case 'historical-financials':
+        return 'Financial Statements';
+      case 'competitor-analysis':
+        return 'Competitor Analysis';
+      case 'dcf-analysis':
+        return 'DCF Valuation';
+      case 'lbo-analysis':
+        return 'LBO Analysis';
+      case 'recent-news':
+        return 'Recent News';
+      case 'sec-filings':
+        return 'SEC Filings & Transcripts';
+      default:
+        return 'FinHubIQ Workstation';
+    }
+  };
+
+  // Function to check if tab should show company header
+  const shouldShowCompanyHeader = (tabId: string) => {
+    return ['company-snapshot', 'historical-financials', 'competitor-analysis', 'dcf-analysis', 'lbo-analysis', 'recent-news', 'sec-filings'].includes(tabId);
+  };
+
   if (!currentSymbol) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-mobile">
@@ -272,61 +300,9 @@ export function Dashboard() {
     <>
       <div data-dashboard className="flex flex-col h-screen overflow-hidden">
         {/* Dashboard-Specific Sticky Header Only */}
-        <div className="sticky top-9 z-40 bg-background/95 backdrop-blur-sm border-b border-border shrink-0">
-          {/* Company Info Section */}
-          <div className="px-mobile pt-0 pb-0.5 border-b border-border/30">
-            <div className="flex items-center justify-between gap-4">
-              {/* Left: Company Name and Controls */}
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-lg font-bold leading-none">
-                    {resolvedCompanyName ? `${resolvedCompanyName} (${currentSymbol})` : currentSymbol}
-                  </h1>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 hover:bg-muted/60 transition-colors group"
-                    onClick={toggleWatchlist}
-                    title={isInWatchlist ? "Remove from watchlist" : "Add to watchlist"}
-                  >
-                    <Star className={cn(
-                      "h-3 w-3 transition-all duration-200",
-                      isInWatchlist 
-                        ? "fill-yellow-400 text-yellow-400" 
-                        : "text-muted-foreground group-hover:text-foreground"
-                    )} />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-6 px-2 text-xs font-bold bg-white hover:bg-gray-50 text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300 transition-colors"
-                    onClick={() => setIsChatOpen(true)}
-                    title="Open AI Analyst Co-pilot"
-                  >
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Analyst Co-pilot
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground leading-none mt-0.5">
-                  FinHubIQ Workstation
-                </p>
-              </div>
-
-              {/* Right: Key Metrics Panel */}
-              <div className="hidden lg:block">
-                <KeyMetricsPanel
-                  symbol={currentSymbol}
-                  profile={profile}
-                  quote={quote}
-                  keyMetrics={keyMetrics}
-                  ratios={ratios}
-                />
-              </div>
-            </div>
-          </div>
-
+        <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border shrink-0">
           {/* Tab Navigation Section */}
-          <div className="px-mobile py-1">
+          <div className="px-mobile py-2">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="w-full">
                 <TabsList className="flex h-auto w-full bg-transparent gap-1 p-0">
@@ -352,7 +328,7 @@ export function Dashboard() {
 
         {/* Main Content Area with Vertical Scrolling */}
         <div className="flex-1 overflow-y-auto mobile-scroll">
-          <div className="px-mobile pt-16 pb-20 sm:pb-4">
+          <div className="px-mobile pt-8 pb-20 sm:pb-4">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               {/* Tab Content with Vertical Scrolling */}
               <div className="animate-fade-in">
@@ -360,25 +336,46 @@ export function Dashboard() {
                   <Home />
                 </TabsContent>
                 <TabsContent value="company-snapshot" className="mt-0 space-y-3">
-                  <CompanyOverview />
+                  <div className="space-y-4">
+                    <CompanyHeader tagline={getTabTagline('company-snapshot')} onOpenChat={() => setIsChatOpen(true)} />
+                    <CompanyOverview onOpenChat={() => setIsChatOpen(true)} />
+                  </div>
                 </TabsContent>
                 <TabsContent value="historical-financials" className="mt-0 space-y-3">
-                  <HistoricalFinancials />
+                  <div className="space-y-4">
+                    <CompanyHeader tagline={getTabTagline('historical-financials')} onOpenChat={() => setIsChatOpen(true)} />
+                    <HistoricalFinancials />
+                  </div>
                 </TabsContent>
                 <TabsContent value="competitor-analysis" className="mt-0 space-y-3">
-                  <CompetitorAnalysis />
+                  <div className="space-y-4">
+                    <CompanyHeader tagline={getTabTagline('competitor-analysis')} onOpenChat={() => setIsChatOpen(true)} />
+                    <CompetitorAnalysis />
+                  </div>
                 </TabsContent>
                 <TabsContent value="dcf-analysis" className="mt-0 space-y-3">
-                  <DCFAnalysis symbol={currentSymbol} />
+                  <div className="space-y-4">
+                    <CompanyHeader tagline={getTabTagline('dcf-analysis')} onOpenChat={() => setIsChatOpen(true)} />
+                    <DCFAnalysis symbol={currentSymbol} />
+                  </div>
                 </TabsContent>
                 <TabsContent value="lbo-analysis" className="mt-0 space-y-3">
-                  <LBOAnalysis symbol={currentSymbol} />
+                  <div className="space-y-4">
+                    <CompanyHeader tagline={getTabTagline('lbo-analysis')} onOpenChat={() => setIsChatOpen(true)} />
+                    <LBOAnalysis symbol={currentSymbol} />
+                  </div>
                 </TabsContent>
                 <TabsContent value="recent-news" className="mt-0 space-y-3">
-                  <RecentNews />
+                  <div className="space-y-4">
+                    <CompanyHeader tagline={getTabTagline('recent-news')} onOpenChat={() => setIsChatOpen(true)} />
+                    <RecentNews />
+                  </div>
                 </TabsContent>
                 <TabsContent value="sec-filings" className="mt-0 space-y-3">
-                  <SECFilingsTranscripts ticker={currentSymbol} />
+                  <div className="space-y-4">
+                    <CompanyHeader tagline={getTabTagline('sec-filings')} onOpenChat={() => setIsChatOpen(true)} />
+                    <SECFilingsTranscripts ticker={currentSymbol} />
+                  </div>
                 </TabsContent>
                 <TabsContent value="idea-generation" className="mt-0 space-y-3">
                   <IdeaGeneration />

@@ -11,7 +11,10 @@ import { formatCurrency, formatPercentage } from "@/lib/formatters";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useSearchStore } from "@/lib/store/search-store";
+import { useCompanyProfile, useFinancialRatios, useKeyMetrics } from "@/lib/api/financial";
+import { useStockQuote } from "@/lib/api/stock";
 import useSWR from "swr";
+import { KeyMetricsPanel } from "@/components/ui/key-metrics-panel";
 import { Input } from "@/components/ui/input";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -264,7 +267,11 @@ const optimizeDescription = (description: string): string => {
 
 export function CompetitorAnalysis() {
   console.log("🔍 CompetitorAnalysis component rendering");
-  const currentSymbol = useSearchStore((state) => state.currentSymbol);
+const currentSymbol = useSearchStore((state) => state.currentSymbol);
+const { profile, isLoading: profileLoading } = useCompanyProfile(currentSymbol || '');
+const { quote, loading: quoteLoading } = useStockQuote(currentSymbol || '');
+const { ratios, isLoading: ratiosLoading } = useFinancialRatios(currentSymbol || '');
+const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(currentSymbol || '');
   const [selectedPeers, setSelectedPeers] = useState<string[]>([]);
   const [manualTicker, setManualTicker] = useState("");
   const [manualTickers, setManualTickers] = useState<string[]>([]);
@@ -669,15 +676,8 @@ export function CompetitorAnalysis() {
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Competitor Analysis</CardTitle>
-          <CardDescription>Compare your company with industry peers</CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-3">
-        {/* Integrated Peer Selection Controls */}
+    <div className="space-y-4">
+      {/* Integrated Peer Selection Controls */}
         <div className="mb-4 pb-4 border-b">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -1430,7 +1430,6 @@ export function CompetitorAnalysis() {
           />
         </TabsContent>
       </Tabs>
-    </CardContent>
-  </Card>
+    </div>
   );
 }

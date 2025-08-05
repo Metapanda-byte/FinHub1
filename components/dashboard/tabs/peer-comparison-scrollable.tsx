@@ -4,8 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PeerComparisonTable } from "@/components/ui/scrollable-table";
 import { formatLargeNumber, formatPercentage } from "@/lib/utils/formatters";
 import { useSearchStore } from "@/lib/store/search-store";
+import { useCompanyProfile, useFinancialRatios, useKeyMetrics } from "@/lib/api/financial";
+import { useStockQuote } from "@/lib/api/stock";
 // import { usePeerComparison } from "@/lib/api/financial"; // TODO: Implement peer comparison hook
 import { Loader2 } from "lucide-react";
+import { KeyMetricsPanel } from "@/components/ui/key-metrics-panel";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -13,6 +16,10 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 export function PeerComparisonScrollable() {
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const { profile, isLoading: profileLoading } = useCompanyProfile(currentSymbol || '');
+  const { quote, loading: quoteLoading } = useStockQuote(currentSymbol || '');
+  const { ratios, isLoading: ratiosLoading } = useFinancialRatios(currentSymbol || '');
+  const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(currentSymbol || '');
   
   // Mock data for demonstration - replace with actual API hook
   const isLoading = false; // Replace with actual loading state
@@ -148,6 +155,48 @@ export function PeerComparisonScrollable() {
 
   return (
     <div className="space-y-6 mobile-borderless">
+      {/* Header with Company Info and Key Metrics */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {/* Company Logo */}
+          <div className="w-10 h-10 bg-muted/50 rounded-lg flex items-center justify-center flex-shrink-0">
+            {profile?.image ? (
+              <img
+                src={profile.image}
+                alt={`${profile?.companyName || currentSymbol} logo`}
+                className="w-8 h-8 object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center text-primary font-bold text-sm hidden">
+              {currentSymbol?.charAt(0) || '?'}
+            </div>
+          </div>
+          
+          {/* Company Name and Ticker */}
+          <div>
+            <h1 className="text-2xl font-bold">
+              {profile?.companyName || 'Company'} ({currentSymbol})
+            </h1>
+            <p className="text-muted-foreground">
+              Peer Comparison
+            </p>
+          </div>
+        </div>
+
+        {/* Key Metrics Panel */}
+        <KeyMetricsPanel
+          symbol={currentSymbol}
+          profile={profile}
+          quote={quote}
+          keyMetrics={keyMetrics}
+          ratios={ratios}
+        />
+      </div>
+
       {isMobile && (
         <Alert>
           <Info className="h-4 w-4" />
@@ -158,42 +207,34 @@ export function PeerComparisonScrollable() {
       )}
 
       {/* Valuation Metrics */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Valuation Metrics</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-48">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          ) : (
-            <PeerComparisonTable
-              companies={mockPeers}
-              metrics={valuationMetrics}
-            />
-          )}
-        </CardContent>
-      </Card>
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold">Valuation Metrics</h2>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-48">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+        ) : (
+          <PeerComparisonTable
+            companies={mockPeers}
+            metrics={valuationMetrics}
+          />
+        )}
+      </div>
 
       {/* Performance Metrics */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Performance Metrics</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-48">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          ) : (
-            <PeerComparisonTable
-              companies={mockPeers}
-              metrics={performanceMetrics}
-            />
-          )}
-        </CardContent>
-      </Card>
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold">Performance Metrics</h2>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-48">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+        ) : (
+          <PeerComparisonTable
+            companies={mockPeers}
+            metrics={performanceMetrics}
+          />
+        )}
+      </div>
     </div>
   );
 } 

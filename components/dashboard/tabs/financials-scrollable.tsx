@@ -6,16 +6,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FinancialStatementTableClean } from "@/components/ui/scrollable-table-clean";
 import { formatFinancialNumber } from "@/lib/utils/formatters";
-import { useIncomeStatements, useBalanceSheets, useCashFlows } from "@/lib/api/financial";
+import { useIncomeStatements, useBalanceSheets, useCashFlows, useCompanyProfile, useFinancialRatios, useKeyMetrics } from "@/lib/api/financial";
 import { useSearchStore } from "@/lib/store/search-store";
 import { Loader2, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
+
 export function FinancialsScrollable() {
   const [period, setPeriod] = useState<"annual" | "quarter">("annual");
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const { profile, isLoading: profileLoading } = useCompanyProfile(currentSymbol || '');
+  const { ratios, isLoading: ratiosLoading } = useFinancialRatios(currentSymbol || '');
+  const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(currentSymbol || '');
   
   const { statements: incomeStatements, isLoading: incomeLoading } = useIncomeStatements(
     currentSymbol || '',
@@ -128,63 +132,51 @@ export function FinancialsScrollable() {
         </TabsList>
 
         <TabsContent value="income" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Income Statement</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {incomeLoading ? (
-                <div className="flex items-center justify-center h-48">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : (
-                <FinancialStatementTableClean
-                  {...prepareTableData(incomeStatements || [])}
-                  metrics={incomeMetrics}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold">Income Statement</h2>
+            {incomeLoading ? (
+              <div className="flex items-center justify-center h-48">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <FinancialStatementTableClean
+                {...prepareTableData(incomeStatements || [])}
+                metrics={incomeMetrics}
+              />
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="balance" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Balance Sheet</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {balanceLoading ? (
-                <div className="flex items-center justify-center h-48">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : (
-                <FinancialStatementTableClean
-                  {...prepareTableData(balanceSheets || [])}
-                  metrics={balanceMetrics}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold">Balance Sheet</h2>
+            {balanceLoading ? (
+              <div className="flex items-center justify-center h-48">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <FinancialStatementTableClean
+                {...prepareTableData(balanceSheets || [])}
+                metrics={balanceMetrics}
+              />
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="cash" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cash Flow Statement</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {cashLoading ? (
-                <div className="flex items-center justify-center h-48">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : (
-                <FinancialStatementTableClean
-                  {...prepareTableData(cashFlows || [])}
-                  metrics={cashFlowMetrics}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold">Cash Flow Statement</h2>
+            {cashLoading ? (
+              <div className="flex items-center justify-center h-48">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <FinancialStatementTableClean
+                {...prepareTableData(cashFlows || [])}
+                metrics={cashFlowMetrics}
+              />
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </div>

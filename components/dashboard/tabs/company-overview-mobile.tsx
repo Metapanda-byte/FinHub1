@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, TouchEvent } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,62 +42,10 @@ function MetricCard({ label, value, change, loading }: MetricCardProps) {
   );
 }
 
-// Custom swipeable carousel component
-function SwipeableCarousel({ 
-  children, 
-  activeIndex, 
-  onIndexChange 
-}: { 
-  children: React.ReactNode[]; 
-  activeIndex: number; 
-  onIndexChange: (index: number) => void;
-}) {
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
 
-  const handleTouchStart = (e: TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-
-    if (isLeftSwipe && activeIndex < children.length - 1) {
-      onIndexChange(activeIndex + 1);
-    }
-    if (isRightSwipe && activeIndex > 0) {
-      onIndexChange(activeIndex - 1);
-    }
-  };
-
-  return (
-    <div 
-      className="overflow-hidden"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      <div 
-        className="flex transition-transform duration-300"
-        style={{ transform: `translateX(-${activeIndex * 100}%)` }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
 
 export function CompanyOverviewMobile() {
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const [activeMetricIndex, setActiveMetricIndex] = useState(0);
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
   const { hasStock, addStock, removeStock } = useWatchlistStore();
   const { profile, isLoading: profileLoading } = useCompanyProfile(currentSymbol || '');
@@ -170,19 +118,46 @@ export function CompanyOverviewMobile() {
   }
 
   return (
-    <div className="space-y-3 px-0 mobile-borderless">
-      {/* Compact Header */}
+    <div className="space-y-3 px-0 mobile-borderless overflow-hidden touch-pan-y">
+      {/* Compact Header with Logo */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold">{profile?.symbol}</h2>
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-            {profile?.exchangeShortName}
-          </Badge>
+        <div className="flex items-center gap-3">
+          {/* Company Info */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold truncate">{profile?.symbol}</h2>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 flex-shrink-0">
+                {profile?.exchangeShortName}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground truncate">
+              {profile?.companyName || ''}
+            </p>
+          </div>
+          
+          {/* Company Logo - Now on the right */}
+          <div className="w-10 h-10 bg-muted/50 rounded-lg flex items-center justify-center flex-shrink-0">
+            {profile?.image ? (
+              <img 
+                src={profile.image} 
+                alt={`${profile?.companyName || profile?.symbol} logo`}
+                className="w-8 h-8 object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center text-primary font-bold text-sm hidden">
+              {profile?.symbol?.charAt(0) || '?'}
+            </div>
+          </div>
         </div>
+        
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-8 w-8 flex-shrink-0"
           onClick={toggleWatchlist}
         >
           {isInWatchlist ? 
@@ -194,7 +169,7 @@ export function CompanyOverviewMobile() {
 
       {/* Stock Price & Chart */}
       <div className="mobile-section">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3">
           <div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold">${quote?.price?.toFixed(2) || '0.00'}</span>
@@ -206,7 +181,6 @@ export function CompanyOverviewMobile() {
                 {quote?.change?.toFixed(2)} ({quote?.changesPercentage?.toFixed(2)}%)
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">{profile?.companyName}</p>
           </div>
           <div className="text-right">
             <p className="text-[10px] text-muted-foreground">52W Range</p>
@@ -216,8 +190,8 @@ export function CompanyOverviewMobile() {
           </div>
         </div>
         
-        {/* Compact Chart */}
-        <div className="h-[120px]">
+        {/* Compact Chart - Fixed Height */}
+        <div className="h-[100px] overflow-hidden">
           <StockChart symbol={currentSymbol} timeframe="YTD" />
         </div>
       </div>
@@ -254,33 +228,17 @@ export function CompanyOverviewMobile() {
         </div>
       </div>
 
-      {/* Key Metrics Carousel */}
+      {/* Key Metrics - Fixed Layout */}
       <div className="mobile-section">
-        <h3 className="text-sm font-semibold mb-2">Key Metrics</h3>
-        <SwipeableCarousel 
-          activeIndex={activeMetricIndex} 
-          onIndexChange={setActiveMetricIndex}
-        >
-          {keyMetrics.map((group, idx) => (
-            <div key={idx} className="flex gap-2 min-w-full">
-              {group.map((metric, i) => (
-                <MetricCard key={i} {...metric} />
-              ))}
-            </div>
+        <h3 className="text-sm font-semibold mb-3">Key Metrics</h3>
+        <div className="grid grid-cols-3 gap-2">
+          {keyMetrics[0].map((metric, i) => (
+            <MetricCard key={i} {...metric} />
           ))}
-        </SwipeableCarousel>
-        
-        {/* Carousel Dots */}
-        <div className="flex justify-center gap-1 mt-2">
-          {keyMetrics.map((_, idx) => (
-            <button
-              key={idx}
-              className={cn(
-                "h-1.5 w-1.5 rounded-full transition-colors",
-                activeMetricIndex === idx ? "bg-primary" : "bg-muted-foreground/30"
-              )}
-              onClick={() => setActiveMetricIndex(idx)}
-            />
+        </div>
+        <div className="grid grid-cols-3 gap-2 mt-2">
+          {keyMetrics[1].map((metric, i) => (
+            <MetricCard key={i} {...metric} />
           ))}
         </div>
       </div>
@@ -309,7 +267,7 @@ export function CompanyOverviewMobile() {
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground">Location</p>
-              <p className="font-medium">{profile?.city}, {profile?.state}</p>
+              <p className="font-medium">{profile?.city || 'N/A'}, {profile?.state || 'N/A'}</p>
             </div>
           </div>
         </TabsContent>

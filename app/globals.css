@@ -730,6 +730,11 @@
     display: none;
   }
   
+  .touch-pan-y {
+    touch-action: pan-y;
+    overflow-x: hidden;
+  }
+  
   /* Enhanced Table Scrolling */
   .table-scroll-container {
     @apply overflow-x-auto;
