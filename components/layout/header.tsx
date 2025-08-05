@@ -157,40 +157,12 @@ export default function Header() {
 
           {/* Center: Ticker Search - Desktop Only */}
           <div className="hidden sm:flex flex-1 justify-center max-w-lg mx-8">
-            <div className="w-full max-w-md flex items-center gap-2">
+            <div className="w-full max-w-md">
               <StockSearch 
-                className="border-0 bg-muted/30 hover:bg-muted/40 focus-within:bg-muted/50 transition-colors duration-200 shadow-sm flex-1" 
+                className="border-0 bg-muted/30 hover:bg-muted/40 focus-within:bg-muted/50 transition-colors duration-200 shadow-sm w-full" 
                 placeholder="Search Company or Ticker"
                 showSelectedTicker={false}
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 hover:bg-muted/60 transition-colors"
-                onClick={() => {
-                  // Toggle watchlist for current symbol
-                  const currentSymbol = useSearchStore.getState().currentSymbol;
-                  if (currentSymbol) {
-                    const watchlistStore = useWatchlistStore.getState();
-                    if (watchlistStore.hasStock(currentSymbol)) {
-                      watchlistStore.removeStock(currentSymbol);
-                    } else {
-                      watchlistStore.addStock({ 
-                        symbol: currentSymbol, 
-                        name: currentSymbol, 
-                        lastPrice: 0, 
-                        change: 0, 
-                        changePercent: 0, 
-                        marketCap: 0, 
-                        peRatio: 0 
-                      });
-                    }
-                  }
-                }}
-                title="Toggle Watchlist"
-              >
-                <Star className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-              </Button>
             </div>
           </div>
 

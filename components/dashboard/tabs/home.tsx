@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Search, TrendingUp, TrendingDown, ChevronRight, BarChart3, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -76,28 +75,7 @@ function StockCard({ symbol, name, price, change, changePercent, onClick }: any)
   );
 }
 
-function SearchBar({ onSearch }: { onSearch: (symbol: string) => void }) {
-  const [query, setQuery] = useState("");
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      onSearch(query.trim().toUpperCase());
-    }
-  };
-  
-  return (
-    <form onSubmit={handleSubmit} className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-      <Input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search stocks (e.g., AAPL, MSFT)"
-        className="pl-10 pr-4 h-12 text-base"
-      />
-    </form>
-  );
-}
+
 
 export function Home() {
   const router = useRouter();
@@ -128,10 +106,7 @@ export function Home() {
     // Stay on the same page but update the symbol
   };
   
-  const handleSearch = (symbol: string) => {
-    setCurrentSymbol(symbol);
-    // Stay on the same page but update the symbol
-  };
+
   
   const marketStatusConfig = {
     "pre-market": { label: "Pre-Market", color: "bg-yellow-500" },
@@ -162,8 +137,7 @@ export function Home() {
             <p className="text-muted-foreground">Professional equity research at your fingertips</p>
           </div>
           
-          {/* Search Bar */}
-          <SearchBar onSearch={handleSearch} />
+
         </div>
       </div>
       

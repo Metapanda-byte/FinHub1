@@ -47,6 +47,7 @@ import { SwipeableView } from "@/components/ui/swipeable-view";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { StockSearch } from "@/components/search/stock-search";
 import { CompanyHeader } from "@/components/dashboard/company-header";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 const tabConfig = [
   { 
@@ -121,6 +122,7 @@ export function Dashboard() {
     context: '',
     symbol: ''
   });
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   const searchParams = useSearchParams();
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
@@ -180,13 +182,19 @@ export function Dashboard() {
     const handleSwitchTab = (event: CustomEvent) => {
       setActiveTab(event.detail.tab);
     };
+    
+    const handleMobileOpenCopilot = () => {
+      setIsChatOpen(true);
+    };
 
     window.addEventListener('mobileTabChange', handleTabChange as EventListener);
     window.addEventListener('switch-tab', handleSwitchTab as EventListener);
+    window.addEventListener('mobile-open-copilot', handleMobileOpenCopilot);
 
     return () => {
       window.removeEventListener('mobileTabChange', handleTabChange as EventListener);
       window.removeEventListener('switch-tab', handleSwitchTab as EventListener);
+      window.removeEventListener('mobile-open-copilot', handleMobileOpenCopilot);
     };
   }, []);
 
@@ -299,36 +307,38 @@ export function Dashboard() {
   return (
     <>
       <div data-dashboard className="flex flex-col h-screen overflow-hidden">
-        {/* Dashboard-Specific Sticky Header Only */}
-        <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border shrink-0">
-          {/* Tab Navigation Section */}
-          <div className="px-mobile py-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <div className="w-full">
-                <TabsList className="flex h-auto w-full bg-transparent gap-1 p-0">
-                  {tabConfig.map((tab) => (
-                    <TabsTrigger
-                      key={tab.id}
-                      value={tab.id}
-                      className="flex-1 px-2 py-2 data-[state=active]:bg-muted/50 data-[state=active]:text-foreground transition-all duration-300 hover:bg-muted/30 rounded-lg border-0 shadow-none"
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        <tab.icon className="h-3.5 w-3.5 flex-shrink-0" />
-                        <span className="text-xs font-medium whitespace-nowrap tracking-wide hidden sm:inline">
-                          {tab.label}
-                        </span>
-                      </div>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </div>
-            </Tabs>
+        {/* Dashboard-Specific Sticky Header Only - Hidden on mobile */}
+        {!isMobile && (
+          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border shrink-0">
+            {/* Tab Navigation Section */}
+            <div className="px-mobile py-2">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <div className="w-full">
+                  <TabsList className="flex h-auto w-full bg-transparent gap-1 p-0">
+                    {tabConfig.map((tab) => (
+                      <TabsTrigger
+                        key={tab.id}
+                        value={tab.id}
+                        className="flex-1 px-2 py-2 data-[state=active]:bg-muted/50 data-[state=active]:text-foreground transition-all duration-300 hover:bg-muted/30 rounded-lg border-0 shadow-none"
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          <tab.icon className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="text-xs font-medium whitespace-nowrap tracking-wide hidden sm:inline">
+                            {tab.label}
+                          </span>
+                        </div>
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </div>
+              </Tabs>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Main Content Area with Vertical Scrolling */}
         <div className="flex-1 overflow-y-auto mobile-scroll">
-          <div className="px-mobile pt-8 pb-20 sm:pb-4">
+          <div className={cn("px-mobile pb-20 sm:pb-4", isMobile ? "pt-4" : "pt-8")}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               {/* Tab Content with Vertical Scrolling */}
               <div className="animate-fade-in">

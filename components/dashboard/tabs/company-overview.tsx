@@ -788,17 +788,17 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
             </div>
 
           </div>
-          <div className="grid gap-3">
+          <div className="grid gap-1">
             {/* Share Price Performance and Capital Structure */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
               {pricesLoading ? (
                 <ChartLoadingSkeleton />
               ) : (
                 <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Share Price Performance</CardTitle>
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-xs font-medium">Share Price Performance</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-0 px-3">
                     <StockChart symbol={currentSymbol} timeframe={timeframe} />
                   </CardContent>
                 </Card>
@@ -807,10 +807,10 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
                 <CardLoadingSkeleton />
               ) : (
                 <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Capital Structure</CardTitle>
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-xs font-medium">Capital Structure</CardTitle>
                   </CardHeader>
-                <CardContent className="p-0">
+                <CardContent className="p-0 px-3">
                   <div className="space-y-0">
                     <div className="flex justify-between items-center py-1.5 px-6 text-sm">
                       <span>Market Cap</span>
@@ -854,22 +854,22 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
             </div>
             
             {/* Historical Financial Charts */}
-            <div className="grid md:grid-cols-2 gap-3" style={{ position: 'relative' }}>
+            <div className="grid md:grid-cols-2 gap-1" style={{ position: 'relative' }}>
               {statementsLoading ? (
                 <ChartLoadingSkeleton />
               ) : (
                 <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical Revenue</CardTitle>
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-xs font-medium">Historical Revenue</CardTitle>
                   </CardHeader>
-                  <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
+                  <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
                     <RevenueChart 
                       data={revenueData}
                       palette={revenueData.map((bar, idx) => idx === revenueData.length - 1 ? '#1e3a8a' : '#60a5fa')}
                       tickFontSize={12}
                     />
                     {ltmRefDate && (
-                      <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
+                      <div style={{ position: 'absolute', left: 0, bottom: 1, fontSize: 9, color: 'var(--muted-foreground)', marginLeft: '0.75rem' }}>
                         <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
                       </div>
                     )}
@@ -880,17 +880,17 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
                 <ChartLoadingSkeleton />
               ) : (
                 <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>Historical EBITDA & Margin</CardTitle>
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-xs font-medium">Historical EBITDA & Margin</CardTitle>
                   </CardHeader>
-                  <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
+                  <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
                     <EbitdaChart 
                       data={ebitdaData}
                       palette={ebitdaData.map((bar, idx) => idx === ebitdaData.length - 1 ? '#1e3a8a' : '#60a5fa')}
                       tickFontSize={12}
                     />
                     {ltmRefDate && (
-                      <div style={{ position: 'absolute', left: 0, bottom: 4, fontSize: 11, color: 'var(--muted-foreground)', marginTop: '0.5rem', marginLeft: '0.75rem' }}>
+                      <div style={{ position: 'absolute', left: 0, bottom: 1, fontSize: 9, color: 'var(--muted-foreground)', marginLeft: '0.75rem' }}>
                         <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
                       </div>
                     )}
@@ -914,22 +914,22 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
               {segmentsLoading ? (
                 <ChartLoadingSkeleton />
               ) : (
                 <Card>
-                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>
+                  <CardHeader className="pb-0 flex flex-row items-center justify-between">
+                    <CardTitle className="text-xs font-medium">
                       {fyLabel} Revenue by Segment
                       {canonicalLTMRevenue && (
-                        <span className="text-sm font-normal text-muted-foreground ml-2">
-                          (Total: ${canonicalLTMRevenue.toFixed(1)}B)
+                        <span className="text-xs text-muted-foreground ml-1">
+                          (${canonicalLTMRevenue.toFixed(1)}B)
                         </span>
                       )}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
+                  <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
                     {(() => {
                       console.log('[DEBUG] About to render segment pie chart:', { 
                         scaledSegmentData, 
@@ -961,17 +961,17 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
                 <ChartLoadingSkeleton />
               ) : (
                 <Card>
-                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                    <CardTitle className="text-xl font-bold" style={{ color: 'var(--finhub-title)' }}>
+                  <CardHeader className="pb-0 flex flex-row items-center justify-between">
+                    <CardTitle className="text-xs font-medium">
                       {fyLabel} Revenue by Geography
                       {canonicalLTMRevenue && (
-                        <span className="text-sm font-normal text-muted-foreground ml-2">
-                          (Total: ${canonicalLTMRevenue.toFixed(1)}B)
+                        <span className="text-xs text-muted-foreground ml-1">
+                          (${canonicalLTMRevenue.toFixed(1)}B)
                         </span>
                       )}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent style={{ position: 'relative', paddingBottom: 28 }}>
+                  <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
                     {(() => {
                       console.log('[DEBUG] About to render geography pie chart:', { 
                         processedGeographyData, 
@@ -997,203 +997,6 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
                   </CardContent>
                 </Card>
               )}
-            </div>
-            
-            {/* New cards section - Key Ratios, Analyst Sentiment, ESG, and Ownership */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
-              {/* Key Financial Ratios Card */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-bold" style={{ color: 'var(--finhub-title)' }}>Key Ratios</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {ratiosLoading ? (
-                    <div className="space-y-2">
-                      <div className="h-4 bg-muted rounded animate-pulse"></div>
-                      <div className="h-4 bg-muted rounded animate-pulse"></div>
-                      <div className="h-4 bg-muted rounded animate-pulse"></div>
-                    </div>
-                  ) : ratios ? (
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>P/E Ratio:</span>
-                        <span className="font-medium tabular-nums">{ratios.peRatio?.toFixed(1) || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>P/B Ratio:</span>
-                        <span className="font-medium tabular-nums">{ratios.priceToBookRatio?.toFixed(1) || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>ROE:</span>
-                        <span className="font-medium tabular-nums">{ratios.returnOnEquity ? `${(ratios.returnOnEquity * 100).toFixed(1)}%` : 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Debt/Equity:</span>
-                        <span className="font-medium tabular-nums">{ratios.debtEquityRatio?.toFixed(2) || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Current Ratio:</span>
-                        <span className="font-medium tabular-nums">{ratios.currentRatio?.toFixed(1) || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Gross Margin:</span>
-                        <span className="font-medium tabular-nums">{ratios.grossProfitMargin ? `${(ratios.grossProfitMargin * 100).toFixed(1)}%` : 'N/A'}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4 text-muted-foreground text-sm">
-                      No ratio data available
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Analyst Sentiment Card */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-bold" style={{ color: 'var(--finhub-title)' }}>Analyst Sentiment</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {ratingsLoading || priceTargetLoading ? (
-                    <div className="space-y-2">
-                      <div className="h-4 bg-muted rounded animate-pulse"></div>
-                      <div className="h-4 bg-muted rounded animate-pulse"></div>
-                      <div className="h-4 bg-muted rounded animate-pulse"></div>
-                    </div>
-                  ) : (ratings || priceTarget) ? (
-                    <div className="space-y-2 text-sm">
-                      {ratings && (
-                        <>
-                          <div className="flex justify-between">
-                            <span>Rating:</span>
-                            <Badge variant="outline" className="text-xs">
-                              {ratings.ratingRecommendation || 'N/A'}
-                            </Badge>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Buy: {ratings.ratingDetailsBuy || 0} | 
-                            Hold: {ratings.ratingDetailsHold || 0} | 
-                            Sell: {ratings.ratingDetailsSell || 0}
-                          </div>
-                        </>
-                      )}
-                      {priceTarget && (
-                        <>
-                          <div className="flex justify-between">
-                            <span>Target High:</span>
-                            <span className="font-medium tabular-nums">${priceTarget.targetHigh?.toFixed(2) || 'N/A'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Target Low:</span>
-                            <span className="font-medium tabular-nums">${priceTarget.targetLow?.toFixed(2) || 'N/A'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Consensus:</span>
-                            <span className="font-medium tabular-nums">${priceTarget.targetConsensus?.toFixed(2) || 'N/A'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Analysts:</span>
-                            <span className="font-medium tabular-nums">{priceTarget.numberOfAnalysts || 'N/A'}</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-4 text-muted-foreground text-sm">
-                      No analyst data available
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* ESG Scores Card */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-bold" style={{ color: 'var(--finhub-title)' }}>ESG Scores</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {esgLoading ? (
-                    <div className="space-y-2">
-                      <div className="h-4 bg-muted rounded animate-pulse"></div>
-                      <div className="h-4 bg-muted rounded animate-pulse"></div>
-                      <div className="h-4 bg-muted rounded animate-pulse"></div>
-                    </div>
-                  ) : esgScore ? (
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Overall ESG:</span>
-                        <span className="font-medium tabular-nums">{esgScore.ESGScore?.toFixed(1) || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Environmental:</span>
-                        <span className="font-medium tabular-nums">{esgScore.environmentalScore?.toFixed(1) || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Social:</span>
-                        <span className="font-medium tabular-nums">{esgScore.socialScore?.toFixed(1) || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Governance:</span>
-                        <span className="font-medium tabular-nums">{esgScore.governanceScore?.toFixed(1) || 'N/A'}</span>
-                      </div>
-                      {esgScore.date && (
-                        <div className="text-xs text-muted-foreground mt-2 pt-2 border-t">
-                          As of: {format(new Date(esgScore.date), 'MMM yyyy')}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-4 text-muted-foreground text-sm">
-                      No ESG data available
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Ownership Structure Card */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-bold" style={{ color: 'var(--finhub-title)' }}>Ownership</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {ownershipLoading ? (
-                    <div className="space-y-2">
-                      <div className="h-4 bg-muted rounded animate-pulse"></div>
-                      <div className="h-4 bg-muted rounded animate-pulse"></div>
-                      <div className="h-4 bg-muted rounded animate-pulse"></div>
-                    </div>
-                  ) : ownership ? (
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Institutional:</span>
-                        <span className="font-medium tabular-nums">{ownership.percentageOfSharesOutstanding?.toFixed(1)}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Holders:</span>
-                        <span className="font-medium tabular-nums">{ownership.investorsHolding?.toLocaleString() || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Shares Held:</span>
-                        <span className="font-medium tabular-nums">{ownership.sharesHeld ? formatLargeNumber(ownership.sharesHeld) : 'N/A'}</span>
-                      </div>
-                      {ownership.holders && ownership.holders.length > 0 && (
-                        <div className="mt-3 pt-2 border-t">
-                          <div className="text-xs font-medium mb-1">Top Holders:</div>
-                          {ownership.holders.slice(0, 3).map((holder, idx) => (
-                            <div key={idx} className="text-xs text-muted-foreground truncate">
-                              {holder.holder}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-4 text-muted-foreground text-sm">
-                      No ownership data available
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>
