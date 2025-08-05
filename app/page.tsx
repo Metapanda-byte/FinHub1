@@ -1,14 +1,53 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Check, BarChartBig } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Check, BarChartBig, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { DemoButton } from "@/components/ui/video-modal";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [showError, setShowError] = useState(false);
+  
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error === "auth_callback_error") {
+      setShowError(true);
+      // Remove error from URL
+      const newUrl = window.location.pathname;
+      router.push(newUrl);
+    }
+  }, [searchParams, router]);
+
   return (
     <div>
+      {/* Auth Error Alert */}
+      {showError && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Alert variant="destructive" className="pr-12">
+            <AlertDescription>
+              There was an error signing in. Please try again.
+            </AlertDescription>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 h-6 w-6"
+              onClick={() => setShowError(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </Alert>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="py-20 bg-gradient-to-b from-background to-muted/30">
         <div className="container">

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { FinHubIQLogo } from "@/components/ui/finhubiq-logo";
 import { StockSearch } from "@/components/search/stock-search";
+import { AuthButton } from "@/components/auth/auth-button";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -167,13 +168,10 @@ export default function Header() {
           <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
             <ThemeToggle />
             
-            {/* Log In Button - No outline */}
-            <Button 
-              variant="ghost" 
-              className="hidden sm:flex items-center justify-center h-7 px-2 text-xs hover:bg-muted/50"
-            >
-              Log In
-            </Button>
+            {/* Auth Button - Desktop */}
+            <div className="hidden sm:block">
+              <AuthButton />
+            </div>
 
             {/* Upgrade Button - McLaren Orange */}
             <Button 
@@ -311,12 +309,7 @@ export default function Header() {
 
               {/* Auth Section */}
               <div className="space-y-2 pt-4 border-t">
-                <Button 
-                  variant="outline" 
-                  className="w-full touch-target"
-                >
-                  Log In
-                </Button>
+                <AuthButton />
                 
                 <Button 
                   className="w-full touch-target bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white"
