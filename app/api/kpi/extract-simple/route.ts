@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     
     for (const pattern of KPI_PATTERNS) {
       for (const regex of pattern.patterns) {
-        const matches = text.matchAll(new RegExp(regex.source, regex.flags + 'g'));
+        const matches = Array.from(text.matchAll(new RegExp(regex.source, regex.flags + 'g')));
         
         for (const match of matches) {
           if (match[1]) {

@@ -293,7 +293,7 @@ export class KPIExtractionService {
     // Try each pattern
     for (const pattern of KPI_PATTERNS) {
       for (const regex of pattern.patterns) {
-        const matches = text.matchAll(new RegExp(regex.source, regex.flags + 'g'));
+        const matches = Array.from(text.matchAll(new RegExp(regex.source, regex.flags + 'g')));
         
         for (const match of matches) {
           const kpi = this.parseKPIMatch(match, pattern, document, symbol);

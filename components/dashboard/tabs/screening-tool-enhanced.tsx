@@ -365,11 +365,11 @@ export function ScreeningToolEnhanced() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Caps</SelectItem>
-                    <SelectItem value="mega-cap">Mega Cap (>$200B)</SelectItem>
+                    <SelectItem value="mega-cap">Mega Cap (&gt;$200B)</SelectItem>
                     <SelectItem value="large-cap">Large Cap ($10B-$200B)</SelectItem>
                     <SelectItem value="mid-cap">Mid Cap ($2B-$10B)</SelectItem>
                     <SelectItem value="small-cap">Small Cap ($300M-$2B)</SelectItem>
-                    <SelectItem value="micro-cap">Micro Cap (<$300M)</SelectItem>
+                    <SelectItem value="micro-cap">Micro Cap (&lt;$300M)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

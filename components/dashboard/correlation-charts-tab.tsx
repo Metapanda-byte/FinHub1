@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Lightbulb, TrendingUp, BarChart3, Scatter as ScatterIcon, Target } from "lucide-react";
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, Bubble } from 'recharts';
+import { Lightbulb, TrendingUp, BarChart3, Target } from "lucide-react";
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { formatCurrency, formatPercentage } from "@/lib/formatters";
 
 interface ValuationData {
@@ -413,7 +413,7 @@ export function CorrelationChartsTab({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ScatterIcon className="h-5 w-5" />
+                <BarChart3 className="h-5 w-5" />
                 Custom Correlation Analysis
               </CardTitle>
               <CardDescription>
