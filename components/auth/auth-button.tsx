@@ -36,14 +36,7 @@ export function AuthButton() {
     setShowAuthModal(true);
   };
 
-  if (authLoading) {
-    return (
-      <Button variant="ghost" size="sm" disabled className="h-7 px-2 text-xs">
-        <Loader2 className="h-4 w-4 animate-spin" />
-      </Button>
-    );
-  }
-
+  // Show user avatar if authenticated, otherwise show Log In button
   if (user) {
     const initials = user.user_metadata?.full_name
       ?.split(' ')
@@ -97,6 +90,7 @@ export function AuthButton() {
     );
   }
 
+  // Show Log In button immediately, even while auth is loading
   return (
     <>
       <Button
@@ -104,8 +98,13 @@ export function AuthButton() {
         size="sm"
         onClick={handleOpenModal}
         className="h-7 px-2 text-xs hover:bg-muted/50"
+        disabled={authLoading}
       >
-        Log In
+        {authLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          "Log In"
+        )}
       </Button>
       <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
     </>

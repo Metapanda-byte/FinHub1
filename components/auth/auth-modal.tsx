@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Mail, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GoogleIcon } from "@/components/ui/google-icon";
+import { FinHubIQLogo } from "@/components/ui/finhubiq-logo";
 
 interface AuthModalProps {
   open: boolean;
@@ -22,7 +23,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const { signIn, signUp, signInWithProvider } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"sign-in" | "sign-up">("sign-in");
+  const [activeTab, setActiveTab] = useState<"log-in" | "sign-up">("log-in");
 
   // Form states
   const [email, setEmail] = useState("");
@@ -47,7 +48,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       return "Invalid email or password. Please check your credentials and try again.";
     }
     if (errorMessage.includes("User already registered")) {
-      return "An account with this email already exists. Please sign in instead.";
+      return "An account with this email already exists. Please log in instead.";
     }
     if (errorMessage.includes("Password should be at least")) {
       return "Password must be at least 6 characters long.";
@@ -112,11 +113,14 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     }}>
       <DialogContent className="sm:max-w-[425px] p-0 gap-0 overflow-hidden">
         <DialogHeader className="p-6 pb-2">
-          <DialogTitle className="text-2xl font-semibold text-center">
-            Welcome to FinHub
-          </DialogTitle>
+          <div className="flex flex-col items-center space-y-4">
+            <FinHubIQLogo variant="primary" size="medium" />
+            <DialogTitle className="text-2xl font-semibold text-center">
+              FinHubIQ
+            </DialogTitle>
+          </div>
           <DialogDescription className="text-center text-muted-foreground">
-            Sign in to access professional financial analysis tools
+            Log in to access workstation
           </DialogDescription>
         </DialogHeader>
 
@@ -154,18 +158,18 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
           )}
 
           {/* Email/Password Tabs */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "sign-in" | "sign-up")}>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "log-in" | "sign-up")}>
             <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="sign-in">Sign In</TabsTrigger>
+              <TabsTrigger value="log-in">Log In</TabsTrigger>
               <TabsTrigger value="sign-up">Sign Up</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="sign-in" className="space-y-4 mt-0">
+            <TabsContent value="log-in" className="space-y-4 mt-0">
               <form onSubmit={handleEmailSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="sign-in-email">Email</Label>
+                  <Label htmlFor="log-in-email">Email</Label>
                   <Input
-                    id="sign-in-email"
+                    id="log-in-email"
                     type="email"
                     placeholder="name@company.com"
                     value={email}
@@ -176,9 +180,9 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sign-in-password">Password</Label>
+                  <Label htmlFor="log-in-password">Password</Label>
                   <Input
-                    id="sign-in-password"
+                    id="log-in-password"
                     type="password"
                     placeholder="••••••••"
                     value={password}
@@ -192,12 +196,12 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
+                      Logging in...
                     </>
                   ) : (
                     <>
                       <Mail className="mr-2 h-4 w-4" />
-                      Sign in with Email
+                      Log in with Email
                     </>
                   )}
                 </Button>
