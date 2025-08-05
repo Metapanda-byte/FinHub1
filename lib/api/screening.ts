@@ -314,7 +314,7 @@ async function fetcher(url: string): Promise<any> {
 // Get list of all tradeable stocks
 export function useStockList() {
   const url = API_KEY 
-    ? `${BASE_URL}/stock-screener?marketCapMoreThan=1000000&betaMoreThan=0&volumeMoreThan=10000&isEtf=false&isActivelyTrading=true&limit=5000&apikey=${API_KEY}`
+    ? `${BASE_URL}/stock-screener?isEtf=false&isActivelyTrading=true&limit=10000&apikey=${API_KEY}`
     : null;
 
   return useSWR(url, fetcher, {
@@ -466,6 +466,17 @@ export function transformToScreeningData(
         ? profile.mktCap / profile.price 
         : 0,
     };
+  });
+}
+
+// Hook to get complete stock universe
+export function useStockUniverse() {
+  const url = '/api/stock/universe';
+  
+  return useSWR(url, fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 24 * 60 * 60 * 1000, // 24 hours
+    errorRetryCount: 2,
   });
 }
 

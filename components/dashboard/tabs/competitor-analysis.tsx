@@ -19,6 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import debounce from "lodash/debounce";
 import { useSWRConfig } from "swr";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { PeerPricePerformance } from "./peer-price-performance";
 
 interface PeerCompany {
   id: string;
@@ -31,11 +32,23 @@ interface ValuationData {
   company: string;
   sector: string;
   marketCap: number;
+  netDebt: number;
+  enterpriseValue: number;
+  // LTM metrics
+  ltmEvToEbitda: number;
+  ltmPeRatio: number;
+  ltmPriceToSales: number;
+  // Forward metrics
+  fwdEvToEbitda: number;
+  fwdPeRatio: number;
+  fwdPriceToSales: number;
+  // Other metrics
+  priceToBook: number;
+  dividendYield: number;
+  // Legacy fields for backward compatibility
   evToEbitda: number;
   peRatio: number;
   priceToSales: number;
-  priceToBook: number;
-  dividendYield: number;
 }
 
 interface PerformanceData {
@@ -143,7 +156,7 @@ const calculateAverage = (numbers: number[]): number => {
 
 // Update the market cap formatter to include commas
 const formatMarketCap = (value: number): string => {
-  if (value === 0) {
+  if (value == null || value === 0 || isNaN(value)) {
     return '-';
   }
   const billions = value / 1_000_000_000;
@@ -151,6 +164,21 @@ const formatMarketCap = (value: number): string => {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1 
   })}B`;
+};
+
+const formatFinancialValue = (value: number): string => {
+  if (value == null || isNaN(value)) {
+    return '-';
+  }
+  
+  const absValue = Math.abs(value);
+  const billions = absValue / 1_000_000_000;
+  const formatted = `$${billions.toLocaleString('en-US', { 
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1 
+  })}B`;
+  
+  return value < 0 ? `(${formatted})` : formatted;
 };
 
 // Country code to full name mapping
@@ -245,9 +273,8 @@ export function CompetitorAnalysis() {
   const [searchResults, setSearchResults] = useState<StockSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const { mutate } = useSWRConfig();
-  const [valuationMode, setValuationMode] = useState<'ttm' | 'forward'>('ttm');
-  const [forwardEstimates, setForwardEstimates] = useState<Record<string, any>>({});
-  const [loadingForward, setLoadingForward] = useState(false);
+
+
 
   // Cache the API URL
   const apiUrl = useMemo(() => {
@@ -350,11 +377,19 @@ export function CompetitorAnalysis() {
           company: newTicker,
           sector: 'N/A',
           marketCap: 0,
+          netDebt: 0,
+          enterpriseValue: 0,
+          ltmEvToEbitda: 0,
+          ltmPeRatio: 0,
+          ltmPriceToSales: 0,
+          fwdEvToEbitda: 0,
+          fwdPeRatio: 0,
+          fwdPriceToSales: 0,
+          priceToBook: 0,
+          dividendYield: 0,
           evToEbitda: 0,
           peRatio: 0,
-          priceToSales: 0,
-          priceToBook: 0,
-          dividendYield: 0
+          priceToSales: 0
         }
       ],
       peerPerformanceData: [
@@ -545,52 +580,7 @@ export function CompetitorAnalysis() {
   };
 
   // Fetch forward estimates for all peers when mode is 'forward'
-  useEffect(() => {
-    if (valuationMode !== 'forward' || !data) return;
-    const fetchEstimates = async () => {
-      setLoadingForward(true);
-      const results: Record<string, any> = {};
-      await Promise.all(
-        data.peerValuationData.map(async (peer) => {
-          try {
-            const res = await fetch(`/api/analyst-estimates?symbol=${peer.ticker}`);
-            if (res.ok) {
-              const est = await res.json();
-              // Find next year's estimate (e.g., for 2025 if now is 2024)
-              const nextYear = new Date().getFullYear() + 1;
-              const next = est.estimates?.find((e: any) => e.year === nextYear);
-              if (next) results[peer.ticker] = next;
-            }
-          } catch {}
-        })
-      );
-      setForwardEstimates(results);
-      setLoadingForward(false);
-    };
-    fetchEstimates();
-  }, [valuationMode, data]);
 
-  // Helper to get the correct value for each metric, with formatting
-  const getValuationMetric = (peer: ValuationData, metric: keyof ValuationData) => {
-    if (valuationMode === 'ttm') {
-      if (metric === 'marketCap') return formatMarketCap(peer.marketCap);
-      if (metric === 'dividendYield') return formatPercentage(peer.dividendYield);
-      if (typeof peer[metric] === 'number') return peer[metric].toFixed(1) + (['evToEbitda','peRatio','priceToSales','priceToBook'].includes(metric) ? 'x' : '');
-      return peer[metric];
-    }
-    if (valuationMode === 'forward') {
-      const est = forwardEstimates[peer.ticker];
-      if (!est) return 'N/A';
-      if (metric === 'peRatio' && est.eps) {
-        return peer.marketCap && est.eps ? (peer.marketCap / (est.eps * 1_000_000_000)).toFixed(1) + 'x' : 'N/A';
-      }
-      if (metric === 'marketCap') return formatMarketCap(peer.marketCap);
-      if (metric === 'dividendYield' && est.dividendYield !== undefined) return formatPercentage(est.dividendYield);
-      if (typeof est[metric] === 'number') return est[metric].toFixed(1) + (['evToEbitda','peRatio','priceToSales','priceToBook'].includes(metric) ? 'x' : '');
-      return est[metric] !== undefined ? est[metric] : 'N/A';
-    }
-    return peer[metric];
-  };
 
   // Early return if no symbol is selected
   console.log("🔍 CompetitorAnalysis - currentSymbol:", currentSymbol);
@@ -797,6 +787,12 @@ export function CompetitorAnalysis() {
               >
                 Correlation Charts
               </TabsTrigger>
+              <TabsTrigger 
+                value="price-performance" 
+                className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+              >
+                Price Performance
+              </TabsTrigger>
             </TabsList>
           </div>
         
@@ -946,24 +942,24 @@ export function CompetitorAnalysis() {
                   
                   {/* Subject company row */}
                   {currentSymbol && (
-                    <tr className="border-2 border-blue-600 dark:border-blue-400 bg-green-25 dark:bg-green-900/20">
-                      <td className="py-3 px-3 text-center">
-                        <div className="w-5 h-5 rounded-full bg-green-600 dark:bg-green-400 flex items-center justify-center">
+                    <tr className="bg-slate-50/50 dark:bg-slate-800/30 border-t border-b border-gray-300 dark:border-gray-600">
+                      <td className="py-2 px-2 text-center">
+                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                           <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                           </svg>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-green-25 dark:bg-green-900/20">
+                      <td className="py-2 px-2 text-xs sticky left-0 z-20 bg-slate-50/50 dark:bg-slate-800/30">
                         {currentSymbol}
                       </td>
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                      <td className="py-2 px-2 text-xs">
                         {data?.peerValuationData?.find(c => c.ticker === currentSymbol)?.company || currentSymbol}
                       </td>
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                      <td className="py-2 px-2 text-xs">
                         {getFullCountryName(data?.peerQualitativeData?.find(q => q.ticker === currentSymbol)?.country || "-")}
                       </td>
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                      <td className="py-2 px-2 text-xs">
                         {(() => {
                           const subjectQualitative = data?.peerQualitativeData?.find(q => q.ticker === currentSymbol);
                           return (
@@ -984,10 +980,10 @@ export function CompetitorAnalysis() {
                           );
                         })()}
                       </td>
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                      <td className="py-2 px-2 text-xs">
                         {data?.peerQualitativeData?.find(q => q.ticker === currentSymbol)?.geographicMix || "-"}
                       </td>
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                      <td className="py-2 px-2 text-xs">
                         {data?.peerQualitativeData?.find(q => q.ticker === currentSymbol)?.segmentMix || "-"}
                       </td>
                     </tr>
@@ -1029,38 +1025,43 @@ export function CompetitorAnalysis() {
                 <h3 className="text-lg font-semibold">Valuation Comparables</h3>
                 <p className="text-sm text-muted-foreground">Compare key valuation metrics with industry peers</p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <ToggleGroup type="single" value={valuationMode} onValueChange={v => v && setValuationMode(v as 'ttm' | 'forward')}>
-                  <ToggleGroupItem value="ttm">TTM</ToggleGroupItem>
-                  <ToggleGroupItem value="forward">Forward</ToggleGroupItem>
-                </ToggleGroup>
-              </div>
             </div>
             <div className="overflow-x-auto rounded-lg">
               <table className="w-full border-collapse comps-table">
                 <thead>
-                  <tr className="border-b-2 border-black dark:border-white text-xs">
-                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Ticker</th>
-                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Company</th>
-                    <th className="text-left py-2 px-2 font-bold cursor-pointer hover:bg-muted/50">Sector</th>
-                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[90px]">
+                  <tr className="border-b border-gray-300 dark:border-gray-600 text-xs">
+                    <th rowSpan={2} className="text-left py-2 px-2 font-bold border-b-2 border-black dark:border-white">Ticker</th>
+                    <th rowSpan={2} className="text-left py-2 px-2 font-bold border-b-2 border-black dark:border-white">Company</th>
+                    <th rowSpan={2} className="text-left py-2 px-2 font-bold border-b-2 border-black dark:border-white">Sector</th>
+                    <th rowSpan={2} className="text-right py-2 px-2 font-bold border-b-2 border-black dark:border-white min-w-[90px]">
                       Market Cap
                     </th>
-                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
-                      EV/EBITDA
+                    <th rowSpan={2} className="text-right py-2 px-2 font-bold border-b-2 border-black dark:border-white min-w-[80px]">
+                      Net Debt
                     </th>
-                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
-                      P/E Ratio
+                    <th rowSpan={2} className="text-right py-2 px-2 font-bold border-b-2 border-black dark:border-white min-w-[100px]">
+                      Enterprise Value
                     </th>
-                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
-                      P/S Ratio
+                    <th colSpan={3} className="text-center py-2 px-2 font-bold border-b border-gray-300 dark:border-gray-600">
+                      LTM Metrics
                     </th>
-                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
+                    <th colSpan={3} className="text-center py-2 px-2 font-bold border-b border-gray-300 dark:border-gray-600">
+                      Forward Metrics
+                    </th>
+                    <th rowSpan={2} className="text-right py-2 px-2 font-bold border-b-2 border-black dark:border-white min-w-[80px]">
                       P/B Ratio
                     </th>
-                    <th className="text-right py-2 px-2 font-bold cursor-pointer hover:bg-muted/50 min-w-[80px]">
+                    <th rowSpan={2} className="text-right py-2 px-2 font-bold border-b-2 border-black dark:border-white min-w-[80px]">
                       Div. Yield
                     </th>
+                  </tr>
+                  <tr className="border-b-2 border-black dark:border-white text-xs">
+                    <th className="text-right py-2 px-2 font-medium min-w-[80px]">P/S</th>
+                    <th className="text-right py-2 px-2 font-medium min-w-[80px]">EV/EBITDA</th>
+                    <th className="text-right py-2 px-2 font-medium min-w-[80px]">P/E</th>
+                    <th className="text-right py-2 px-2 font-medium min-w-[80px]">P/S</th>
+                    <th className="text-right py-2 px-2 font-medium min-w-[80px]">EV/EBITDA</th>
+                    <th className="text-right py-2 px-2 font-medium min-w-[80px]">P/E</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1070,12 +1071,20 @@ export function CompetitorAnalysis() {
                       <td className="py-2 px-2 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline align-middle">{company.ticker}</td>
                       <td className="py-2 px-2 align-middle">{company.company}</td>
                       <td className="py-2 px-2 text-muted-foreground align-middle">{company.sector}</td>
-                      <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'marketCap')}</td>
-                      <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'evToEbitda')}</td>
-                      <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'peRatio')}</td>
-                      <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'priceToSales')}</td>
-                      <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'priceToBook')}</td>
-                      <td className="text-right py-2 px-2 tabular-nums align-middle">{getValuationMetric(company, 'dividendYield')}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatMarketCap(company.marketCap)}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatFinancialValue(company.netDebt)}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatFinancialValue(company.enterpriseValue)}</td>
+                      {/* LTM Metrics */}
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{company.ltmPriceToSales ? company.ltmPriceToSales.toFixed(1) + 'x' : '-'}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{company.ltmEvToEbitda ? company.ltmEvToEbitda.toFixed(1) + 'x' : '-'}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{company.ltmPeRatio ? company.ltmPeRatio.toFixed(1) + 'x' : '-'}</td>
+                      {/* Forward Metrics */}
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{company.fwdPriceToSales ? company.fwdPriceToSales.toFixed(1) + 'x' : '-'}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{company.fwdEvToEbitda ? company.fwdEvToEbitda.toFixed(1) + 'x' : '-'}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{company.fwdPeRatio ? company.fwdPeRatio.toFixed(1) + 'x' : '-'}</td>
+                      {/* Other Metrics */}
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{company.priceToBook ? company.priceToBook.toFixed(1) + 'x' : '-'}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.dividendYield)}</td>
                     </tr>
                   ))}
                   
@@ -1093,16 +1102,34 @@ export function CompetitorAnalysis() {
                           {formatMarketCap(calculateMetrics(filteredValuationData).median.marketCap)}
                         </td>
                         <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).median.evToEbitda.toFixed(1)}x
+                          {formatFinancialValue(calculateMetrics(filteredValuationData).median.netDebt)}
                         </td>
                         <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).median.peRatio.toFixed(1)}x
+                          {formatFinancialValue(calculateMetrics(filteredValuationData).median.enterpriseValue)}
+                        </td>
+                        {/* LTM Metrics */}
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {calculateMetrics(filteredValuationData).median.ltmPriceToSales?.toFixed(1) || '-'}x
                         </td>
                         <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).median.priceToSales.toFixed(1)}x
+                          {calculateMetrics(filteredValuationData).median.ltmEvToEbitda?.toFixed(1) || '-'}x
                         </td>
                         <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).median.priceToBook.toFixed(1)}x
+                          {calculateMetrics(filteredValuationData).median.ltmPeRatio?.toFixed(1) || '-'}x
+                        </td>
+                        {/* Forward Metrics */}
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {calculateMetrics(filteredValuationData).median.fwdPriceToSales?.toFixed(1) || '-'}x
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {calculateMetrics(filteredValuationData).median.fwdEvToEbitda?.toFixed(1) || '-'}x
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {calculateMetrics(filteredValuationData).median.fwdPeRatio?.toFixed(1) || '-'}x
+                        </td>
+                        {/* Other Metrics */}
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {calculateMetrics(filteredValuationData).median.priceToBook?.toFixed(1) || '-'}x
                         </td>
                         <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {formatPercentage(calculateMetrics(filteredValuationData).median.dividendYield)}
@@ -1116,16 +1143,34 @@ export function CompetitorAnalysis() {
                           {formatMarketCap(calculateMetrics(filteredValuationData).average.marketCap)}
                         </td>
                         <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).average.evToEbitda.toFixed(1)}x
+                          {formatFinancialValue(calculateMetrics(filteredValuationData).average.netDebt)}
                         </td>
                         <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).average.peRatio.toFixed(1)}x
+                          {formatFinancialValue(calculateMetrics(filteredValuationData).average.enterpriseValue)}
+                        </td>
+                        {/* LTM Metrics */}
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {calculateMetrics(filteredValuationData).average.ltmPriceToSales?.toFixed(1) || '-'}x
                         </td>
                         <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).average.priceToSales.toFixed(1)}x
+                          {calculateMetrics(filteredValuationData).average.ltmEvToEbitda?.toFixed(1) || '-'}x
                         </td>
                         <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).average.priceToBook.toFixed(1)}x
+                          {calculateMetrics(filteredValuationData).average.ltmPeRatio?.toFixed(1) || '-'}x
+                        </td>
+                        {/* Forward Metrics */}
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {calculateMetrics(filteredValuationData).average.fwdPriceToSales?.toFixed(1) || '-'}x
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {calculateMetrics(filteredValuationData).average.fwdEvToEbitda?.toFixed(1) || '-'}x
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {calculateMetrics(filteredValuationData).average.fwdPeRatio?.toFixed(1) || '-'}x
+                        </td>
+                        {/* Other Metrics */}
+                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                          {calculateMetrics(filteredValuationData).average.priceToBook?.toFixed(1) || '-'}x
                         </td>
                         <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
                           {formatPercentage(calculateMetrics(filteredValuationData).average.dividendYield)}
@@ -1138,37 +1183,58 @@ export function CompetitorAnalysis() {
                   <tr className="h-4"/>
                   
                   {/* Subject company row */}
-                  {data?.peerValuationData.find(company => company.ticker === currentSymbol) && (
-                    <tr className="border-2 border-blue-600 dark:border-blue-400 bg-green-25 dark:bg-green-900/20">
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-green-25 dark:bg-green-900/20">
-                        {currentSymbol}
-                      </td>
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
-                        {data.peerValuationData.find(company => company.ticker === currentSymbol)?.company}
-                      </td>
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
-                        {data.peerValuationData.find(company => company.ticker === currentSymbol)?.sector}
-                      </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
-                        {formatMarketCap(data.peerValuationData.find(company => company.ticker === currentSymbol)?.marketCap || 0)}
-                      </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
-                        {data.peerValuationData.find(company => company.ticker === currentSymbol)?.evToEbitda.toFixed(1)}x
-                      </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
-                        {data.peerValuationData.find(company => company.ticker === currentSymbol)?.peRatio.toFixed(1)}x
-                      </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
-                        {data.peerValuationData.find(company => company.ticker === currentSymbol)?.priceToSales.toFixed(1)}x
-                      </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
-                        {data.peerValuationData.find(company => company.ticker === currentSymbol)?.priceToBook.toFixed(1)}x
-                      </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
-                        {formatPercentage(data.peerValuationData.find(company => company.ticker === currentSymbol)?.dividendYield || 0)}
-                      </td>
-                    </tr>
-                  )}
+                  {(() => {
+                    const subjectCompany = data?.peerValuationData.find(company => company.ticker === currentSymbol);
+                    return subjectCompany ? (
+                      <tr className="bg-slate-50/50 dark:bg-slate-800/30 border-t border-b border-gray-300 dark:border-gray-600">
+                        <td className="py-2 px-2 text-xs sticky left-0 z-20 bg-slate-50/50 dark:bg-slate-800/30">
+                          {currentSymbol}
+                        </td>
+                        <td className="py-2 px-2 text-xs">
+                          {subjectCompany.company}
+                        </td>
+                        <td className="py-2 px-2 text-xs">
+                          {subjectCompany.sector}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">
+                          {formatMarketCap(subjectCompany.marketCap)}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">
+                          {formatFinancialValue(subjectCompany.netDebt)}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">
+                          {formatFinancialValue(subjectCompany.enterpriseValue)}
+                        </td>
+                        {/* LTM Metrics */}
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">
+                          {subjectCompany.ltmPriceToSales ? subjectCompany.ltmPriceToSales.toFixed(1) + 'x' : '-'}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">
+                          {subjectCompany.ltmEvToEbitda ? subjectCompany.ltmEvToEbitda.toFixed(1) + 'x' : '-'}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">
+                          {subjectCompany.ltmPeRatio ? subjectCompany.ltmPeRatio.toFixed(1) + 'x' : '-'}
+                        </td>
+                        {/* Forward Metrics */}
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">
+                          {subjectCompany.fwdPriceToSales ? subjectCompany.fwdPriceToSales.toFixed(1) + 'x' : '-'}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">
+                          {subjectCompany.fwdEvToEbitda ? subjectCompany.fwdEvToEbitda.toFixed(1) + 'x' : '-'}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">
+                          {subjectCompany.fwdPeRatio ? subjectCompany.fwdPeRatio.toFixed(1) + 'x' : '-'}
+                        </td>
+                        {/* Other Metrics */}
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">
+                          {subjectCompany.priceToBook ? subjectCompany.priceToBook.toFixed(1) + 'x' : '-'}
+                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">
+                          {formatPercentage(subjectCompany.dividendYield)}
+                        </td>
+                      </tr>
+                    ) : null;
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -1293,37 +1359,37 @@ export function CompetitorAnalysis() {
                   
                   {/* Subject company row */}
                   {data?.peerPerformanceData.find(company => company.ticker === currentSymbol) && (
-                    <tr className="border-2 border-blue-600 dark:border-blue-400 bg-green-25 dark:bg-green-900/20">
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-green-25 dark:bg-green-900/20">
+                    <tr className="bg-slate-50/50 dark:bg-slate-800/30 border-t border-b border-gray-300 dark:border-gray-600">
+                      <td className="py-2 px-2 text-xs sticky left-0 z-20 bg-slate-50/50 dark:bg-slate-800/30">
                         {currentSymbol}
                       </td>
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                      <td className="py-2 px-2 text-xs">
                         {data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.company}
                       </td>
-                      <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 bg-green-25 dark:bg-green-900/20">
+                      <td className="py-2 px-2 text-xs">
                         {data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.sector}
                       </td>
                       <td className={cn(
-                        "text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold",
+                        "text-right py-2 px-2 text-xs tabular-nums",
                         (data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.revenueGrowth || 0) >= 0 
                           ? "text-green-600 dark:text-green-400" 
                           : "text-red-600 dark:text-red-400"
                       )}>
                         {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.revenueGrowth || 0)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums">
                         {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.grossMargin || 0)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums">
                         {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.operatingMargin || 0)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums">
                         {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.netMargin || 0)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums">
                         {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.roic || 0)}
                       </td>
-                      <td className="text-right py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
+                      <td className="text-right py-2 px-2 text-xs tabular-nums">
                         {formatPercentage(data.peerPerformanceData.find(company => company.ticker === currentSymbol)?.roe || 0)}
                       </td>
                     </tr>
@@ -1354,6 +1420,14 @@ export function CompetitorAnalysis() {
               </div>
             </div>
           </div>
+        </TabsContent>
+        
+        <TabsContent value="price-performance" className="mt-3">
+          <PeerPricePerformance 
+            currentSymbol={currentSymbol}
+            selectedPeers={selectedPeers}
+            peerCompanies={data?.peerCompanies || []}
+          />
         </TabsContent>
       </Tabs>
     </CardContent>

@@ -576,6 +576,40 @@ export interface AnalystRating {
   ratingDetailsSell: number;
 }
 
+// Analyst Estimates interface
+export interface AnalystEstimates {
+  symbol: string;
+  date: string;
+  period?: 'annual' | 'quarter';
+  estimatedRevenue: number;
+  estimatedEbitda: number;
+  estimatedEbitdaAvg: number;
+  estimatedEbitdaHigh: number;
+  estimatedEbitdaLow: number;
+  estimatedEps: number;
+  estimatedEpsAvg: number;
+  estimatedEpsHigh: number;
+  estimatedEpsLow: number;
+  estimatedNetIncome: number;
+  estimatedNetIncomeAvg: number;
+  estimatedNetIncomeHigh: number;
+  estimatedNetIncomeLow: number;
+  estimatedSgaExpense: number;
+  estimatedSgaExpenseAvg: number;
+  estimatedSgaExpenseHigh: number;
+  estimatedSgaExpenseLow: number;
+  estimatedEbit: number;
+  estimatedEbitAvg: number;
+  estimatedEbitHigh: number;
+  estimatedEbitLow: number;
+  numberAnalystsEstimatedRevenue: number;
+  numberAnalystsEstimatedEps: number;
+  numberAnalystsEstimatedEbitda: number;
+  numberAnalystsEstimatedEbit: number;
+  numberAnalystsEstimatedNetIncome: number;
+  numberAnalystsEstimatedSgaExpense: number;
+}
+
 // Ownership interfaces
 export interface InstitutionalOwnership {
   symbol: string;
@@ -726,12 +760,24 @@ function processNestedRevenueData(data: RevenueSegment, parentName: string = '',
     const segments: ProcessedSegment[] = [];
     
     Object.entries(obj).forEach(([key, value]) => {
-      const name = key.replace(' Segment', '');
+      // Fix spaced letters in key names (e.g., "U N I T E D  K I N G D O M" -> "UNITED KINGDOM")
+      let fixedKey = key;
+      if (/[A-Z]\s+[A-Z]/.test(key)) {
+        // Remove spaces between single letters
+        fixedKey = key.replace(/(?:\b[A-Z]\s+)+[A-Z]\b/g, (match) => match.replace(/\s+/g, ''));
+        // Also handle if entire string is spaced letters
+        if (/^[A-Z\s]+$/.test(fixedKey) && /[A-Z]\s+[A-Z]/.test(fixedKey)) {
+          fixedKey = fixedKey.replace(/\s+/g, '');
+        }
+        console.log(`[DEBUG processLeafNodes] Fixed spaced key: "${key}" -> "${fixedKey}"`);
+      }
+      
+      const name = fixedKey.replace(' Segment', '');
       const fullName = currentParentName ? `${currentParentName} - ${name}` : name;
       // Use concise label for segments, but preserve fullName for geography
       const displayName = isGeography ? fullName : getConciseSegmentLabel(fullName);
       
-      console.log(`[DEBUG processLeafNodes] Processing key: "${key}", fullName: "${fullName}", displayName: "${displayName}", value:`, value);
+      console.log(`[DEBUG processLeafNodes] Processing key: "${key}", fixedKey: "${fixedKey}", fullName: "${fullName}", displayName: "${displayName}", value:`, value);
 
       if (typeof value === 'number') {
         // Leaf node - actual revenue value
@@ -1164,6 +1210,31 @@ export function useAnalystRatings(symbol: string) {
 
   return {
     ratings,
+    isLoading,
+    error,
+    mutate
+  };
+}
+
+// Hook for analyst estimates
+export function useAnalystEstimates(symbol: string, period: 'annual' | 'quarter' | 'both' = 'both') {
+  const { data, error, isLoading, mutate } = useSWR(
+    symbol ? `/api/analyst-estimates?symbol=${symbol}&period=${period}` : null,
+    async (url: string) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch analyst estimates');
+      return response.json();
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: CACHE_DURATIONS.FINANCIAL_STATEMENTS,
+      shouldRetryOnError: false
+    }
+  );
+
+  return {
+    estimates: data?.estimates || [],
     isLoading,
     error,
     mutate

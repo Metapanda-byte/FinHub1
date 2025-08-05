@@ -7,6 +7,7 @@ import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
 import { useSearchStore } from "@/lib/store/search-store";
+import { AnalystEstimates } from "./analyst-estimates";
 
 const balanceSheetColumns = [
   { header: "Date", accessorKey: "date" },
@@ -69,6 +70,7 @@ export function FinancialStatements() {
             <TabsTrigger value="balance-sheet">Balance Sheet</TabsTrigger>
             <TabsTrigger value="income-statement">Income Statement</TabsTrigger>
             <TabsTrigger value="cash-flow">Cash Flow</TabsTrigger>
+            <TabsTrigger value="analyst-estimates">Analyst Estimates</TabsTrigger>
           </TabsList>
           <TabsContent value="balance-sheet">
             <DataTable data={balanceSheets} columns={balanceSheetColumns} />
@@ -78,6 +80,9 @@ export function FinancialStatements() {
           </TabsContent>
           <TabsContent value="cash-flow">
             <DataTable data={cashFlows} columns={cashFlowColumns} />
+          </TabsContent>
+          <TabsContent value="analyst-estimates">
+            <AnalystEstimates />
           </TabsContent>
         </Tabs>
       </CardContent>

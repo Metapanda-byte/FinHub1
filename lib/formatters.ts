@@ -8,6 +8,7 @@ export const formatCurrency = (value: number): string => {
 };
 
 export const formatLargeCurrency = (value: number): string => {
+  if (value == null || isNaN(value)) return 'N/A';
   if (value >= 1e12) {
     return `$${(value / 1e12).toFixed(1)}T`;
   } else if (value >= 1e9) {
@@ -22,14 +23,17 @@ export const formatLargeCurrency = (value: number): string => {
 };
 
 export const formatMillions = (value: number): string => {
+  if (value == null || isNaN(value)) return 'N/A';
   return `$${(value).toFixed(1)}M`;
 };
 
 export const formatBillions = (value: number): string => {
+  if (value == null || isNaN(value)) return 'N/A';
   return `$${(value).toFixed(1)}B`;
 };
 
 export const formatPercentage = (value: number): string => {
+  if (value == null || isNaN(value)) return 'N/A';
   return `${value.toFixed(1)}%`;
 };
 
@@ -68,6 +72,7 @@ export const formatYearOnly = (dateString: string): string => {
 };
 
 export const formatTooltipValue = (value: number, prefix = '$', suffix = ''): string => {
+  if (value == null || isNaN(value)) return 'N/A';
   return `${prefix}${value.toLocaleString('en-US', {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
@@ -87,6 +92,7 @@ export const calculateGrowthPercentage = (current: number, previous: number): nu
 };
 
 export const formatGrowth = (current: number, previous: number): string => {
+  if (current == null || previous == null || isNaN(current) || isNaN(previous)) return 'N/A';
   const growthPercentage = calculateGrowthPercentage(current, previous);
   return `${growthPercentage >= 0 ? '+' : ''}${growthPercentage.toFixed(1)}%`;
 };

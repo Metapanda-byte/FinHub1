@@ -238,14 +238,46 @@ function useTTMIncomeStatement(symbol: string) {
   return { ttm, isLoading: !error && !data, error };
 }
 
+// Function to fix spaced-out country names (e.g., "U N I T E D K I N G D O M" -> "UNITED KINGDOM")
+function fixSpacedCountryName(name: string): string {
+  if (!name) return name;
+  
+  // First, handle common patterns with spaces between every letter
+  // This will convert "U S A" to "USA", "U K" to "UK", etc.
+  let fixed = name;
+  
+  // More aggressive pattern to catch spaced single letters
+  // This handles cases like "U N I T E D  K I N G D O M" with varying spaces
+  fixed = fixed.replace(/(?:\b[A-Z]\s+)+[A-Z]\b/g, (match) => {
+    // Remove all spaces from the matched sequence
+    return match.replace(/\s+/g, '');
+  });
+  
+  // Also handle cases where the entire string is spaced letters
+  // Check if string only contains single letters and spaces
+  if (/^[A-Z\s]+$/.test(fixed) && /[A-Z]\s+[A-Z]/.test(fixed)) {
+    fixed = fixed.replace(/\s+/g, '');
+  }
+  
+  // Clean up any remaining multiple spaces
+  fixed = fixed.replace(/\s+/g, ' ').trim();
+  
+  console.log(`[DEBUG fixSpacedCountryName] Input: "${name}" -> Output: "${fixed}"`);
+  
+  return fixed;
+}
+
 // Financial-report-style geographic labeling system
 function getGeoLabel(region: string): string {
   if (!region) return '';
   
-  console.log(`[DEBUG getGeoLabel] Processing: "${region}"`);
+  // First, fix any spaced-out country names
+  const fixedRegion = fixSpacedCountryName(region);
+  
+  console.log(`[DEBUG getGeoLabel] Processing: "${region}" -> fixed: "${fixedRegion}"`);
   
   // Clean and normalize input
-  let cleaned = region.toLowerCase().trim();
+  let cleaned = fixedRegion.toLowerCase().trim();
   
   // Remove common business prefixes/suffixes first
   const cleanPatterns = [
@@ -270,15 +302,17 @@ function getGeoLabel(region: string): string {
   // Exact match mappings (most reliable) - ordered by specificity
   const exactMappings: Record<string, string> = {
     // Countries (most specific)
-    'united states of america': 'United States',
-    'united states': 'United States',
-    'usa': 'United States',
-    'u.s.a': 'United States',
-    'u.s.': 'United States',
-    'us': 'United States',
-    'united kingdom': 'United Kingdom',
-    'great britain': 'United Kingdom',
-    'uk': 'United Kingdom',
+    'united states of america': 'US',
+    'united states': 'US',
+    'usa': 'US',
+    'u.s.a': 'US',
+    'u.s.': 'US',
+    'us': 'US',
+    'unitedstates': 'US', // Handle case where spaces were removed
+    'united kingdom': 'UK',
+    'great britain': 'UK',
+    'uk': 'UK',
+    'unitedkingdom': 'UK', // Handle case where spaces were removed
     'peoples republic of china': 'China',
     'prc': 'China',
     'china': 'China',
@@ -291,6 +325,7 @@ function getGeoLabel(region: string): string {
     'brazil': 'Brazil',
     'mexico': 'Mexico',
     'south korea': 'South Korea',
+    'southkorea': 'South Korea', // Handle case where spaces were removed
     'korea': 'South Korea',
     'netherlands': 'Netherlands',
     'switzerland': 'Switzerland',
@@ -302,6 +337,7 @@ function getGeoLabel(region: string): string {
     'singapore': 'Singapore',
     'russia': 'Russia',
     'south africa': 'South Africa',
+    'southafrica': 'South Africa', // Handle case where spaces were removed
     
     // Major Business Regions
     'asia pacific': 'Asia Pacific',
@@ -330,11 +366,18 @@ function getGeoLabel(region: string): string {
     'international': 'International',
     'foreign': 'International',
     'home': 'Domestic',
-    'rest of world': 'Rest of World',
-    'row': 'Rest of World',
+    'rest of world': 'RoW',
+    'restofworld': 'RoW', // Handle case where spaces were removed
+    'row': 'RoW',
     'other': 'Other',
+    'others': 'Other',
     'global': 'Global',
     'worldwide': 'Worldwide',
+    
+    // Add specific mappings for problematic cases
+    'non-us': 'Non-US',
+    'nonus': 'Non-US',
+    'non us': 'Non-US',
   };
   
   // Try exact match first
@@ -654,10 +697,22 @@ export function CompanyOverview() {
   // Process geography labels using the improved geographic labeling function
   // Use fullName when available (contains original unprocessed name), fallback to name
   const processedGeographyData = scaledGeographyData.map((item, index) => {
-    const originalName = item.fullName || item.name;
-    const processedName = getGeoLabel(originalName);
+    // Try multiple sources for the name
+    const originalName = item.fullName || item.name || '';
+    
+    // Also check if the name might be the key itself in some cases
+    // This handles when geographic data comes as object keys
+    let nameToProcess = originalName;
+    
+    // If name looks like it has spaced letters, process it
+    if (/[A-Z]\s+[A-Z]/.test(nameToProcess)) {
+      console.log(`[DEBUG] Detected spaced letters in geographic name: "${nameToProcess}"`);
+    }
+    
+    const processedName = getGeoLabel(nameToProcess);
     console.log(`[DEBUG] Geographic label processing [${index}]: "${originalName}" -> "${processedName}"`);
     console.log(`[DEBUG] Item data:`, item);
+    
     return {
       ...item,
       name: processedName,

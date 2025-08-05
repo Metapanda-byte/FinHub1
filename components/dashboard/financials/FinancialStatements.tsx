@@ -9,6 +9,7 @@ import { useIncomeStatements, useBalanceSheets, useCashFlows, useRevenueSegments
 import { IncomeStatementLine } from "./IncomeStatementLine";
 import { formatFinancialNumber } from "@/lib/utils/formatters";
 import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
+import { AnalystEstimates } from "../tabs/analyst-estimates";
 
 interface FinancialStatementsProps {
   symbol?: string;
@@ -46,14 +47,21 @@ export function FinancialStatements({ symbol: propSymbol }: FinancialStatementsP
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-xl font-bold">Historical Financials</CardTitle>
-        <div className="flex items-center gap-4">
-          {/* ViewModeToggle and PeriodToggle removed as per new_code */}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <Tabs defaultValue="historical" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="historical">Historical Financials</TabsTrigger>
+        <TabsTrigger value="estimates">Analyst Estimates</TabsTrigger>
+      </TabsList>
+      
+      <TabsContent value="historical">
+        <Card>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-xl font-bold">Historical Financials</CardTitle>
+            <div className="flex items-center gap-4">
+              {/* ViewModeToggle and PeriodToggle removed as per new_code */}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
         {/* Income Statement */}
         <section>
           <h3 className="text-lg font-semibold mb-4">Income Statement</h3>
@@ -241,7 +249,13 @@ export function FinancialStatements({ symbol: propSymbol }: FinancialStatementsP
         </section>
 
         {/* Removed detailed view for Revenue Segmentation and Geographic Revenue as per new_code */}
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
+      </TabsContent>
+      
+      <TabsContent value="estimates">
+        <AnalystEstimates symbol={symbol} />
+      </TabsContent>
+    </Tabs>
   );
 }

@@ -1386,3 +1386,163 @@
       }
     }
   }
+
+/* Matte finish for financial tables */
+@layer components {
+  /* Remove glossy hover effects from all financial tables */
+  .financial-table-wrapper tbody tr:hover,
+  .comps-table tbody tr:hover,
+  .watchlist-table tbody tr:hover,
+  .screening-table tbody tr:hover {
+    background-color: transparent !important;
+  }
+
+  /* Subtle row hover for better UX without glossiness */
+  .financial-table-wrapper tbody tr:hover td,
+  .comps-table tbody tr:hover td,
+  .watchlist-table tbody tr:hover td,
+  .screening-table tbody tr:hover td {
+    background-color: hsl(var(--muted) / 0.3) !important;
+  }
+
+  /* Remove hover effects from table headers */
+  .financial-table-wrapper th.cursor-pointer:hover,
+  .comps-table th.cursor-pointer:hover,
+  .watchlist-table th.cursor-pointer:hover,
+  .screening-table th.cursor-pointer:hover,
+  th.hover\:bg-muted\/50:hover {
+    background-color: transparent !important;
+  }
+
+  /* Matte finish for specific financial components */
+  .financial-table-wrapper th,
+  .comps-table th,
+  .watchlist-table th,
+  .screening-table th {
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Remove shadow effects from scroll indicators */
+  .financial-table-wrapper::before,
+  .financial-table-wrapper::after {
+    display: none !important;
+  }
+
+  /* Matte borders - subtle and clean */
+  .financial-table-wrapper tr[data-has-border="true"] td,
+  .financial-table-wrapper tr[data-has-border-top="true"] td {
+    border-bottom: 1px solid hsl(var(--border) / 0.5) !important;
+  }
+
+  /* Remove transitions for a more static, matte feel */
+  .financial-table-wrapper tr,
+  .financial-table-wrapper td,
+  .financial-table-wrapper th,
+  .comps-table tr,
+  .comps-table td,
+  .comps-table th {
+    transition: none !important;
+  }
+
+  /* Matte background for highlighted rows */
+  .financial-table-wrapper tr.bg-blue-50\/50,
+  .financial-table-wrapper tr.bg-slate-50\/50,
+  .dark .financial-table-wrapper tr.bg-blue-950\/20,
+  .dark .financial-table-wrapper tr.bg-slate-800\/30 {
+    background-color: hsl(var(--muted) / 0.2) !important;
+  }
+
+  /* Remove glossy tooltip shadows */
+  .tooltip-content {
+    box-shadow: none !important;
+    border: 1px solid hsl(var(--border) / 0.3);
+  }
+
+  /* Matte finish for cards containing financial tables */
+  .financial-table-card {
+    box-shadow: none !important;
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+  
+  /* Matte finish for tabs */
+  .premium-tabs .premium-tab-trigger {
+    border-bottom: 2px solid transparent;
+    transition: none !important;
+  }
+  
+  .premium-tabs .premium-tab-trigger[data-state="active"] {
+    border-bottom-color: hsl(var(--finhub-orange));
+    background: transparent !important;
+  }
+  
+  /* Matte finish for toggle groups */
+  .toggle-group-item {
+    transition: none !important;
+  }
+  
+  .toggle-group-item[data-state="active"] {
+    background-color: hsl(var(--muted) / 0.5) !important;
+    box-shadow: none !important;
+  }
+  
+  /* Remove any remaining shadows from financial components */
+  .financial-table-wrapper *,
+  .comps-table *,
+  .watchlist-table *,
+  .screening-table * {
+    box-shadow: none !important;
+  }
+  
+  /* Matte finish for all table cells */
+  .financial-table-wrapper td,
+  .financial-table-wrapper th {
+    background-image: none !important;
+    background-color: transparent !important;
+  }
+  
+  /* Ensure clean, matte appearance for alternating rows */
+  .financial-table-wrapper tbody tr:nth-child(even) {
+    background-color: hsl(var(--muted) / 0.1) !important;
+  }
+  
+  /* Highlight LTM column with subtle dotted borders */
+  .financial-table-wrapper th.ltm-column,
+  .financial-table-wrapper td.ltm-column {
+    position: relative;
+  }
+  
+  .financial-table-wrapper th.ltm-column::before,
+  .financial-table-wrapper td.ltm-column::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    border-left: 1px dotted hsl(var(--border) / 0.7);
+  }
+  
+  .financial-table-wrapper th.ltm-column::after,
+  .financial-table-wrapper td.ltm-column::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    border-right: 1px dotted hsl(var(--border) / 0.7);
+  }
+  
+  /* Ensure the LTM column background is visible */
+  .financial-table-wrapper th.ltm-column,
+  .financial-table-wrapper td.ltm-column {
+    background-color: hsl(var(--muted) / 0.15) !important;
+  }
+  
+  /* Dark mode adjustments for LTM column */
+  .dark .financial-table-wrapper th.ltm-column,
+  .dark .financial-table-wrapper td.ltm-column {
+    background-color: hsl(var(--muted) / 0.2) !important;
+  }
+}

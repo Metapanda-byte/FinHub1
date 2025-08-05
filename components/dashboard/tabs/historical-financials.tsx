@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import { TableLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
+import { AnalystEstimates } from "./analyst-estimates";
 
 const expenseMetrics = new Set([
   "Cost of Revenue",
@@ -850,7 +851,7 @@ export function HistoricalFinancials() {
                 : [...years.map(year => (
                     <th key={year} className="text-center py-0.5 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom" style={{ minWidth: '50px' }}>{`FY ${year}`}</th>
                   )), 
-                  <th key="ltm" className="text-center py-0.5 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '50px' }}>LTM</th>]}
+                  <th key="ltm" className="text-center py-0.5 px-1 font-semibold text-xs text-slate-800 dark:text-slate-200 align-bottom bg-blue-50 dark:bg-blue-900/30 ltm-column" style={{ minWidth: '50px' }}>LTM</th>]}
             </tr>
             {(selectedPeriod === 'quarter' || selectedPeriod === 'semi-annual') && (() => {
               const periods = selectedPeriod === 'semi-annual' ? ["H1", "H2"] : ["Q1","Q2","Q3","Q4"];
@@ -900,7 +901,7 @@ export function HistoricalFinancials() {
                     )}
                   </th>
                 ))}
-                <th key="ltm-sub" className="text-center py-0.5 px-1 text-xs font-medium text-slate-700 dark:text-slate-300 align-bottom border-none bg-blue-50 dark:bg-blue-900/30" style={{ minWidth: '50px' }}>
+                <th key="ltm-sub" className="text-center py-0.5 px-1 text-xs font-medium text-slate-700 dark:text-slate-300 align-bottom border-none bg-blue-50 dark:bg-blue-900/30 ltm-column" style={{ minWidth: '50px' }}>
                   <div className="flex flex-col">
                     <span className="text-xs text-muted-foreground italic">{quarterlyMap ? getLTMReferenceDate(quarterlyMap) : 'LTM'}</span>
                   </div>
@@ -992,7 +993,7 @@ export function HistoricalFinancials() {
                         </td>
                       )}),
                       <td key="ltm" className={cn(
-                        "text-right py-0.5 px-1 text-xs tabular-nums font-medium bg-blue-50 dark:bg-blue-900/30 relative z-10",
+                        "text-right py-0.5 px-1 text-xs tabular-nums font-medium bg-blue-50 dark:bg-blue-900/30 relative z-10 ltm-column",
                         row.isImportant ? "font-semibold" : "",
                         row.isMargin ? "text-slate-500 dark:text-slate-400" : "text-slate-900 dark:text-slate-100"
                       )} style={{ minWidth: '50px' }}>
@@ -2207,6 +2208,12 @@ export function HistoricalFinancials() {
                 >
                   Balance Sheet
                 </TabsTrigger>
+                <TabsTrigger 
+                  value="analyst-estimates"
+                  className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+                >
+                  Analyst Estimates
+                </TabsTrigger>
               </TabsList>
               
                             <div className="flex items-center gap-2">
@@ -2267,6 +2274,10 @@ export function HistoricalFinancials() {
               ) : (
                 renderFinancialTable(processBalanceSheets(balanceQuarterlyMap, balanceSheetsAnnual), "Balance Sheet", balancePeriodMap, balanceQuarterlyMap)
               )}
+            </TabsContent>
+            
+            <TabsContent value="analyst-estimates" className="mt-3">
+              <AnalystEstimates symbol={currentSymbol} />
             </TabsContent>
           </Tabs>
         </CardContent>
