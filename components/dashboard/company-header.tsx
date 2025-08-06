@@ -9,6 +9,7 @@ import { useCompanyProfile, useFinancialRatios, useKeyMetrics } from "@/lib/api/
 import { useStockQuote } from "@/lib/api/stock";
 import { KeyMetricsPanel } from "@/components/ui/key-metrics-panel";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useState, useEffect } from "react";
 
 interface CompanyHeaderProps {
   tagline: string;
@@ -19,6 +20,11 @@ export function CompanyHeader({ tagline, onOpenChat }: CompanyHeaderProps) {
   const { currentSymbol } = useSearchStore();
   const { hasStock, addStock, removeStock } = useWatchlistStore();
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const { profile } = useCompanyProfile(currentSymbol || '');
   const { quote } = useStockQuote(currentSymbol || '');
@@ -42,6 +48,11 @@ export function CompanyHeader({ tagline, onOpenChat }: CompanyHeaderProps) {
       });
     }
   };
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="flex items-start justify-between">

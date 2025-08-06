@@ -11,7 +11,7 @@ import { EbitdaChart } from "@/components/dashboard/charts/ebitda-chart";
 import { PieChart } from "@/components/dashboard/charts/pie-chart";
 import { StockChart } from "@/components/dashboard/charts/stock-chart";
 import { ShareholdersTable } from "@/components/dashboard/tables/shareholders-table";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useSearchStore } from "@/lib/store/search-store";
 import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegmentsTTM, useGeographicRevenueTTM, useEmployeeCount, useBalanceSheets, useFinancialRatios, useKeyMetrics, usePriceTarget, useAnalystRatings, useInstitutionalOwnership, useESGScore } from "@/lib/api/financial";
@@ -425,15 +425,21 @@ interface CompanyOverviewProps {
 
 export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   const [timeframe, setTimeframe] = useState<'YTD' | '1Y' | '5Y'>('YTD');
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { hasStock, addStock, removeStock } = useWatchlistStore();
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
   const isMobile = useMediaQuery("(max-width: 768px)");
   
-  // Function to truncate description for mobile
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  // Function to get description with expandable functionality
   const getDescription = (description: string | undefined) => {
     if (!description) return '';
     
-    if (isMobile) {
+    if (isMobile && !isDescriptionExpanded) {
       // For mobile, limit to ~150 characters and add ellipsis
       return description.length > 150 
         ? description.substring(0, 150).trim() + '...'
@@ -644,6 +650,17 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
     return <span>{absStr}<span style={{ display: 'inline-block', minWidth: '1.2ch', textAlign: 'left' }}>x&nbsp;</span></span>;
   }
 
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <CrunchingNumbersCard 
+          className="col-span-full"
+        />
+      </div>
+    );
+  }
+
   if (!currentSymbol || profileLoading || statementsLoading || pricesLoading || segmentsLoading || regionsLoading) {
     return (
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
@@ -774,7 +791,17 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
                   </Badge>
                 </div>
               </div>
-              <p className="text-xs text-justify leading-relaxed">{getDescription(profile?.description)}</p>
+              <div className="space-y-2">
+                <p className="text-xs text-justify leading-relaxed">{getDescription(profile?.description)}</p>
+                {isMobile && profile?.description && profile.description.length > 150 && (
+                  <button
+                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                    className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                  >
+                    {isDescriptionExpanded ? 'Show Less' : 'Read More'}
+                  </button>
+                )}
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
                 <div>
                   <p className="text-[10px] text-muted-foreground">Market Cap</p>

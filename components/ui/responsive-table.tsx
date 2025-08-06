@@ -3,6 +3,7 @@
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { MobileTable, MobileCardTable } from "./mobile-table";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 interface Column {
   key: string;
@@ -39,6 +40,65 @@ export function ResponsiveTable({
   maxHeight,
 }: ResponsiveTableProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    // Return desktop view during SSR to prevent hydration mismatch
+    return (
+      <div 
+        className={cn(
+          "w-full overflow-auto rounded-lg border",
+          className
+        )}
+        style={{ maxHeight }}
+      >
+        <table className="w-full">
+          <thead className={cn(
+            "bg-muted/50",
+            stickyHeader && "sticky top-0 z-10"
+          )}>
+            <tr>
+              {columns.map((column) => (
+                <th
+                  key={column.key}
+                  className={cn(
+                    "px-4 py-3 text-sm font-medium",
+                    column.align === "right" ? "text-right" : 
+                    column.align === "center" ? "text-center" : "text-left"
+                  )}
+                >
+                  {column.header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, idx) => (
+              <tr key={idx} className="border-t hover:bg-muted/50 transition-colors">
+                {columns.map((column) => (
+                  <td
+                    key={column.key}
+                    className={cn(
+                      "px-4 py-3 text-sm",
+                      column.align === "right" ? "text-right" : 
+                      column.align === "center" ? "text-center" : "text-left"
+                    )}
+                  >
+                    {column.accessor(row)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
 
   if (isMobile) {
     if (mobileView === "card" && mobilePrimaryColumn) {

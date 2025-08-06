@@ -8,6 +8,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { formatPercentage } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { ClientOnly } from "@/components/ui/client-only";
 
 interface PeerPricePerformanceProps {
   currentSymbol: string;
@@ -103,12 +104,16 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
           : date.toLocaleDateString([], { month: 'short', day: 'numeric' }),
       };
       
-      // Generate performance for each symbol (normalized to 0 at start)
+      // Generate performance for each symbol (normalized to 0 at start) - deterministic
       symbols.forEach((symbol, idx) => {
-        const volatility = 0.02 + Math.random() * 0.03;
-        const trend = (Math.random() - 0.5) * 0.001;
+        // Use deterministic "random" values based on symbol and time index
+        const symbolSeed = symbol.charCodeAt(0) + symbol.charCodeAt(1) * 256;
+        const timeSeed = i * 1000 + symbolSeed;
+        
+        const volatility = 0.02 + ((timeSeed * 9301 + 49297) % 65536) / 65536 * 0.03;
+        const trend = (((timeSeed * 1103515245 + 12345) % 65536) / 65536 - 0.5) * 0.001;
         const previousValue = i === 0 ? 0 : (chartData[i - 1]?.[symbol] as number || 0);
-        const change = (Math.random() - 0.5) * volatility + trend * i;
+        const change = (((timeSeed * 1664525 + 1013904223) % 65536) / 65536 - 0.5) * volatility + trend * i;
         dataPoint[symbol] = previousValue + change;
       });
       
@@ -165,26 +170,41 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-semibold">Share Price Performance</h3>
-          <p className="text-sm text-muted-foreground">Relative performance comparison with peer group</p>
+    <ClientOnly fallback={
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold">Share Price Performance</h3>
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          </div>
         </div>
-        
-        {/* Timeframe selector */}
-        <ToggleGroup type="single" value={timeframe} onValueChange={(v) => v && setTimeframe(v)}>
-          <ToggleGroupItem value="12H" className="text-xs">12H</ToggleGroupItem>
-          <ToggleGroupItem value="1D" className="text-xs">1D</ToggleGroupItem>
-          <ToggleGroupItem value="1W" className="text-xs">1W</ToggleGroupItem>
-          <ToggleGroupItem value="1M" className="text-xs">1M</ToggleGroupItem>
-          <ToggleGroupItem value="3M" className="text-xs">3M</ToggleGroupItem>
-          <ToggleGroupItem value="YTD" className="text-xs">YTD</ToggleGroupItem>
-          <ToggleGroupItem value="1Y" className="text-xs">1Y</ToggleGroupItem>
-          <ToggleGroupItem value="3Y" className="text-xs">3Y</ToggleGroupItem>
-          <ToggleGroupItem value="5Y" className="text-xs">5Y</ToggleGroupItem>
-        </ToggleGroup>
+        <Card className="p-6">
+          <div className="h-[400px] w-full flex items-center justify-center">
+            <div className="text-muted-foreground">Loading chart...</div>
+          </div>
+        </Card>
       </div>
+    }>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold">Share Price Performance</h3>
+            <p className="text-sm text-muted-foreground">Relative performance comparison with peer group</p>
+          </div>
+          
+          {/* Timeframe selector */}
+          <ToggleGroup type="single" value={timeframe} onValueChange={(v) => v && setTimeframe(v)}>
+            <ToggleGroupItem value="12H" className="text-xs">12H</ToggleGroupItem>
+            <ToggleGroupItem value="1D" className="text-xs">1D</ToggleGroupItem>
+            <ToggleGroupItem value="1W" className="text-xs">1W</ToggleGroupItem>
+            <ToggleGroupItem value="1M" className="text-xs">1M</ToggleGroupItem>
+            <ToggleGroupItem value="3M" className="text-xs">3M</ToggleGroupItem>
+            <ToggleGroupItem value="YTD" className="text-xs">YTD</ToggleGroupItem>
+            <ToggleGroupItem value="1Y" className="text-xs">1Y</ToggleGroupItem>
+            <ToggleGroupItem value="3Y" className="text-xs">3Y</ToggleGroupItem>
+            <ToggleGroupItem value="5Y" className="text-xs">5Y</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
 
       {/* Performance Chart */}
       <Card className="p-6">
@@ -295,5 +315,6 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
         </div>
       </Card>
     </div>
+    </ClientOnly>
   );
 } 

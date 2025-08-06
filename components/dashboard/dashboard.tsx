@@ -122,7 +122,12 @@ export function Dashboard() {
     context: '',
     symbol: ''
   });
+  const [mounted, setMounted] = useState(false);
   const isMobile = useMediaQuery("(max-width: 640px)");
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const searchParams = useSearchParams();
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
@@ -265,6 +270,21 @@ export function Dashboard() {
   const shouldShowCompanyHeader = (tabId: string) => {
     return ['company-snapshot', 'historical-financials', 'competitor-analysis', 'dcf-analysis', 'lbo-analysis', 'recent-news', 'sec-filings'].includes(tabId);
   };
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-mobile">
+        <div className="mb-6">
+          <Search className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+          <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Initializing dashboard
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentSymbol) {
     return (

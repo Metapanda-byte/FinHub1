@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { TrendingUp, TrendingDown, DollarSign, BarChart3, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useState, useEffect } from "react";
 
 interface KeyMetricsPanelProps {
   symbol: string | null;
@@ -24,8 +25,18 @@ export function KeyMetricsPanel({
   className 
 }: KeyMetricsPanelProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   if (!symbol || !profile) {
+    return null;
+  }
+  
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
     return null;
   }
 

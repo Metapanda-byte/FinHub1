@@ -46,32 +46,28 @@ export const geographyData = [
   { name: "Rest of Asia Pacific", value: 22.2 }
 ];
 
+// Deterministic mock data generation to prevent hydration mismatches
+const generateDeterministicData = (length: number, basePrice: number, priceRange: number, baseVolume: number, volumeRange: number, yearOffset: number = 0) => {
+  return Array.from({ length }, (_, i) => {
+    // Use deterministic "random" values based on index
+    const seed = i + yearOffset * 1000;
+    const priceVariation = (seed * 9301 + 49297) % 65536 / 65536; // Deterministic "random"
+    const volumeVariation = (seed * 1103515245 + 12345) % 65536 / 65536; // Different seed
+    
+    return {
+      date: new Date(2023 + yearOffset, 11, i + 1).toISOString().split('T')[0],
+      price: basePrice + priceVariation * priceRange,
+      volume: Math.floor(baseVolume + volumeVariation * volumeRange)
+    };
+  });
+};
+
 export const stockData = {
-  daily: Array.from({ length: 30 }, (_, i) => ({
-    date: new Date(2023, 11, i + 1).toISOString().split('T')[0],
-    price: 175 + Math.random() * 15,
-    volume: Math.floor(Math.random() * 80000000 + 40000000)
-  })),
-  weekly: Array.from({ length: 12 }, (_, i) => ({
-    date: new Date(2023, 9 + Math.floor(i / 4), 1 + (i % 4) * 7).toISOString().split('T')[0],
-    price: 170 + Math.random() * 20,
-    volume: Math.floor(Math.random() * 300000000 + 200000000)
-  })),
-  monthly: Array.from({ length: 12 }, (_, i) => ({
-    date: new Date(2023, i, 15).toISOString().split('T')[0],
-    price: 160 + Math.random() * 30,
-    volume: Math.floor(Math.random() * 800000000 + 600000000)
-  })),
-  yearly: Array.from({ length: 5 }, (_, i) => ({
-    date: new Date(2019 + i, 6, 1).toISOString().split('T')[0],
-    price: 100 + Math.random() * 100 + i * 20,
-    volume: Math.floor(Math.random() * 2000000000 + 1000000000)
-  })),
-  fiveYear: Array.from({ length: 5 }, (_, i) => ({
-    date: new Date(2019 + i, 6, 1).toISOString().split('T')[0],
-    price: 100 + Math.random() * 100 + i * 20,
-    volume: Math.floor(Math.random() * 2000000000 + 1000000000)
-  }))
+  daily: generateDeterministicData(30, 175, 15, 60000000, 40000000),
+  weekly: generateDeterministicData(12, 170, 20, 250000000, 100000000),
+  monthly: generateDeterministicData(12, 160, 30, 700000000, 200000000),
+  yearly: generateDeterministicData(5, 100, 100, 1500000000, 1000000000, 0),
+  fiveYear: generateDeterministicData(5, 100, 100, 1500000000, 1000000000, 0)
 };
 
 export const shareholderData = [

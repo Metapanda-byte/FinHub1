@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,11 +15,16 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 
 export function FinancialsScrollable() {
   const [period, setPeriod] = useState<"annual" | "quarter">("annual");
+  const [mounted, setMounted] = useState(false);
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { profile, isLoading: profileLoading } = useCompanyProfile(currentSymbol || '');
   const { ratios, isLoading: ratiosLoading } = useFinancialRatios(currentSymbol || '');
   const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(currentSymbol || '');
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const { statements: incomeStatements, isLoading: incomeLoading } = useIncomeStatements(
     currentSymbol || '',
@@ -33,6 +38,15 @@ export function FinancialsScrollable() {
     currentSymbol || '',
     period
   );
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   if (!currentSymbol) {
     return (
