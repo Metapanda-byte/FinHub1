@@ -8,7 +8,7 @@ import { ArrowUpDown, TrendingUp, TrendingDown, Eye, X, Download, Filter, Lightb
 import { useWatchlistStore } from "@/lib/store/watchlist-store";
 import { useSearchStore } from "@/lib/store/search-store";
 import { cn } from "@/lib/utils";
-import { formatFinancialNumber, formatPercentage, formatLargeNumber } from "@/lib/utils/formatters";
+import { formatFinancialNumber, formatPercentage, formatLargeNumber } from "@/lib/formatters";
 
 interface WatchlistStock {
   symbol: string;

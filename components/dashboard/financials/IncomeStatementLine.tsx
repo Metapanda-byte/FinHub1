@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { formatFinancialNumber } from "@/lib/utils/formatters";
+import { formatFinancialNumber } from "@/lib/formatters";
 import type { FinancialLineItem } from "@/lib/types/financial";
 
 export function IncomeStatementLine({

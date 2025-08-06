@@ -1,6 +1,0 @@
-html, body {
-  --finhub-pie-label: #111 !important;
-}
-html.dark, body.dark {
-  --finhub-pie-label: #fff !important;
-} 

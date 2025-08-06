@@ -197,6 +197,7 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+    --finhub-pie-label: #111;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
@@ -228,6 +229,7 @@
   .dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
+    --finhub-pie-label: #fff;
     --card: 215 28% 7%;
     --card-foreground: 0 0% 98%;
     --popover: 215 28% 7%;

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Calculator } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatFinancialNumber } from "@/lib/utils/formatters";
+import { formatFinancialNumber } from "@/lib/formatters";
 import { useDCFAnalysis, useCompanyProfile, useIncomeStatements, useCashFlows, useBalanceSheets, CustomDCFAssumptions } from "@/lib/api/financial";
 import { TableLoadingSkeleton } from "@/components/ui/loading-skeleton";
 

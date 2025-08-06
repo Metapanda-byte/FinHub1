@@ -15,7 +15,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useSearchStore } from "@/lib/store/search-store";
 import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegmentsTTM, useGeographicRevenueTTM, useEmployeeCount, useBalanceSheets, useFinancialRatios, useKeyMetrics, usePriceTarget, useAnalystRatings, useInstitutionalOwnership, useESGScore } from "@/lib/api/financial";
-import { formatFinancialNumber, formatLargeNumber } from "@/lib/utils/formatters";
+import { formatFinancialNumber, formatLargeNumber } from "@/lib/formatters";
 import { Star, StarOff } from "lucide-react";
 import { useWatchlistStore } from "@/lib/store/watchlist-store";
 import { Button } from "@/components/ui/button";

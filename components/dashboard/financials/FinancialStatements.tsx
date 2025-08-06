@@ -7,7 +7,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSearchStore } from "@/lib/store/search-store";
 import { useIncomeStatements, useBalanceSheets, useCashFlows, useRevenueSegments, useGeographicRevenue } from "@/lib/api/financial";
 import { IncomeStatementLine } from "./IncomeStatementLine";
-import { formatFinancialNumber } from "@/lib/utils/formatters";
+import { formatFinancialNumber } from "@/lib/formatters";
 import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 import { AnalystEstimates } from "../tabs/analyst-estimates";
 

@@ -10,7 +10,7 @@ import { Download, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSearchStore } from "@/lib/store/search-store";
 import { useIncomeStatements, useBalanceSheets, useCashFlows } from "@/lib/api/financial";
-import { formatFinancialNumber, getGrowthIndicator } from "@/lib/utils/formatters";
+import { formatFinancialNumber, getGrowthIndicator } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";

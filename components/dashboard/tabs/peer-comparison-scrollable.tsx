@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PeerComparisonTable } from "@/components/ui/scrollable-table";
-import { formatLargeNumber, formatPercentage } from "@/lib/utils/formatters";
+import { formatLargeNumber, formatPercentage } from "@/lib/formatters";
 import { useSearchStore } from "@/lib/store/search-store";
 import { useCompanyProfile, useFinancialRatios, useKeyMetrics } from "@/lib/api/financial";
 import { useStockQuote } from "@/lib/api/stock";

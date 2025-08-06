@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TrendingUp, TrendingDown, Calculator } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatFinancialNumber } from "@/lib/utils/formatters";
+import { formatFinancialNumber } from "@/lib/formatters";
 import { useCompanyProfile, useIncomeStatements, useCashFlows, useBalanceSheets } from "@/lib/api/financial";
 import { TableLoadingSkeleton } from "@/components/ui/loading-skeleton";
 

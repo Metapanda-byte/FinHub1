@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSearchStore } from "@/lib/store/search-store";
 import { useAnalystEstimates } from "@/lib/api/financial";
-import { formatFinancialNumber, getGrowthIndicator } from "@/lib/utils/formatters";
+import { formatFinancialNumber, getGrowthIndicator } from "@/lib/formatters";
 import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 import { cn } from "@/lib/utils";
 

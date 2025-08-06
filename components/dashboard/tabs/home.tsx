@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useSearchStore } from "@/lib/store/search-store";
-import { formatLargeNumber, formatPercentage } from "@/lib/utils/formatters";
+import { formatLargeNumber, formatPercentage } from "@/lib/formatters";
 
 // Mock data - replace with real API calls
 const marketMovers = {

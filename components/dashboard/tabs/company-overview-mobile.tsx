@@ -10,7 +10,7 @@ import { useSearchStore } from "@/lib/store/search-store";
 import { useWatchlistStore } from "@/lib/store/watchlist-store";
 import { useCompanyProfile, useIncomeStatements, useStockPriceData } from "@/lib/api/financial";
 import { useStockQuote } from "@/lib/api/stock";
-import { formatFinancialNumber, formatLargeNumber } from "@/lib/utils/formatters";
+import { formatFinancialNumber, formatLargeNumber } from "@/lib/formatters";
 import { StockChart } from "@/components/dashboard/charts/stock-chart";
 import { cn } from "@/lib/utils";
 

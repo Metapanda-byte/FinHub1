@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 import { useSearchStore } from "@/lib/store/search-store";
 import { useCompanyProfile, useIncomeStatements, useBalanceSheets } from "@/lib/api/financial";
-import { formatFinancialNumber, formatPercentage } from "@/lib/utils/formatters";
+import { formatFinancialNumber, formatPercentage } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { ValuationMetrics } from "@/components/stock/valuation-metrics";
 import { ValuationAnalysis } from "@/components/stock/valuation-analysis";

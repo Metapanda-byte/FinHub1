@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FinancialStatementTableClean } from "@/components/ui/scrollable-table-clean";
-import { formatFinancialNumber } from "@/lib/utils/formatters";
+import { formatFinancialNumber } from "@/lib/formatters";
 import { useIncomeStatements, useBalanceSheets, useCashFlows, useCompanyProfile, useFinancialRatios, useKeyMetrics } from "@/lib/api/financial";
 import { useSearchStore } from "@/lib/store/search-store";
 import { Loader2, Info } from "lucide-react";
