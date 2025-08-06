@@ -338,7 +338,7 @@ export function Dashboard() {
 
         {/* Main Content Area with Vertical Scrolling */}
         <div className="flex-1 overflow-y-auto mobile-scroll">
-          <div className={cn("px-mobile pb-20 sm:pb-4", isMobile ? "pt-4" : "pt-8")}>
+          <div className={cn("px-mobile pb-20 sm:pb-4", isMobile ? "pt-4" : "pt-8")} style={{ overflowX: 'hidden', touchAction: 'pan-y' }}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               {/* Tab Content with Vertical Scrolling */}
               <div className="animate-fade-in">

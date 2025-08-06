@@ -12,6 +12,7 @@ import { PieChart } from "@/components/dashboard/charts/pie-chart";
 import { StockChart } from "@/components/dashboard/charts/stock-chart";
 import { ShareholdersTable } from "@/components/dashboard/tables/shareholders-table";
 import { useState, useMemo } from "react";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useSearchStore } from "@/lib/store/search-store";
 import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegmentsTTM, useGeographicRevenueTTM, useEmployeeCount, useBalanceSheets, useFinancialRatios, useKeyMetrics, usePriceTarget, useAnalystRatings, useInstitutionalOwnership, useESGScore } from "@/lib/api/financial";
 import { formatFinancialNumber, formatLargeNumber } from "@/lib/utils/formatters";
@@ -426,6 +427,21 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   const [timeframe, setTimeframe] = useState<'YTD' | '1Y' | '5Y'>('YTD');
   const { hasStock, addStock, removeStock } = useWatchlistStore();
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  
+  // Function to truncate description for mobile
+  const getDescription = (description: string | undefined) => {
+    if (!description) return '';
+    
+    if (isMobile) {
+      // For mobile, limit to ~150 characters and add ellipsis
+      return description.length > 150 
+        ? description.substring(0, 150).trim() + '...'
+        : description;
+    }
+    
+    return description;
+  };
   const { profile, isLoading: profileLoading } = useCompanyProfile(currentSymbol || '');
   const { statements, isLoading: statementsLoading } = useIncomeStatements(currentSymbol || '', 'annual');
   const { statements: quarterlyStatements, isLoading: quarterlyStatementsLoading } = useIncomeStatements(currentSymbol || '', 'quarter');
@@ -738,7 +754,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   console.log('[DEBUG] Final consolidated geography data:', consolidatedGeographyData);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 company-overview">
       <div className="grid gap-3">
           <div className="flex items-start space-x-4 rounded-md border p-3">
             <div className="space-y-2 flex-1">
@@ -758,7 +774,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
                   </Badge>
                 </div>
               </div>
-              <p className="text-xs text-justify leading-relaxed">{profile?.description}</p>
+              <p className="text-xs text-justify leading-relaxed">{getDescription(profile?.description)}</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
                 <div>
                   <p className="text-[10px] text-muted-foreground">Market Cap</p>

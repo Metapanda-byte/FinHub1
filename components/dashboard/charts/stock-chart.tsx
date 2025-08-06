@@ -148,27 +148,27 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
   const { formatter: dateFormatter, ticks: dateTicks } = getDateConfig();
 
   return (
-    <div className="w-full space-y-3">
+    <div className="w-full space-y-2 sm:space-y-3">
       {/* Stock Price Header - Compact */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-base font-semibold">{symbol}</span>
-          <span className="text-lg font-bold">${currentPrice.toFixed(2)}</span>
-          <div className={`flex items-center gap-1 text-sm ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+          <span className="text-xs sm:text-sm md:text-base font-semibold">{symbol}</span>
+          <span className="text-xs sm:text-sm md:text-lg font-bold">${currentPrice.toFixed(2)}</span>
+          <div className={`flex items-center gap-1 text-[10px] sm:text-xs md:text-sm ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             <span>{priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}</span>
             <span>({percentageChange >= 0 ? '+' : ''}{percentageChange.toFixed(2)}%)</span>
           </div>
         </div>
         
         {/* Timeframe Selector - Compact */}
-        <div className="flex gap-1">
+        <div className="flex gap-0.5 sm:gap-1">
           {timeframeOptions.map((option) => (
             <Button
               key={option}
               variant={selectedTimeframe === option ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedTimeframe(option)}
-              className="h-7 px-3 text-xs"
+              className="h-6 sm:h-7 px-2 sm:px-3 text-[10px] sm:text-xs"
             >
               {option}
             </Button>
@@ -177,7 +177,7 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
       </div>
 
       {/* Chart */}
-      <div className="h-[240px] w-full">
+      <div className="h-[200px] sm:h-[240px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={processedData}

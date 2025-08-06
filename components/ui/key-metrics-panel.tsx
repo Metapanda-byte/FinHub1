@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { TrendingUp, TrendingDown, DollarSign, BarChart3, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface KeyMetricsPanelProps {
   symbol: string | null;
@@ -22,6 +23,8 @@ export function KeyMetricsPanel({
   ratios,
   className 
 }: KeyMetricsPanelProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  
   if (!symbol || !profile) {
     return null;
   }
@@ -62,34 +65,34 @@ export function KeyMetricsPanel({
       icon: change >= 0 ? TrendingUp : TrendingDown,
       color: change >= 0 ? "text-green-600" : "text-red-600"
     },
-    {
+    ...(isMobile ? [] : [{
       label: "Market Cap",
       value: formatLargeNumber(marketCap),
       icon: BarChart3,
       color: "text-blue-600"
-    }
+    }])
   ];
 
   return (
-    <div className={cn("flex items-center gap-8", className)}>
+    <div className={cn("flex items-center", isMobile ? "justify-end" : "gap-8", className)}>
       {metrics.map((metric, index) => {
         return (
           <div key={metric.label} className="flex items-center gap-8">
             {index > 0 && (
               <Separator orientation="vertical" className="h-8 bg-border/40" />
             )}
-            <div className="flex flex-col items-end min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-sm whitespace-nowrap">
+            <div className="flex flex-col items-end text-right">
+              <div className="flex flex-col items-end gap-0.5">
+                <span className={cn("font-semibold whitespace-nowrap", isMobile ? "text-sm" : "text-sm")}>
                   {metric.value}
                 </span>
                 {metric.subValue && (
-                  <span className={cn("text-xs font-medium", metric.color)}>
+                  <span className={cn("font-medium", isMobile ? "text-xs" : "text-xs", metric.color)}>
                     {metric.subValue}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground whitespace-nowrap">
+              <p className={cn("text-muted-foreground whitespace-nowrap", isMobile ? "text-[10px]" : "text-xs")}>
                 {metric.label}
               </p>
             </div>

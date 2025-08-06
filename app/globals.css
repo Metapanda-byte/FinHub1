@@ -274,6 +274,60 @@
     max-width: 100vw;
   }
 
+  /* Prevent horizontal scrolling on cards and content areas */
+  .card,
+  .card-content,
+  .card-header,
+  .mobile-section,
+  .company-overview,
+  .financials-content,
+  .peers-content,
+  .news-content,
+  .filings-content,
+  .dcf-content,
+  .lbo-content {
+    overflow-x: hidden;
+    touch-action: pan-y;
+  }
+
+  /* Allow horizontal scrolling only for tables */
+  .financial-table-wrapper,
+  .table-scroll-container,
+  .mobile-table-container,
+  .scrollable-table {
+    overflow-x: auto;
+    touch-action: pan-x;
+  }
+
+  /* Prevent horizontal scrolling on all other content */
+  .card,
+  .card-content,
+  .card-header,
+  .mobile-section,
+  .company-overview,
+  .financials-content,
+  .peers-content,
+  .news-content,
+  .filings-content,
+  .dcf-content,
+  .lbo-content,
+  .tabs-content,
+  .tab-content,
+  [data-dashboard] {
+    overflow-x: hidden !important;
+    touch-action: pan-y !important;
+    max-width: 100vw;
+  }
+
+  /* Ensure tables within cards can still scroll */
+  .card .financial-table-wrapper,
+  .card .table-scroll-container,
+  .card .mobile-table-container,
+  .card .scrollable-table {
+    overflow-x: auto !important;
+    touch-action: pan-x !important;
+  }
+
   /* Mobile-First Typography System */
   h1 {
     @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight;
