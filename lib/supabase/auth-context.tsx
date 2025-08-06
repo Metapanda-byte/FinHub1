@@ -22,9 +22,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.warn('Auth session check timed out');
+      setLoading(false);
+    }, 5000); // 5 second timeout
+
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(timeoutId);
       setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch((error) => {
+      clearTimeout(timeoutId);
+      console.error('Auth session check failed:', error);
       setLoading(false);
     });
 
@@ -33,7 +44,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

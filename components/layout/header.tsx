@@ -155,14 +155,10 @@ export default function Header() {
             </nav>
           </div>
 
-          {/* Center: Ticker Search - Desktop Only */}
+          {/* Center: Spacer - Search moved to dashboard */}
           <div className="hidden md:flex flex-1 justify-center max-w-lg mx-8">
             <div className="w-full max-w-md">
-              <StockSearch 
-                className="border-0 bg-muted/30 hover:bg-muted/40 focus-within:bg-muted/50 transition-colors duration-200 shadow-sm w-full" 
-                placeholder="Search Company or Ticker"
-                showSelectedTicker={false}
-              />
+              {/* Search bar moved to dashboard for better visibility */}
             </div>
           </div>
 

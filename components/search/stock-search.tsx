@@ -171,8 +171,8 @@ export function StockSearch({ className, placeholder = "Search companies...", sh
   };
 
   const handleInputFocus = () => {
-    // Only show dropdown if there's content to show
-    if (inputValue.length >= 1 || recentSearches.length > 0 || favorites.length > 0) {
+    // Only show dropdown if user is actively typing
+    if (inputValue.length >= 1) {
       setOpen(true);
     }
   };
@@ -187,8 +187,8 @@ export function StockSearch({ className, placeholder = "Search companies...", sh
   };
 
   const showClearButton = inputValue.length > 0;
-  const showSuggestions = search.length >= 2 && searchResults && searchResults.length > 0;
-  const showRecentsAndFavorites = search.length === 0 && (recentSearches.length > 0 || favorites.length > 0);
+  const showSuggestions = search.length >= 1 && searchResults && searchResults.length > 0;
+  const showRecentsAndFavorites = false; // Disabled - no past searches shown
 
   return (
     <div className="relative">
@@ -201,7 +201,7 @@ export function StockSearch({ className, placeholder = "Search companies...", sh
         onBlur={() => setTimeout(() => setOpen(false), 200)} // Delay to allow clicking on dropdown items
         className={cn(
           "w-full h-8 px-2 py-1 pr-16 text-sm bg-transparent rounded-md",
-          "placeholder:text-orange-500/60 placeholder:italic",
+          "placeholder:text-orange-500/80 placeholder:italic",
           "focus:outline-none",
           "disabled:cursor-not-allowed disabled:opacity-50",
           className

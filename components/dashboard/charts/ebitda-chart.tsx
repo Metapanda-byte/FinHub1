@@ -6,7 +6,6 @@ import {
   ResponsiveContainer,
   XAxis,
   YAxis,
-  Tooltip,
   CartesianGrid,
   Line,
   ComposedChart,
@@ -99,20 +98,6 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
           dx={10}
           hide={true}
         />
-        <Tooltip
-          formatter={(value: number, name: string) => {
-            if (name === "value") return [`$${value.toFixed(1)}B`, "EBITDA"];
-            if (name === "margin") return [`${value.toFixed(1)}%`, "Margin"];
-            return [value, name];
-          }}
-          labelFormatter={(label) => `Year: ${label}`}
-          contentStyle={{
-            borderRadius: "6px",
-            padding: "8px 12px",
-            border: "1px solid var(--border)",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-          }}
-        />
         <Bar
           yAxisId="left"
           dataKey="value"
@@ -120,6 +105,38 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
           {data.map((entry, idx) => (
             <Cell key={`cell-${idx}`} fill={palette && palette[idx] ? palette[idx] : barColor} />
           ))}
+          <LabelList
+            dataKey="value"
+            position="top"
+            content={(props: any) => {
+              const { x, y, value } = props;
+              const xNum = typeof x === 'number' ? x : Number(x);
+              const yNum = typeof y === 'number' ? y : Number(y);
+              const ebitdaValue = typeof value === 'number' ? value : Number(value);
+              if (isNaN(xNum) || isNaN(yNum) || isNaN(ebitdaValue)) return null;
+              
+              return (
+                <foreignObject x={xNum - 30} y={yNum - 35} width={60} height={25} style={{ pointerEvents: 'none' }}>
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '3px',
+                      padding: '2px 6px',
+                      fontSize: '10px',
+                      fontWeight: '600',
+                      color: '#1e293b',
+                      textAlign: 'center',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                      fontFamily: 'system-ui, -apple-system, sans-serif',
+                    }}
+                  >
+                    {`$${ebitdaValue.toFixed(1)}B`}
+                  </div>
+                </foreignObject>
+              );
+            }}
+          />
         </Bar>
         <Line
           yAxisId="right"

@@ -20,7 +20,7 @@ const ValuationConsiderations = lazy(() => import("./valuation-considerations").
 const RecentNews = lazy(() => import("./recent-news").then(m => ({ default: m.RecentNews })));
 const IdeaGeneration = lazy(() => import("./idea-generation"));
 const CompetitorAnalysis = lazy(() => import("./competitor-analysis").then(m => ({ default: m.CompetitorAnalysis })));
-const ScreeningTool = lazy(() => import("./screening-tool").then(m => ({ default: m.ScreeningTool })));
+const ScreeningTool = lazy(() => import("./screening-tool-enhanced").then(m => ({ default: m.ScreeningToolEnhanced })));
 
 // Tab-specific loading skeletons
 function HomeLoadingSkeleton() {
@@ -89,15 +89,15 @@ export function DashboardTabs() {
         <div className="flex items-center justify-between w-full">
           <div className="flex-1 overflow-x-auto">
             <TabsList className="mobile-tabs w-full bg-transparent border-b border-border px-0 py-0 h-auto justify-start rounded-none min-w-max">
-              <TabsTrigger value="home" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none text-finhub-orange font-bold bg-blue-500 text-white">🏠 HOME ONLY</TabsTrigger>
-              {/* <TabsTrigger value="overview" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Overview</TabsTrigger>
+              <TabsTrigger value="home" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Home</TabsTrigger>
+              <TabsTrigger value="overview" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Overview</TabsTrigger>
               <TabsTrigger value="financials" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Financials</TabsTrigger>
               <TabsTrigger value="credit-analysis" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Credit</TabsTrigger>
               <TabsTrigger value="valuation" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Valuation</TabsTrigger>
               <TabsTrigger value="competitors" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Competitors</TabsTrigger>
               <TabsTrigger value="idea-generation" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Ideas</TabsTrigger>
               <TabsTrigger value="recent-news" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">News</TabsTrigger>
-              <TabsTrigger value="screening" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Screening</TabsTrigger> */}
+              <TabsTrigger value="screening" className="mobile-tab touch-friendly rounded-none bg-transparent hover:bg-accent/50 text-responsive font-medium data-[state=active]:border-finhub-orange data-[state=active]:bg-transparent data-[state=active]:shadow-none">Screening</TabsTrigger>
             </TabsList>
           </div>
           <div className="flex-shrink-0 ml-4">

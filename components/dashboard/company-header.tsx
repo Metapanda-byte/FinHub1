@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Star } from "lucide-react";
+import { Star, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWatchlistStore } from "@/lib/store/watchlist-store";
 import { useSearchStore } from "@/lib/store/search-store";
@@ -116,6 +116,27 @@ export function CompanyHeader({ tagline, onOpenChat }: CompanyHeaderProps) {
                   : "text-muted-foreground group-hover:text-foreground"
               )} />
             </Button>
+
+            {/* AI Co-pilot Button - Only show on desktop */}
+            {!isMobile && onOpenChat && (
+              <Button
+                variant="default"
+                size="sm"
+                className={cn(
+                  "bg-gray-50 hover:bg-gray-100 text-blue-600 hover:text-blue-700 transition-colors border border-gray-200",
+                  "h-8 px-3 text-xs font-medium"
+                )}
+                onClick={onOpenChat}
+                title="Ask Your Analyst"
+              >
+                <Sparkles className={cn(
+                  "transition-all duration-200",
+                  "h-3 w-3 mr-1",
+                  "text-blue-600"
+                )} />
+                Ask Your Analyst
+              </Button>
+            )}
           </div>
           
           <p className={cn(

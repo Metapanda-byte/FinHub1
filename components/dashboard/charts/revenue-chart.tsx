@@ -6,9 +6,9 @@ import {
   ResponsiveContainer,
   XAxis,
   YAxis,
-  Tooltip,
   CartesianGrid,
   Cell,
+  LabelList,
 } from "recharts";
 import { formatBillions } from "@/lib/formatters";
 import { format } from "date-fns";
@@ -93,22 +93,44 @@ export function RevenueChart({ data, palette, tickFontSize = 12, ltmBarGradient 
           domain={[roundedMin, roundedMax]}
           ticks={yTicks}
         />
-        <Tooltip
-          formatter={(value: number) => [`$${value.toFixed(1)}B`, "Revenue"]}
-          labelFormatter={(year) => typeof year === 'string' && year.startsWith('LTM') ? year : `Year: ${year}`}
-          contentStyle={{
-            borderRadius: "6px",
-            padding: "8px 12px",
-            border: "1px solid var(--border)",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-          }}
-        />
         <Bar
           dataKey="value"
         >
           {data.map((entry, idx) => (
             <Cell key={`cell-${idx}`} fill={palette && palette[idx] ? palette[idx] : '#2563eb'} />
           ))}
+          <LabelList
+            dataKey="value"
+            position="top"
+            content={(props: any) => {
+              const { x, y, value } = props;
+              const xNum = typeof x === 'number' ? x : Number(x);
+              const yNum = typeof y === 'number' ? y : Number(y);
+              const revenueValue = typeof value === 'number' ? value : Number(value);
+              if (isNaN(xNum) || isNaN(yNum) || isNaN(revenueValue)) return null;
+              
+              return (
+                <foreignObject x={xNum - 30} y={yNum - 35} width={60} height={25} style={{ pointerEvents: 'none' }}>
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '3px',
+                      padding: '2px 6px',
+                      fontSize: '10px',
+                      fontWeight: '600',
+                      color: '#1e293b',
+                      textAlign: 'center',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                      fontFamily: 'system-ui, -apple-system, sans-serif',
+                    }}
+                  >
+                    {`$${revenueValue.toFixed(1)}B`}
+                  </div>
+                </foreignObject>
+              );
+            }}
+          />
         </Bar>
       </BarChart>
     </ResponsiveContainer>

@@ -330,6 +330,17 @@ export function Dashboard() {
         {/* Dashboard-Specific Sticky Header Only - Hidden on mobile */}
         {!isMobile && (
           <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border shrink-0">
+            {/* Search Bar Section - Above Toolbar */}
+            <div className="px-mobile py-2 border-b border-border/50">
+              <div className="w-full max-w-xs">
+                <StockSearch 
+                  className="w-full bg-background border border-orange-500/60 hover:border-orange-500/80 focus-within:border-orange-500 transition-all duration-200 shadow-sm text-sm" 
+                  placeholder="Search Company or Ticker..."
+                  showSelectedTicker={false}
+                />
+              </div>
+            </div>
+            
             {/* Tab Navigation Section */}
             <div className="px-mobile py-2">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -353,6 +364,17 @@ export function Dashboard() {
                 </div>
               </Tabs>
             </div>
+          </div>
+        )}
+
+        {/* Mobile Search Bar - Only for mobile */}
+        {isMobile && (
+          <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border/50 px-mobile py-2">
+            <StockSearch 
+              className="w-full bg-background border border-orange-500/60 hover:border-orange-500/80 focus-within:border-orange-500 transition-all duration-200 shadow-sm text-sm" 
+              placeholder="Search Company or Ticker..."
+              showSelectedTicker={false}
+            />
           </div>
         )}
 
