@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FinHubIQLogo } from "@/components/ui/finhubiq-logo";
 import { useTheme } from "next-themes";
-import { Github, Twitter, Linkedin, Mail, ChevronDown } from "lucide-react";
+import { Twitter, Linkedin, Mail, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -28,11 +28,6 @@ export default function Footer() {
       name: "LinkedIn",
       href: "https://linkedin.com/company/finhubiq",
       icon: Linkedin,
-    },
-    {
-      name: "GitHub",
-      href: "https://github.com/finhubiq",
-      icon: Github,
     },
     {
       name: "Email",

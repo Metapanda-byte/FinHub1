@@ -134,36 +134,47 @@ function calculateAdvancedLTM(
     };
   }
 
-  // Case 2: We have some quarters in next FY - apply the formula
-  // LTM = Last FY + Recent quarters in next FY - Equivalent quarters in prior FY
+  // Case 2: We have some quarters in next FY - apply the LTM formula
+  // LTM = LFY + YTD(t) - YTD(t-1)
+  // Where: LFY = Last Fiscal Year, YTD(t) = current year quarters, YTD(t-1) = prior year corresponding quarters
   
-  let nextFYValue = 0;
-  let priorFYValue = 0;
+  let ytdCurrent = 0;  // YTD(t)
+  let ytdPrior = 0;    // YTD(t-1)
   
   // Sort quarters by date to ensure proper matching
   const sortedNextFYQuarters = nextFYQuarters.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const sortedPriorFYQuarters = priorFYQuarters.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  // Sum the available quarters in next FY
+  // Calculate YTD(t) - sum of available quarters in current fiscal year
   for (const quarter of sortedNextFYQuarters) {
     const value = quarter[field];
     if (value !== null && value !== undefined && !isNaN(value)) {
-      nextFYValue += value;
+      ytdCurrent += value;
     }
   }
 
-  // Sum the equivalent quarters in prior FY
+  // Calculate YTD(t-1) - sum of corresponding quarters from prior fiscal year
   const quartersToMatch = Math.min(sortedNextFYQuarters.length, sortedPriorFYQuarters.length);
   
   for (let i = 0; i < quartersToMatch; i++) {
     const value = sortedPriorFYQuarters[i][field];
     if (value !== null && value !== undefined && !isNaN(value)) {
-      priorFYValue += value;
+      ytdPrior += value;
     }
   }
 
-  // Apply the LTM formula
-  const ltmValue = lastCompleteFYValue + nextFYValue - priorFYValue;
+  // Apply the LTM formula: LTM = LFY + YTD(t) - YTD(t-1)
+  const ltmValue = lastCompleteFYValue + ytdCurrent - ytdPrior;
+  
+  console.log(`[LTM Calculation] ${field}:`, {
+    lfy: lastCompleteFYValue,
+    ytdCurrent,
+    ytdPrior,
+    ltmValue,
+    quartersInCurrentFY: sortedNextFYQuarters.length,
+    quartersInPriorFY: sortedPriorFYQuarters.length,
+    quartersMatched: quartersToMatch
+  });
   
   return { 
     value: ltmValue,
@@ -202,12 +213,9 @@ function formatMarketCapBillions(value: number) {
   return `${(value / 1_000_000_000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}B`;
 }
 
-// Add a hook to fetch TTM revenue from FMP key-metrics-ttm endpoint
+// Add a hook to fetch TTM revenue from internal API
 function useTTMRevenue(symbol: string) {
-  const FMP_API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
-  const url = symbol
-    ? `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?period=ttm&apikey=${FMP_API_KEY}`
-    : null;
+  const url = symbol ? `/api/financial/income-statement-ttm?symbol=${symbol}` : null;
   const fetcher = (url: string) => fetch(url).then(res => res.json());
   const { data, error } = useSWR(url, fetcher, {
     refreshInterval: 5 * 60 * 1000, // 5 minutes for TTM data
@@ -222,12 +230,9 @@ function useTTMRevenue(symbol: string) {
   return { ttmRevenue, isLoading: !error && !data, error };
 }
 
-// Add a hook to fetch TTM income statement from FMP income-statement endpoint
+// Add a hook to fetch TTM income statement from internal API
 function useTTMIncomeStatement(symbol: string) {
-  const FMP_API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
-  const url = symbol
-    ? `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?period=ttm&apikey=${FMP_API_KEY}`
-    : null;
+  const url = symbol ? `/api/financial/income-statement-ttm?symbol=${symbol}` : null;
   const fetcher = (url: string) => fetch(url).then(res => res.json());
   const { data, error } = useSWR(url, fetcher, {
     refreshInterval: 5 * 60 * 1000, // 5 minutes for TTM data

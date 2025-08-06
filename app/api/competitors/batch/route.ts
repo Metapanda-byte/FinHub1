@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "symbols array is required" }, { status: 400 });
   }
 
-  const apiKey = process.env.NEXT_PUBLIC_FMP_API_KEY;
+  const apiKey = process.env.FMP_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "API key not configured" }, { status: 500 });
   }
@@ -143,7 +143,7 @@ export async function GET(request: Request) {
   const limit = parseInt(searchParams.get("limit") || "1000");
   const offset = parseInt(searchParams.get("offset") || "0");
 
-  const apiKey = process.env.NEXT_PUBLIC_FMP_API_KEY;
+  const apiKey = process.env.FMP_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "API key not configured" }, { status: 500 });
   }

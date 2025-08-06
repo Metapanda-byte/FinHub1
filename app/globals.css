@@ -224,6 +224,7 @@
     --finhub-orange: 20 90% 48%;
     --finhub-orange-foreground: 0 0% 98%;
     --finhub-orange-muted: 20 90% 95%;
+    --chart-text-color: #1e293b;
   }
 
   .dark {
@@ -254,6 +255,7 @@
     --chart-5: 340 75% 55%;
     --finhub-orange: 20 90% 48%;
     --finhub-orange-muted: 20 40% 20%;
+    --chart-text-color: #ffffff;
   }
 }
 

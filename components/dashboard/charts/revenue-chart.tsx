@@ -61,7 +61,7 @@ export function RevenueChart({ data, palette, tickFontSize = 12, ltmBarGradient 
   }
   return (
     <ResponsiveContainer width="100%" height={280}>
-      <BarChart data={data} margin={{ top: 10, right: 12, left: 12, bottom: 10 }}>
+      <BarChart data={data} margin={{ top: 40, right: 12, left: 12, bottom: 10 }}>
         {ltmBarGradient && (
           <defs>
             <pattern id="ltmBarDots" patternUnits="userSpaceOnUse" width="8" height="8">
@@ -103,31 +103,32 @@ export function RevenueChart({ data, palette, tickFontSize = 12, ltmBarGradient 
             dataKey="value"
             position="top"
             content={(props: any) => {
-              const { x, y, value } = props;
+              const { x, y, value, width } = props;
               const xNum = typeof x === 'number' ? x : Number(x);
               const yNum = typeof y === 'number' ? y : Number(y);
               const revenueValue = typeof value === 'number' ? value : Number(value);
+              const barWidth = typeof width === 'number' ? width : Number(width) || 0;
               if (isNaN(xNum) || isNaN(yNum) || isNaN(revenueValue)) return null;
               
+              // Calculate the center of the bar
+              const barCenter = xNum + (barWidth / 2);
+              
               return (
-                <foreignObject x={xNum - 30} y={yNum - 35} width={60} height={25} style={{ pointerEvents: 'none' }}>
-                  <div
-                    style={{
-                      background: '#ffffff',
-                      borderRadius: '3px',
-                      padding: '2px 6px',
-                      fontSize: '10px',
-                      fontWeight: '600',
-                      color: '#1e293b',
-                      textAlign: 'center',
-                      border: '1px solid #e2e8f0',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                      fontFamily: 'system-ui, -apple-system, sans-serif',
-                    }}
-                  >
-                    {`$${revenueValue.toFixed(1)}B`}
-                  </div>
-                </foreignObject>
+                <text
+                  x={barCenter}
+                  y={yNum - 20}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                    fill: 'var(--chart-text-color, #ffffff)',
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  {`$${revenueValue.toFixed(1)}B`}
+                </text>
               );
             }}
           />

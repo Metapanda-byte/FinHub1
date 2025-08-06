@@ -73,25 +73,29 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
 
   // Initialize with company-specific data
   useEffect(() => {
-    if (dcfData && incomeStatements && cashFlowStatements) {
+    if (dcfData && incomeStatements && cashFlowStatements && 
+        incomeStatements.length > 0 && cashFlowStatements.length > 0) {
       const latestIncome = incomeStatements[0];
       const latestCashFlow = cashFlowStatements[0];
       
-      const historicalOperatingMargin = latestIncome.operatingIncome && latestIncome.revenue 
-        ? (latestIncome.operatingIncome / latestIncome.revenue) * 100 
-        : 20.0;
-      
-      const historicalCapexPercent = latestCashFlow.capitalExpenditure && latestIncome.revenue
-        ? Math.abs(latestCashFlow.capitalExpenditure / latestIncome.revenue) * 100
-        : 3.0;
+      // Add null checks to prevent runtime errors
+      if (latestIncome && latestCashFlow) {
+        const historicalOperatingMargin = latestIncome.operatingIncome && latestIncome.revenue 
+          ? (latestIncome.operatingIncome / latestIncome.revenue) * 100 
+          : 20.0;
+        
+        const historicalCapexPercent = latestCashFlow.capitalExpenditure && latestIncome.revenue
+          ? Math.abs(latestCashFlow.capitalExpenditure / latestIncome.revenue) * 100
+          : 3.0;
 
-      setAssumptions(prev => ({
-        ...prev,
-        discountRate: dcfData.discountRate || 8.0,
-        longTermGrowthRate: dcfData.longTermGrowthRate || 2.5,
-        operatingMarginTarget: Math.max(historicalOperatingMargin, 15.0),
-        capexAsPercentOfRevenue: Math.min(historicalCapexPercent, 5.0),
-      }));
+        setAssumptions(prev => ({
+          ...prev,
+          discountRate: dcfData?.discountRate || 8.0,
+          longTermGrowthRate: dcfData?.longTermGrowthRate || 2.5,
+          operatingMarginTarget: Math.max(historicalOperatingMargin, 15.0),
+          capexAsPercentOfRevenue: Math.min(historicalCapexPercent, 5.0),
+        }));
+      }
     }
   }, [dcfData, incomeStatements, cashFlowStatements, symbol]);
 

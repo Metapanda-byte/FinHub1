@@ -165,36 +165,46 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
 
   // Initialize with company-specific data
   useEffect(() => {
-    if (profile && incomeStatements && cashFlowStatements && balanceSheets) {
+    if (profile && incomeStatements && cashFlowStatements && balanceSheets && 
+        incomeStatements.length > 0 && cashFlowStatements.length > 0 && balanceSheets.length > 0) {
       const latestIncome = incomeStatements[0];
       const latestCashFlow = cashFlowStatements[0];
       const latestBalance = balanceSheets[0];
       
-      const historicalEbitdaMargin = latestIncome.ebitda && latestIncome.revenue 
-        ? (latestIncome.ebitda / latestIncome.revenue) * 100 
-        : 25.0;
-      
-      const historicalCapexPercent = latestCashFlow.capitalExpenditure && latestIncome.revenue
-        ? Math.abs(latestCashFlow.capitalExpenditure / latestIncome.revenue) * 100
-        : 3.0;
+      // Add null checks to prevent runtime errors
+      if (latestIncome && latestCashFlow && latestBalance) {
+        const historicalEbitdaMargin = latestIncome.ebitda && latestIncome.revenue 
+          ? (latestIncome.ebitda / latestIncome.revenue) * 100 
+          : 25.0;
+        
+        const historicalCapexPercent = latestCashFlow.capitalExpenditure && latestIncome.revenue
+          ? Math.abs(latestCashFlow.capitalExpenditure / latestIncome.revenue) * 100
+          : 3.0;
 
-      setAssumptions(prev => ({
-        ...prev,
-        ebitdaMarginTarget: Math.max(historicalEbitdaMargin, 20.0),
-        capexAsPercentOfRevenue: Math.min(historicalCapexPercent, 5.0),
-      }));
+        setAssumptions(prev => ({
+          ...prev,
+          ebitdaMarginTarget: Math.max(historicalEbitdaMargin, 20.0),
+          capexAsPercentOfRevenue: Math.min(historicalCapexPercent, 5.0),
+        }));
+      }
     }
   }, [profile, incomeStatements, cashFlowStatements, balanceSheets, symbol]);
 
   // Enhanced LBO calculation
   const lboCalculation = useMemo((): LBOCalculationResult | null => {
-    if (!profile || !incomeStatements || !cashFlowStatements || !balanceSheets || incomeStatements.length === 0) {
+    if (!profile || !incomeStatements || !cashFlowStatements || !balanceSheets || 
+        incomeStatements.length === 0 || cashFlowStatements.length === 0 || balanceSheets.length === 0) {
       return null;
     }
 
     const latestIncome = incomeStatements[0];
     const latestCashFlow = cashFlowStatements[0];
     const latestBalance = balanceSheets[0];
+
+    // Add null checks to prevent runtime errors
+    if (!latestIncome || !latestCashFlow || !latestBalance) {
+      return null;
+    }
 
     // Base year data
     const baseRevenue = latestIncome.revenue || 0;

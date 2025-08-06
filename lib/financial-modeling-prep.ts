@@ -1,4 +1,4 @@
-const API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
+const API_KEY = process.env.FMP_API_KEY;
 const BASE_URL = "https://financialmodelingprep.com/api/v3";
 
 export interface StockQuote {
@@ -19,7 +19,7 @@ export interface StockQuote {
 
 export async function fetchStockQuote(symbol: string): Promise<StockQuote> {
   if (!API_KEY) {
-    throw new Error("NEXT_PUBLIC_FMP_API_KEY is not configured");
+    throw new Error("FMP_API_KEY is not configured");
   }
 
   const response = await fetch(

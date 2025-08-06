@@ -2,7 +2,7 @@
 
 import useSWR from 'swr';
 
-const API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
+const API_KEY = process.env.FMP_API_KEY;
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 // Enhanced interfaces for real screening data

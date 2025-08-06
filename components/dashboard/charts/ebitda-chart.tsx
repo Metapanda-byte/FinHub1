@@ -66,7 +66,7 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
   }
   return (
     <ResponsiveContainer width="100%" height={280}>
-      <ComposedChart data={data} margin={{ top: 40, right: 2, left: 2, bottom: 10 }}>
+      <ComposedChart data={data} margin={{ top: 50, right: 2, left: 2, bottom: 10 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis
           dataKey="year"
@@ -109,31 +109,32 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
             dataKey="value"
             position="top"
             content={(props: any) => {
-              const { x, y, value } = props;
+              const { x, y, value, width } = props;
               const xNum = typeof x === 'number' ? x : Number(x);
               const yNum = typeof y === 'number' ? y : Number(y);
               const ebitdaValue = typeof value === 'number' ? value : Number(value);
+              const barWidth = typeof width === 'number' ? width : Number(width) || 0;
               if (isNaN(xNum) || isNaN(yNum) || isNaN(ebitdaValue)) return null;
               
+              // Calculate the center of the bar
+              const barCenter = xNum + (barWidth / 2);
+              
               return (
-                <foreignObject x={xNum - 30} y={yNum - 35} width={60} height={25} style={{ pointerEvents: 'none' }}>
-                  <div
-                    style={{
-                      background: '#ffffff',
-                      borderRadius: '3px',
-                      padding: '2px 6px',
-                      fontSize: '10px',
-                      fontWeight: '600',
-                      color: '#1e293b',
-                      textAlign: 'center',
-                      border: '1px solid #e2e8f0',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                      fontFamily: 'system-ui, -apple-system, sans-serif',
-                    }}
-                  >
-                    {`$${ebitdaValue.toFixed(1)}B`}
-                  </div>
-                </foreignObject>
+                <text
+                  x={barCenter}
+                  y={yNum - 20}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                    fill: 'var(--chart-text-color, #ffffff)',
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  {`$${ebitdaValue.toFixed(1)}B`}
+                </text>
               );
             }}
           />
@@ -144,8 +145,18 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
           dataKey="margin"
           stroke={lineColor}
           strokeWidth={2}
-          dot={{ r: 4, fill: lineColor }}
-          activeDot={{ r: 6 }}
+          dot={{ 
+            r: 5, 
+            fill: '#ffffff', 
+            stroke: lineColor, 
+            strokeWidth: 2 
+          }}
+          activeDot={{ 
+            r: 7, 
+            fill: '#ffffff', 
+            stroke: lineColor, 
+            strokeWidth: 3 
+          }}
           animationDuration={1500}
         >
           <LabelList
@@ -156,21 +167,24 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
               const yNum = typeof y === 'number' ? y : Number(y);
               const marginValue = typeof value === 'number' ? value : Number(value);
               if (isNaN(xNum) || isNaN(yNum) || isNaN(marginValue)) return null;
-              // Position label just above the line node (dot) with more clearance
-              const labelY = yNum - 28;
+              
+              // Align all boxes to the top of the plot area for better visibility
+              const topMargin = 50; // Match the chart's top margin
+              const labelY = topMargin - 25; // Position boxes at the top
+              
               return (
                 <foreignObject x={xNum - 27} y={labelY} width={54} height={30} style={{ pointerEvents: 'none', overflow: 'visible' }}>
                   <div
                     style={{
-                      background: '#fff',
+                      background: '#ffffff',
                       borderRadius: 4,
-                      padding: '2px 8px',
+                      padding: '3px 8px',
                       fontSize: 10,
                       fontWeight: 600,
                       color: '#1e3a8a',
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                       textAlign: 'center',
-                      border: '1px solid #b0b0b0',
+                      border: '1px solid #d1d5db',
                       minWidth: 32,
                       minHeight: 18,
                       display: 'inline-block',

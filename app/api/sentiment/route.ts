@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
   }
 
-  const apiKey = process.env.NEXT_PUBLIC_FMP_API_KEY;
+  const apiKey = process.env.FMP_API_KEY;
   if (!apiKey) {
     console.error("API key not configured");
     return NextResponse.json({ error: "API key not configured" }, { status: 500 });
