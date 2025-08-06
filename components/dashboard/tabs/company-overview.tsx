@@ -27,6 +27,7 @@ import clsx from 'clsx';
 import useSWR from 'swr';
 import { ChartLoadingSkeleton, CardLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
+import { MobileCarousel } from "@/components/ui/mobile-carousel";
 
 // Enhanced LTM calculation following the new specification
 function calculateAdvancedLTM(
@@ -770,129 +771,318 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   // Debug the final processed data
   console.log('[DEBUG] Final consolidated geography data:', consolidatedGeographyData);
 
-  return (
-    <div className="space-y-4 company-overview">
-      <div className="grid gap-3">
-          <div className="flex items-start space-x-4 rounded-md border p-3">
-            <div className="space-y-2 flex-1">
-              <div className="space-y-0.5">
-                <h3 className="text-sm font-semibold leading-none tracking-tight">
-                  {profile?.companyName} ({profile?.symbol})
-                </h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="outline" className="text-[10px]">
-                    {profile?.sector}
-                  </Badge>
-                  <Badge variant="outline" className="text-[10px]">
-                    {profile?.industry}
-                  </Badge>
-                  <Badge variant="outline" className="text-[10px]">
-                    {profile?.exchangeShortName}
-                  </Badge>
-                </div>
+  // Create card components for mobile carousel
+  const createCompanyInfoCard = () => (
+    <div className="flex items-start space-x-4 rounded-md border p-3">
+      <div className="space-y-2 flex-1">
+        <div className="space-y-0.5">
+          <h3 className="text-sm font-semibold leading-none tracking-tight">
+            {profile?.companyName} ({profile?.symbol})
+          </h3>
+          <div className="flex items-center gap-2 mt-1">
+            <Badge variant="outline" className="text-[10px]">
+              {profile?.sector}
+            </Badge>
+            <Badge variant="outline" className="text-[10px]">
+              {profile?.industry}
+            </Badge>
+            <Badge variant="outline" className="text-[10px]">
+              {profile?.exchangeShortName}
+            </Badge>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <p className="text-xs text-justify leading-relaxed">{getDescription(profile?.description)}</p>
+          {isMobile && profile?.description && profile.description.length > 150 && (
+            <button
+              onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+              className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+            >
+              {isDescriptionExpanded ? 'Show Less' : 'Read More'}
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+          <div>
+            <p className="text-[10px] text-muted-foreground">Market Cap</p>
+            <p className="text-xs font-medium tabular-nums">{formatMarketCapBillions(marketCap || 0)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">Employees</p>
+            <p className="text-xs font-medium tabular-nums">
+              {employeeCountLoading
+                ? <span className="animate-pulse text-muted-foreground">•••</span>
+                : (employeeCount !== null && employeeCount !== undefined)
+                  ? employeeCount.toLocaleString()
+                  : 'N/A'}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">CEO</p>
+            <p className="text-xs font-medium">{profile?.ceo || 'N/A'}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">Location</p>
+            <p className="text-xs font-medium">
+              {profile?.city && profile?.state ? `${profile?.city}, ${profile?.state}` : 'N/A'}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const createSharePriceCard = () => {
+    if (pricesLoading) return null;
+    return (
+      <Card>
+        <CardHeader className="pb-0">
+          <CardTitle className="text-xs font-medium">Share Price Performance</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 px-3">
+          <StockChart symbol={currentSymbol} timeframe={timeframe} />
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const createCapitalStructureCard = () => {
+    if (balanceSheetLoading) return null;
+    return (
+      <Card>
+        <CardHeader className="pb-0">
+          <CardTitle className="text-xs font-medium">Capital Structure</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 px-3">
+          <div className="space-y-0">
+            <div className="flex justify-between items-center py-1.5 px-6 text-sm">
+              <span>Market Cap</span>
+              <span className="text-right tabular-nums">{formatWithParens(marketCap)}</span>
+            </div>
+            <div className="flex justify-between items-center py-1.5 px-6 text-sm">
+              <span>(+) Total Debt</span>
+              <span className="text-right tabular-nums">{formatWithParens(totalDebt)}</span>
+            </div>
+            <div className="flex justify-between items-center py-1.5 px-6 text-sm">
+              <span>(+) Minority Interest</span>
+              <span className="text-right tabular-nums">{formatWithParens(minorityInterest)}</span>
+            </div>
+            <div className="flex justify-between items-center py-1.5 px-6 text-sm">
+              <span>(-) Cash & Equivalents</span>
+              <span className="text-right tabular-nums">{formatWithParens(cash !== null ? -Math.abs(cash) : null)}</span>
+            </div>
+            <div className="flex justify-between items-center py-1.5 px-6 text-sm font-semibold border-t border-slate-200 dark:border-slate-700">
+              <span>Enterprise Value</span>
+              <span className="text-right tabular-nums">{formatWithParens(enterpriseValue)}</span>
+            </div>
+          </div>
+          <div className="border-t border-slate-200 dark:border-slate-700 mt-6">
+            <div className="py-3 px-6 bg-slate-50 dark:bg-slate-900/50">
+              <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">Key Metrics</div>
+            </div>
+            <div className="space-y-0">
+              <div className="flex justify-between items-center py-1.5 px-6 text-sm">
+                <span>P/E Ratio</span>
+                <span className="text-right tabular-nums">{formatRatio(null)}</span>
               </div>
-              <div className="space-y-2">
-                <p className="text-xs text-justify leading-relaxed">{getDescription(profile?.description)}</p>
-                {isMobile && profile?.description && profile.description.length > 150 && (
-                  <button
-                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                    className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-                  >
-                    {isDescriptionExpanded ? 'Show Less' : 'Read More'}
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-                <div>
-                  <p className="text-[10px] text-muted-foreground">Market Cap</p>
-                  <p className="text-xs font-medium tabular-nums">{formatMarketCapBillions(marketCap || 0)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground">Employees</p>
-                  <p className="text-xs font-medium tabular-nums">
-                    {employeeCountLoading
-                      ? <span className="animate-pulse text-muted-foreground">•••</span>
-                      : (employeeCount !== null && employeeCount !== undefined)
-                        ? employeeCount.toLocaleString()
-                        : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground">CEO</p>
-                  <p className="text-xs font-medium">{profile?.ceo || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground">Location</p>
-                  <p className="text-xs font-medium">
-                    {profile?.city && profile?.state ? `${profile?.city}, ${profile?.state}` : 'N/A'}
-                  </p>
-                </div>
+              <div className="flex justify-between items-center py-1.5 px-6 text-sm">
+                <span>EV / EBITDA</span>
+                <span className="text-right tabular-nums">{formatRatio(evToEbitda)}</span>
               </div>
             </div>
-
           </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const createRevenueChartCard = () => {
+    if (statementsLoading) return null;
+    return (
+      <Card>
+        <CardHeader className="pb-0">
+          <CardTitle className="text-xs font-medium">Historical Revenue</CardTitle>
+        </CardHeader>
+        <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
+          <RevenueChart 
+            data={revenueData}
+            palette={revenueData.map((bar, idx) => idx === revenueData.length - 1 ? '#1e3a8a' : '#60a5fa')}
+            tickFontSize={12}
+          />
+          {ltmRefDate && (
+            <div style={{ position: 'absolute', left: 0, bottom: 1, fontSize: 9, color: 'var(--muted-foreground)', marginLeft: '0.75rem' }}>
+              <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const createEbitdaChartCard = () => {
+    if (statementsLoading) return null;
+    return (
+      <Card>
+        <CardHeader className="pb-0">
+          <CardTitle className="text-xs font-medium">Historical EBITDA & Margin</CardTitle>
+        </CardHeader>
+        <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
+          <EbitdaChart 
+            data={ebitdaData}
+            palette={ebitdaData.map((bar, idx) => idx === ebitdaData.length - 1 ? '#1e3a8a' : '#60a5fa')}
+            tickFontSize={12}
+          />
+          {ltmRefDate && (
+            <div style={{ position: 'absolute', left: 0, bottom: 1, fontSize: 9, color: 'var(--muted-foreground)', marginLeft: '0.75rem' }}>
+              <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const createSegmentChartCard = () => {
+    if (segmentsLoading) return null;
+    return (
+      <Card>
+        <CardHeader className="pb-0 flex flex-row items-center justify-between">
+          <CardTitle className="text-xs font-medium">
+            {fyLabel} Revenue by Segment
+            {canonicalLTMRevenue && (
+              <span className="text-xs text-muted-foreground ml-1">
+                (${canonicalLTMRevenue.toFixed(1)}B)
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
+          {scaledSegmentData.length > 0 ? (
+            <PieChart 
+              data={scaledSegmentData} 
+              nameKey="name" 
+              dataKey="value" 
+              colors={['#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#e0e7ff']}
+              formatter={(value) => `$${value.toFixed(1)}B`}
+              labelColor={pieLabelColor}
+            />
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No revenue segmentation data available for this company
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const createGeographyChartCard = () => {
+    if (regionsLoading) return null;
+    return (
+      <Card>
+        <CardHeader className="pb-0 flex flex-row items-center justify-between">
+          <CardTitle className="text-xs font-medium">
+            {fyLabel} Revenue by Geography
+            {canonicalLTMRevenue && (
+              <span className="text-xs text-muted-foreground ml-1">
+                (${canonicalLTMRevenue.toFixed(1)}B)
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
+          {consolidatedGeographyData.length > 1 ? (
+            <PieChart 
+              data={consolidatedGeographyData} 
+              nameKey="name" 
+              dataKey="value" 
+              colors={['#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#e0e7ff']}
+              formatter={(value) => `$${value.toFixed(1)}B`}
+              labelColor={pieLabelColor}
+          />
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Not enough data to display geographic split.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Create carousel cards array (excluding company info card)
+  const carouselCards = [
+    createSharePriceCard(),
+    createCapitalStructureCard(),
+    createRevenueChartCard(),
+    createEbitdaChartCard(),
+    createSegmentChartCard(),
+    createGeographyChartCard(),
+  ].filter(Boolean);
+
+  // Use actual chart cards
+  const finalCarouselCards = carouselCards;
+
+  // Only render carousel if we have valid cards and not all are loading
+  const hasValidCards = finalCarouselCards.length > 0;
+  const isLoading = pricesLoading || balanceSheetLoading || statementsLoading || segmentsLoading || regionsLoading;
+
+
+
+
+
+
+
+  return (
+    <div className="space-y-4 company-overview">
+      {isMobile ? (
+        // Mobile view with simple grid layout
+        <div className="space-y-4">
+          {/* Fixed Company Info Card */}
+          {createCompanyInfoCard()}
+          
+          {/* Charts in a simple grid */}
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-sm">Loading charts...</p>
+            </div>
+          ) : hasValidCards ? (
+            <div className="space-y-4">
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground mb-2">
+                  {finalCarouselCards.length} charts available
+                </p>
+              </div>
+              <div className="grid gap-4">
+                {finalCarouselCards.map((card, index) => (
+                  <div key={`chart-${index}`}>
+                    {card}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-sm">No chart data available</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        // Desktop grid view
+        <div className="grid gap-3">
+          {createCompanyInfoCard()}
           <div className="grid gap-1">
             {/* Share Price Performance and Capital Structure */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
               {pricesLoading ? (
                 <ChartLoadingSkeleton />
               ) : (
-                <Card>
-                  <CardHeader className="pb-0">
-                    <CardTitle className="text-xs font-medium">Share Price Performance</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 px-3">
-                    <StockChart symbol={currentSymbol} timeframe={timeframe} />
-                  </CardContent>
-                </Card>
+                createSharePriceCard()
               )}
               {balanceSheetLoading ? (
                 <CardLoadingSkeleton />
               ) : (
-                <Card>
-                  <CardHeader className="pb-0">
-                    <CardTitle className="text-xs font-medium">Capital Structure</CardTitle>
-                  </CardHeader>
-                <CardContent className="p-0 px-3">
-                  <div className="space-y-0">
-                    <div className="flex justify-between items-center py-1.5 px-6 text-sm">
-                      <span>Market Cap</span>
-                      <span className="text-right tabular-nums">{formatWithParens(marketCap)}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1.5 px-6 text-sm">
-                      <span>(+) Total Debt</span>
-                      <span className="text-right tabular-nums">{formatWithParens(totalDebt)}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1.5 px-6 text-sm">
-                      <span>(+) Minority Interest</span>
-                      <span className="text-right tabular-nums">{formatWithParens(minorityInterest)}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1.5 px-6 text-sm">
-                      <span>(-) Cash & Equivalents</span>
-                      <span className="text-right tabular-nums">{formatWithParens(cash !== null ? -Math.abs(cash) : null)}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1.5 px-6 text-sm font-semibold border-t border-slate-200 dark:border-slate-700">
-                      <span>Enterprise Value</span>
-                      <span className="text-right tabular-nums">{formatWithParens(enterpriseValue)}</span>
-                    </div>
-                  </div>
-                  <div className="border-t border-slate-200 dark:border-slate-700 mt-6">
-                    <div className="py-3 px-6 bg-slate-50 dark:bg-slate-900/50">
-                      <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">Key Metrics</div>
-                    </div>
-                    <div className="space-y-0">
-                      <div className="flex justify-between items-center py-1.5 px-6 text-sm">
-                        <span>P/E Ratio</span>
-                        <span className="text-right tabular-nums">{formatRatio(null)}</span>
-                      </div>
-                      <div className="flex justify-between items-center py-1.5 px-6 text-sm">
-                        <span>EV / EBITDA</span>
-                        <span className="text-right tabular-nums">{formatRatio(evToEbitda)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                createCapitalStructureCard()
               )}
             </div>
             
@@ -901,44 +1091,12 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
               {statementsLoading ? (
                 <ChartLoadingSkeleton />
               ) : (
-                <Card>
-                  <CardHeader className="pb-0">
-                    <CardTitle className="text-xs font-medium">Historical Revenue</CardTitle>
-                  </CardHeader>
-                  <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
-                    <RevenueChart 
-                      data={revenueData}
-                      palette={revenueData.map((bar, idx) => idx === revenueData.length - 1 ? '#1e3a8a' : '#60a5fa')}
-                      tickFontSize={12}
-                    />
-                    {ltmRefDate && (
-                      <div style={{ position: 'absolute', left: 0, bottom: 1, fontSize: 9, color: 'var(--muted-foreground)', marginLeft: '0.75rem' }}>
-                        <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                createRevenueChartCard()
               )}
               {statementsLoading ? (
                 <ChartLoadingSkeleton />
               ) : (
-                <Card>
-                  <CardHeader className="pb-0">
-                    <CardTitle className="text-xs font-medium">Historical EBITDA & Margin</CardTitle>
-                  </CardHeader>
-                  <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
-                    <EbitdaChart 
-                      data={ebitdaData}
-                      palette={ebitdaData.map((bar, idx) => idx === ebitdaData.length - 1 ? '#1e3a8a' : '#60a5fa')}
-                      tickFontSize={12}
-                    />
-                    {ltmRefDate && (
-                      <div style={{ position: 'absolute', left: 0, bottom: 1, fontSize: 9, color: 'var(--muted-foreground)', marginLeft: '0.75rem' }}>
-                        <span>{'¹ As at: '}{format(ltmRefDate, 'MMM-yy')}</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                createEbitdaChartCard()
               )}
               {/* FYE Note positioned at bottom right of the charts container */}
               {fyeNote && (
@@ -961,88 +1119,17 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
               {segmentsLoading ? (
                 <ChartLoadingSkeleton />
               ) : (
-                <Card>
-                  <CardHeader className="pb-0 flex flex-row items-center justify-between">
-                    <CardTitle className="text-xs font-medium">
-                      {fyLabel} Revenue by Segment
-                      {canonicalLTMRevenue && (
-                        <span className="text-xs text-muted-foreground ml-1">
-                          (${canonicalLTMRevenue.toFixed(1)}B)
-                        </span>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
-                    {(() => {
-                      console.log('[DEBUG] About to render segment pie chart:', { 
-                        scaledSegmentData, 
-                        dataLength: scaledSegmentData.length,
-                        hasData: scaledSegmentData.length > 0 
-                      });
-                      return null;
-                    })()}
-                    {scaledSegmentData.length > 0 ? (
-                      <>
-                        <PieChart 
-                          data={scaledSegmentData} 
-                          nameKey="name" 
-                          dataKey="value" 
-                          colors={['#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#e0e7ff']}
-                          formatter={(value) => `$${value.toFixed(1)}B`}
-                          labelColor={pieLabelColor}
-                        />
-                      </>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No revenue segmentation data available for this company
-                      </div>
-                  )}
-                </CardContent>
-              </Card>
+                createSegmentChartCard()
               )}
               {regionsLoading ? (
                 <ChartLoadingSkeleton />
               ) : (
-                <Card>
-                  <CardHeader className="pb-0 flex flex-row items-center justify-between">
-                    <CardTitle className="text-xs font-medium">
-                      {fyLabel} Revenue by Geography
-                      {canonicalLTMRevenue && (
-                        <span className="text-xs text-muted-foreground ml-1">
-                          (${canonicalLTMRevenue.toFixed(1)}B)
-                        </span>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
-                    {(() => {
-                      console.log('[DEBUG] About to render geography pie chart:', { 
-                        processedGeographyData, 
-                        dataLength: processedGeographyData.length,
-                        hasData: processedGeographyData.length > 1 
-                      });
-                      return null;
-                    })()}
-                    {consolidatedGeographyData.length > 1 ? (
-                      <PieChart 
-                        data={consolidatedGeographyData} 
-                        nameKey="name" 
-                        dataKey="value" 
-                        colors={['#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#e0e7ff']}
-                        formatter={(value) => `$${value.toFixed(1)}B`}
-                        labelColor={pieLabelColor}
-                      />
-                    ) : (
-                                              <div className="text-center py-8 text-muted-foreground">
-                          Not enough data to display geographic split.
-                        </div>
-                      )}
-                  </CardContent>
-                </Card>
+                createGeographyChartCard()
               )}
             </div>
           </div>
         </div>
-      </div>
-    );
+      )}
+    </div>
+  );
 }

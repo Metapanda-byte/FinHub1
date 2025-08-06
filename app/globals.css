@@ -149,6 +149,7 @@
     .mobile-table-container th {
       padding: 0.5rem 0.75rem;
       white-space: nowrap;
+      font-size: 0.75rem; /* 12px for mobile */
     }
   }
   
@@ -622,18 +623,20 @@
   }
   
   .mobile-table {
-    @apply min-w-full text-sm;
+    @apply min-w-full text-xs;
   }
   
   .mobile-table th {
-    @apply px-3 py-3 text-left font-medium;
+    @apply px-3 py-2 text-left font-medium;
     @apply bg-muted/50 sticky top-0;
     @apply whitespace-nowrap;
+    font-size: 0.75rem; /* 12px */
   }
   
   .mobile-table td {
-    @apply px-3 py-3;
+    @apply px-3 py-2;
     @apply whitespace-nowrap;
+    font-size: 0.75rem; /* 12px */
   }
   
   /* Mobile Scroll Indicators */
@@ -1105,6 +1108,24 @@
       -moz-user-select: none;
       -ms-user-select: none;
       user-select: none;
+      font-size: 0.75rem; /* 12px for mobile */
+    }
+    
+    .financial-table th,
+    .financial-table td {
+      font-size: 0.75rem; /* 12px for mobile */
+      padding: 0.5rem 0.75rem; /* Reduced padding */
+    }
+    
+    /* Additional mobile table optimizations */
+    .financial-table-wrapper table {
+      font-size: 0.75rem; /* 12px for mobile */
+    }
+    
+    .financial-table-wrapper th,
+    .financial-table-wrapper td {
+      font-size: 0.75rem; /* 12px for mobile */
+      line-height: 1.2; /* Tighter line height for mobile */
     }
     
     /* Re-enable text selection on desktop */
@@ -1858,5 +1879,26 @@
   .dark .financial-table-wrapper th.ltm-column,
   .dark .financial-table-wrapper td.ltm-column {
     background-color: hsl(var(--muted) / 0.2) !important;
+  }
+  
+  /* Mobile Carousel Optimizations */
+  @media (max-width: 768px) {
+    .mobile-carousel-container {
+      touch-action: pan-y pinch-zoom;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .mobile-carousel-slide {
+      min-height: 60vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    .mobile-carousel-card {
+      margin: 0 0.5rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
   }
 }
