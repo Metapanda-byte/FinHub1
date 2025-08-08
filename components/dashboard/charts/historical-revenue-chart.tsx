@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { ProcessedSegment } from '@/lib/types/financial';
+import { ProcessedSegment } from '@/lib/api/financial';
 
 interface HistoricalRevenueChartProps {
   data: {

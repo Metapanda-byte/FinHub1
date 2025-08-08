@@ -121,11 +121,3 @@ export interface CashFlowItem {
   netCashUsedProvidedByFinancingActivities: number;
   [key: string]: any;
 }
-
-export interface ProcessedSegment {
-  name: string;
-  value: number;
-  percentage: number;
-  children?: ProcessedSegment[];
-  fullName?: string;
-}
