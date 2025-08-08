@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import XLSX from 'xlsx';
+
+export const dynamic = 'force-dynamic';
 
 interface DocumentExtractionRequest {
   url: string;
@@ -42,6 +43,7 @@ function detectFileType(url: string): string {
 // Extract text from PDF buffer
 async function extractPDF(buffer: Buffer): Promise<{ content: string; metadata: any }> {
   try {
+    const { default: pdfParse } = await import('pdf-parse');
     const data = await pdfParse(buffer);
     return {
       content: data.text,

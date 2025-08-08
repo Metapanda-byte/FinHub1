@@ -71,7 +71,7 @@ export function EarningsTranscriptsSection({ ticker }: EarningsTranscriptsSectio
               Found {transcriptDates.length} earnings call transcripts
             </div>
             <div className="space-y-3">
-              {transcriptDates.slice(0, 12).map((transcript, index) => transcript && (
+              {transcriptDates.slice(0, 12).map((transcript: any, index: number) => transcript && (
               <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">

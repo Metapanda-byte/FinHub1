@@ -93,7 +93,7 @@ export function ContentExtractionDemo({ ticker }: ContentExtractionDemoProps) {
                       <CardTitle className="text-sm">Management Highlights</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      {transcriptAnalysis.analysis.managementHighlights.slice(0, 3).map((highlight, i) => (
+                      {transcriptAnalysis.analysis.managementHighlights.slice(0, 3).map((highlight: string, i: number) => (
                         <div key={i} className="p-2 bg-green-50 rounded text-xs">
                           {highlight}
                         </div>
@@ -106,7 +106,7 @@ export function ContentExtractionDemo({ ticker }: ContentExtractionDemoProps) {
                       <CardTitle className="text-sm">Forward Guidance</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      {transcriptAnalysis.analysis.guidance.slice(0, 3).map((guidance, i) => (
+                      {transcriptAnalysis.analysis.guidance.slice(0, 3).map((guidance: string, i: number) => (
                         <div key={i} className="p-2 bg-blue-50 rounded text-xs">
                           {guidance}
                         </div>
@@ -119,7 +119,7 @@ export function ContentExtractionDemo({ ticker }: ContentExtractionDemoProps) {
                       <CardTitle className="text-sm">Strategic Updates</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      {transcriptAnalysis.analysis.strategicUpdates.slice(0, 3).map((update, i) => (
+                      {transcriptAnalysis.analysis.strategicUpdates.slice(0, 3).map((update: string, i: number) => (
                         <div key={i} className="p-2 bg-purple-50 rounded text-xs">
                           {update}
                         </div>
@@ -132,7 +132,7 @@ export function ContentExtractionDemo({ ticker }: ContentExtractionDemoProps) {
                       <CardTitle className="text-sm">Risk Discussions</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      {transcriptAnalysis.analysis.riskDiscussions.slice(0, 3).map((risk, i) => (
+                      {transcriptAnalysis.analysis.riskDiscussions.slice(0, 3).map((risk: string, i: number) => (
                         <div key={i} className="p-2 bg-orange-50 rounded text-xs">
                           {risk}
                         </div>

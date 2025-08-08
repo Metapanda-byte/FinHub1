@@ -7,7 +7,8 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, XCircle, Shield, Target, BarChart3, PieChart } from 'lucide-react';
 import { useSearchStore } from '@/lib/store/search-store';
-import { useFinancialRatios, useKeyMetrics, type FinancialRatios, type KeyMetrics } from '@/lib/api/financial';
+import { useFinancialRatios, useKeyMetrics } from '@/lib/api/financial';
+import type { FinancialRatios, KeyMetrics } from '@/lib/types/financial';
 import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, RadialBarChart, RadialBar, Legend, Pie } from 'recharts';
 

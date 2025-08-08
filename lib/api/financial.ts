@@ -2,6 +2,7 @@
 
 import useSWR from 'swr';
 import React from 'react';
+import type { IncomeStatementItem, BalanceSheetItem, CashFlowItem } from '@/lib/types/financial';
 
 // Simple fetcher for internal API routes
 const fetcher = async (url: string) => {
@@ -31,8 +32,8 @@ export function useCompanyProfile(symbol: string) {
 }
 
 // Income Statements Hook
-export function useIncomeStatements(symbol: string, period: 'annual' | 'quarter' = 'annual') {
-  const { data, error, isLoading } = useSWR(
+export function useIncomeStatements(symbol: string, period: 'annual' | 'quarter' = 'annual'): { statements: IncomeStatementItem[]; isLoading: boolean; error: any } {
+  const { data, error, isLoading } = useSWR<IncomeStatementItem[]>(
     symbol ? `/api/financial/income-statement?symbol=${symbol}&period=${period}&limit=10` : null,
     fetcher,
     {
@@ -49,8 +50,8 @@ export function useIncomeStatements(symbol: string, period: 'annual' | 'quarter'
 }
 
 // Balance Sheets Hook
-export function useBalanceSheets(symbol: string, period: 'annual' | 'quarter' = 'annual') {
-  const { data, error, isLoading } = useSWR(
+export function useBalanceSheets(symbol: string, period: 'annual' | 'quarter' = 'annual'): { statements: BalanceSheetItem[]; isLoading: boolean; error: any } {
+  const { data, error, isLoading } = useSWR<BalanceSheetItem[]>(
     symbol ? `/api/financial/balance-sheet?symbol=${symbol}&period=${period}&limit=10` : null,
     fetcher,
     {
@@ -67,8 +68,8 @@ export function useBalanceSheets(symbol: string, period: 'annual' | 'quarter' = 
 }
 
 // Cash Flow Statements Hook
-export function useCashFlows(symbol: string, period: 'annual' | 'quarter' = 'annual') {
-  const { data, error, isLoading } = useSWR(
+export function useCashFlows(symbol: string, period: 'annual' | 'quarter' = 'annual'): { statements: CashFlowItem[]; isLoading: boolean; error: any } {
+  const { data, error, isLoading } = useSWR<CashFlowItem[]>(
     symbol ? `/api/financial/cash-flow?symbol=${symbol}&period=${period}&limit=10` : null,
     fetcher,
     {
@@ -362,13 +363,50 @@ export function useEarningsTranscriptDates(symbol: string) {
   };
 }
 
+// Define minimal DCF data shape used by the UI
+export interface DCFAnalysisData {
+  discountRate?: number;
+  longTermGrowthRate?: number;
+  [key: string]: any;
+}
+
 // DCF Analysis Hook
-export function useDCFAnalysis(symbol: string, assumptions?: any) {
+export function useDCFAnalysis(symbol: string, assumptions?: any): { dcfData: DCFAnalysisData | null; isLoading: boolean; error: any } {
   return { 
     dcfData: null, 
     isLoading: false, 
     error: new Error('DCF Analysis not yet implemented') 
   };
+}
+
+// Content extraction/analysis hooks used in demo
+export function useTranscriptAnalysis(symbol: string, quarter: number, year: number) {
+  const key = symbol && quarter && year ? ['analyze-transcript', symbol, quarter, year] : null;
+  const { data, error, isLoading } = useSWR(key, async () => {
+    const res = await fetch('/api/analyze-transcript', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol, quarter, year })
+    });
+    if (!res.ok) throw new Error(`Failed to analyze transcript: ${res.status}`);
+    return res.json();
+  });
+  return { analysis: data, isLoading, error };
+}
+
+export function useFilingContent(symbol: string, filingUrl: string, filingType: string) {
+  const enabled = Boolean(symbol && filingUrl && filingType);
+  const key = enabled ? ['extract-filing-content', symbol, filingUrl, filingType] : null;
+  const { data, error, isLoading } = useSWR(key, async () => {
+    const res = await fetch('/api/extract-filing-content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol, filingUrl, filingType })
+    });
+    if (!res.ok) throw new Error(`Failed to extract filing content: ${res.status}`);
+    return res.json();
+  });
+  return { content: data, isLoading, error };
 }
 
 // Custom DCF Assumptions interface
@@ -382,3 +420,6 @@ export interface CustomDCFAssumptions {
   capexAsPercentOfRevenue: number;
   workingCapitalChangeAsPercentOfRevenue: number;
 }
+
+// Backwards-compatible aliases for legacy hook names
+export { useRevenueSegmentsTTM as useRevenueSegments, useGeographicRevenueTTM as useGeographicRevenue };

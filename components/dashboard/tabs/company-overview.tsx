@@ -704,7 +704,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   // SPECIAL DEBUG FOR MSFT - let's see the exact structure
   if (currentSymbol === 'MSFT') {
     console.log('[MSFT DEBUG] ttmGeographyData length:', ttmGeographyData.length);
-    ttmGeographyData.forEach((item, idx) => {
+    ttmGeographyData.forEach((item: any, idx: number) => {
       console.log(`[MSFT DEBUG] Item ${idx}:`, JSON.stringify(item, null, 2));
     });
   }
@@ -717,7 +717,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   if (fiscalYearRevenue && ttmSegmentData.length > 0) {
     const segmentTotal = ttmSegmentData.reduce((sum: number, s: any) => sum + s.value, 0);
     if (segmentTotal > 0) {
-      scaledSegmentData = ttmSegmentData.map(seg => ({
+      scaledSegmentData = ttmSegmentData.map((seg: any) => ({
         ...seg,
         percentage: (seg.value / segmentTotal) * 100
       }));
@@ -727,7 +727,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   if (fiscalYearRevenue && ttmGeographyData.length > 0) {
     const geoTotal = ttmGeographyData.reduce((sum: number, s: any) => sum + s.value, 0);
     if (geoTotal > 0) {
-      scaledGeographyData = ttmGeographyData.map(geo => ({
+      scaledGeographyData = ttmGeographyData.map((geo: any) => ({
         ...geo,
         percentage: (geo.value / geoTotal) * 100
       }));

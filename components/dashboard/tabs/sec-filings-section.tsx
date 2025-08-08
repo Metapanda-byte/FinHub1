@@ -21,14 +21,14 @@ export function SECFilingsSection({ ticker }: SECFilingsSectionProps) {
   // Filter SEC filings by type
   const filteredFilings = useMemo(() => {
     if (!secFilings || filingTypeFilter === 'all') return secFilings;
-    return secFilings.filter(filing => filing.type === filingTypeFilter);
+    return secFilings.filter((filing: any) => filing.type === filingTypeFilter);
   }, [secFilings, filingTypeFilter]);
 
   // Get unique filing types for filter dropdown
-  const filingTypes = useMemo(() => {
+  const filingTypes = useMemo((): string[] => {
     if (!secFilings) return [];
-    const typeSet = new Set(secFilings.map(filing => filing.type));
-    const types = Array.from(typeSet).sort();
+    const typeSet = new Set(secFilings.map((filing: any) => filing.type as string));
+    const types = Array.from(typeSet.values()).map(String).sort();
     return types;
   }, [secFilings]);
 
@@ -96,8 +96,8 @@ export function SECFilingsSection({ ticker }: SECFilingsSectionProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All filing types ({secFilings?.length || 0})</SelectItem>
-                  {filingTypes.map(type => {
-                    const count = secFilings?.filter(f => f.type === type).length || 0;
+                  {filingTypes.map((type: string) => {
+                    const count = secFilings?.filter((f: any) => f.type === type).length || 0;
                     return (
                       <SelectItem key={type} value={type}>
                         {type} ({count})
@@ -111,7 +111,7 @@ export function SECFilingsSection({ ticker }: SECFilingsSectionProps) {
               </div>
             </div>
             <div className="space-y-3">
-              {filteredFilings.map((filing, index) => (
+              {filteredFilings.map((filing: any, index: number) => (
               <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">

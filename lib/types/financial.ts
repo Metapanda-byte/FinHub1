@@ -121,3 +121,123 @@ export interface CashFlowItem {
   netCashUsedProvidedByFinancingActivities: number;
   [key: string]: any;
 }
+
+// Add common visualization types
+export interface ProcessedSegment {
+  name: string;
+  value: number;
+  percentage: number;
+  children?: ProcessedSegment[];
+  fullName?: string;
+}
+
+// Financial Ratios interfaces
+export interface FinancialRatios {
+  peRatio: number;
+  pegRatio: number;
+  bookValuePerShare: number;
+  priceToBookRatio: number;
+  returnOnAssets: number;
+  returnOnEquity: number;
+  debtEquityRatio: number;
+  currentRatio: number;
+  quickRatio: number;
+  grossProfitMargin: number;
+  operatingProfitMargin: number;
+  netProfitMargin: number;
+  dividendYield: number;
+  payoutRatio: number;
+  
+  // Credit Analysis Ratios
+  debtRatio: number; // Total Liabilities / Total Assets
+  longTermDebtToCapitalization: number;
+  totalDebtToCapitalization: number;
+  interestCoverage: number; // EBIT / Interest Expense
+  cashFlowToDebtRatio: number; // Operating Cash Flow / Total Debt
+  cashRatio: number; // Cash / Current Liabilities
+  companyEquityMultiplier: number; // Total Assets / Total Equity
+  cashFlowCoverageRatios: number; // Operating Cash Flow / (Short Term Debt + Total Debt)
+  shortTermCoverageRatios: number; // Operating Cash Flow / Short Term Debt
+  capitalExpenditureCoverageRatio: number; // Operating Cash Flow / Capex
+  
+  date: string;
+}
+
+// Key Metrics interface for credit analysis
+export interface KeyMetrics {
+  revenuePerShare: number;
+  netIncomePerShare: number;
+  operatingCashFlowPerShare: number;
+  freeCashFlowPerShare: number;
+  cashPerShare: number;
+  bookValuePerShare: number;
+  tangibleBookValuePerShare: number;
+  shareholdersEquityPerShare: number;
+  interestDebtPerShare: number;
+  marketCap: number;
+  enterpriseValue: number;
+  peRatio: number;
+  priceToSalesRatio: number;
+  pocfratio: number; // Price to Operating Cash Flow
+  pfcfRatio: number; // Price to Free Cash Flow
+  pbRatio: number;
+  ptbRatio: number;
+  evToSales: number;
+  enterpriseValueOverEBITDA: number;
+  evToOperatingCashFlow: number;
+  evToFreeCashFlow: number;
+  earningsYield: number;
+  freeCashFlowYield: number;
+  debtToEquity: number;
+  debtToAssets: number;
+  netDebtToEBITDA: number;
+  currentRatio: number;
+  interestCoverage: number;
+  incomeQuality: number;
+  dividendYield: number;
+  payoutRatio: number;
+  salesGeneralAndAdministrativeToRevenue: number;
+  researchAndDevelopmentToRevenue: number;
+  intangiblesToTotalAssets: number;
+  capexToOperatingCashFlow: number;
+  capexToRevenue: number;
+  capexToDepreciation: number;
+  stockBasedCompensationToRevenue: number;
+  grahamNumber: number;
+  roic: number; // Return on Invested Capital
+  returnOnTangibleAssets: number;
+  grahamNetNet: number;
+  workingCapital: number;
+  tangibleAssetValue: number;
+  netCurrentAssetValue: number;
+  investedCapital: number;
+  averageReceivables: number;
+  averagePayables: number;
+  averageInventory: number;
+  daysSalesOutstanding: number;
+  daysPayablesOutstanding: number;
+  daysOfInventoryOnHand: number;
+  receivablesTurnover: number;
+  payablesTurnover: number;
+  inventoryTurnover: number;
+  roe: number;
+  capexPerShare: number;
+  date: string;
+}
+
+export interface EarningsTranscriptDate {
+  symbol: string;
+  quarter: number;
+  year: number;
+  date: string;
+}
+
+export interface SECFiling {
+  symbol: string;
+  fillingDate: string;
+  acceptedDate: string;
+  cik: string;
+  type: string;
+  link: string;
+  finalLink: string;
+}
