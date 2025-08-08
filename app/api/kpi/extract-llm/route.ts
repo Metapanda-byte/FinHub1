@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const perplexity = new OpenAI({
-  apiKey: process.env.PERPLEXITY_API_KEY,
-  baseURL: 'https://api.perplexity.ai',
-});
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,6 +13,19 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const apiKey = process.env.PERPLEXITY_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Perplexity API key not configured; LLM extraction is disabled in this environment.' },
+        { status: 503 }
+      );
+    }
+
+    const perplexity = new OpenAI({
+      apiKey,
+      baseURL: 'https://api.perplexity.ai',
+    });
 
     // Build industry-specific prompt
     const prompt = buildKPIExtractionPrompt({
