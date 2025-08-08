@@ -172,11 +172,13 @@ export default function Header() {
             </div>
 
             {/* Upgrade Button - McLaren Orange */}
-            <Button 
-              className="hidden sm:flex items-center justify-center h-7 px-2 text-xs bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white"
-            >
-              Upgrade
-            </Button>
+            <Link href="/plans">
+              <Button 
+                className="hidden sm:flex items-center justify-center h-7 px-2 text-xs bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white"
+              >
+                Upgrade
+              </Button>
+            </Link>
 
             {/* Mobile Menu Button */}
             <Button
@@ -300,11 +302,13 @@ export default function Header() {
               <div className="space-y-2 pt-4 border-t">
                 <AuthButton />
                 
-                <Button 
-                  className="w-full touch-target bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white"
-                >
-                  Upgrade
-                </Button>
+                <Link href="/plans" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button 
+                    className="w-full touch-target bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white"
+                  >
+                    Upgrade
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>

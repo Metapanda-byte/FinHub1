@@ -557,7 +557,8 @@ Provide response in JSON format:
       keyMetricsResults,
       ratiosResults,
       incomeResults,
-      segmentResults
+      segmentResults,
+      estimatesResults
     ] = await Promise.all([
       // Company profiles
       Promise.all(allSymbols.map(async (sym) => {
@@ -598,7 +599,7 @@ Provide response in JSON format:
       // Income statements
       Promise.all(allSymbols.map(async (sym) => {
         try {
-          const response = await fetch(`https://financialmodelingprep.com/api/v3/income-statement/${sym}?limit=2&apikey=${apiKey}`);
+          const response = await fetch(`https://financialmodelingprep.com/api/v3/income-statement/${sym}?period=quarter&limit=4&apikey=${apiKey}`);
           if (!response.ok) return null;
           const data = await response.json();
           return data;
@@ -627,6 +628,18 @@ Provide response in JSON format:
         } catch (error) {
           console.log(`Failed to fetch segment data for ${sym}:`, error);
           return { geographic: null, product: null };
+        }
+      })),
+      
+      // Analyst estimates (annual) for forward metrics
+      Promise.all(allSymbols.map(async (sym) => {
+        try {
+          const response = await fetch(`https://financialmodelingprep.com/api/v3/analyst-estimates/${sym}?period=annual&limit=6&apikey=${apiKey}`);
+          if (!response.ok) return null;
+          const data = await response.json();
+          return Array.isArray(data) ? data : null;
+        } catch {
+          return null;
         }
       }))
     ]);
@@ -714,35 +727,103 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
       const profile = companyProfiles.find((p) => p?.symbol === sym);
       const company = profile?.companyName || sym;
       const sector = profile?.sector || 'N/A';
+      const price = Number(profile?.price) || 0;
 
-      // Calculate net debt and enterprise value
-      const netDebt = (metrics?.netDebtTTM || 0);
-      const enterpriseValue = metrics?.enterpriseValueTTM || 0;
-      
+      // Current capital structure
+      const marketCap = Number(metrics?.marketCapTTM || 0);
+      const netDebt = Number(metrics?.netDebtTTM || 0);
+      const enterpriseValue = Number(metrics?.enterpriseValueTTM || (marketCap + netDebt));
+
+      // LTM construction from income statements
+      const stmts = incomeResults[index] as any[] | null;
+      let ltmRevenue = 0;
+      let ltmEbitda = 0;
+      let ltmNetIncome = 0;
+      let sharesOutstanding = Number(metrics?.sharesOutstanding || 0);
+      if (Array.isArray(stmts) && stmts.length > 0) {
+        const take = Math.min(4, stmts.length);
+        for (let i = 0; i < take; i++) {
+          const s = stmts[i] || {};
+          // only accumulate if quarterly; FMP quarterly objects usually include 'period' or 'filingDate' with quarter context
+          const isQuarter = (s?.period?.toLowerCase?.() === 'q1' || s?.period?.toLowerCase?.() === 'q2' || s?.period?.toLowerCase?.() === 'q3' || s?.period?.toLowerCase?.() === 'q4' || s?.period?.toLowerCase?.() === 'quarter');
+          const revenueVal = Number(s.revenue || 0);
+          const ebitdaVal = Number(s.ebitda || 0);
+          const netIncomeVal = Number(s.netIncome || 0);
+          if (isQuarter || (revenueVal > 0 && ebitdaVal !== null)) {
+            ltmRevenue += revenueVal;
+            ltmEbitda += ebitdaVal;
+            ltmNetIncome += netIncomeVal;
+          }
+          if (!sharesOutstanding) {
+            sharesOutstanding = Number(s.weightedAverageShsOutDil || s.weightedAverageShsOut || 0) || sharesOutstanding;
+          }
+        }
+      }
+      // Safe guards and fallbacks when quarterly parse failed
+      const ltmEbitdaMargin = ltmRevenue > 0 ? ltmEbitda / ltmRevenue : 0;
+
+      // LTM multiples computed from EV/MC
+      const ltmEvToEbitda = ltmEbitda > 0 ? enterpriseValue / ltmEbitda : (ratios?.enterpriseValueMultipleTTM || 0);
+      const ltmPriceToSales = ltmRevenue > 0 ? marketCap / ltmRevenue : (ratios?.priceToSalesRatioTTM || 0);
+      const ltmPeRatio = ltmNetIncome !== 0 ? marketCap / ltmNetIncome : (ratios?.priceEarningsRatioTTM || 0);
+
+      // Forward estimates
+      const estimatesArr = estimatesResults[index] as any[] | null;
+      let estRevenue = 0;
+      let estEps = 0;
+      let estEbitda = 0;
+      if (Array.isArray(estimatesArr) && estimatesArr.length > 0) {
+        // Choose the nearest future annual estimate (first element is usually nearest)
+        const future = estimatesArr.find((e) => e?.period?.toLowerCase() === 'annual');
+        const chosen = future || estimatesArr[0];
+        estRevenue = Number(chosen?.estimatedRevenueAvg || chosen?.revenueEstimatedAvg || 0);
+        estEps = Number(chosen?.estimatedEpsAvg || chosen?.epsEstimatedAvg || 0);
+        estEbitda = Number(chosen?.estimatedEbitdaAvg || 0);
+      }
+      if (!estEbitda && estRevenue > 0 && ltmEbitdaMargin > 0) {
+        estEbitda = estRevenue * ltmEbitdaMargin;
+      }
+
+      // Forward multiples from current EV / MC
+      const fwdPriceToSales = estRevenue > 0 ? marketCap / estRevenue : 0;
+      const fwdEvToEbitda = estEbitda > 0 ? enterpriseValue / estEbitda : 0;
+      let fwdPeRatio = 0;
+      if (estEps > 0) {
+        if (price > 0) {
+          fwdPeRatio = price / estEps;
+        } else if (sharesOutstanding > 0) {
+          fwdPeRatio = marketCap / (estEps * sharesOutstanding);
+        }
+      }
+      // Normalize any pathological values
+      const safeFwdPS = isFinite(fwdPriceToSales) && fwdPriceToSales >= 0 ? fwdPriceToSales : 0;
+      const safeFwdEVEBITDA = isFinite(fwdEvToEbitda) && fwdEvToEbitda >= 0 ? fwdEvToEbitda : 0;
+      const safeFwdPE = isFinite(fwdPeRatio) && fwdPeRatio >= 0 ? fwdPeRatio : 0;
+
       return {
         ticker: sym,
         company,
         sector,
-        marketCap: metrics?.marketCapTTM || 0,
-        netDebt: netDebt,
-        enterpriseValue: enterpriseValue,
-        // LTM metrics
-        ltmEvToEbitda: ratios?.enterpriseValueMultipleTTM || 0,
-        ltmPeRatio: ratios?.priceEarningsRatioTTM || 0,
-        ltmPriceToSales: ratios?.priceToSalesRatioTTM || 0,
-        // Forward metrics (will be populated later)
-        fwdEvToEbitda: 0,
-        fwdPeRatio: 0,
-        fwdPriceToSales: 0,
-        // Other metrics
+        marketCap,
+        netDebt,
+        enterpriseValue,
+        // LTM
+        ltmEvToEbitda,
+        ltmPeRatio,
+        ltmPriceToSales,
+        // Forward
+        fwdEvToEbitda: safeFwdEVEBITDA,
+        fwdPeRatio: safeFwdPE,
+        fwdPriceToSales: safeFwdPS,
+        // Other
         priceToBook: ratios?.priceToBookRatioTTM || 0,
         dividendYield: ratios?.dividendYieldPercentageTTM || 0,
-        // Legacy fields for backward compatibility
-        evToEbitda: ratios?.enterpriseValueMultipleTTM || 0,
-        peRatio: ratios?.priceEarningsRatioTTM || 0,
-        priceToSales: ratios?.priceToSalesRatioTTM || 0,
+        // Legacy (kept for compatibility)
+        evToEbitda: ltmEvToEbitda,
+        peRatio: ltmPeRatio,
+        priceToSales: ltmPriceToSales,
       };
-    }).filter((data) => data.marketCap > 0); // Filter out companies with no data
+    }).filter((data) => data.marketCap > 0);
 
     // 7. Fetch income statements for performance metrics
     const performanceData = allSymbols.map((sym, index) => {
@@ -829,45 +910,72 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
           // FMP returns data in various formats, let's handle them
           let geoEntries: Array<{region: string, revenue: number}> = [];
           
-          // Extended list of possible region/country keys from FMP API
-          const regionKeyMappings: { [key: string]: string } = {
-            'unitedStates': 'US',
-            'UNITED STATES': 'US',
-            'US & Canada': 'US & Canada',
-            'United States': 'US',
-            'china': 'China',
-            'CHINA': 'China',
-            'europe': 'Europe',
-            'Europe': 'Europe',
-            'EMEA': 'EMEA',
-            'emea': 'EMEA',
-            'japan': 'Japan',
-            'Japan': 'Japan',
-            'restOfWorld': 'Rest of World',
-            'Rest Of World': 'Rest of World',
-            'americas': 'Americas',
-            'Americas': 'Americas',
-            'Americas Excluding United States': 'Americas ex-US',
-            'asia': 'Asia',
-            'Asia': 'Asia',
-            'Asia Pacific': 'Asia-Pacific',
-            'apac': 'APAC',
-            'APAC': 'APAC',
-            'North America': 'North America',
-            'Non-US': 'Non-US',
-            'International': 'International',
-            'Other': 'Other',
-            'SWITZERLAND': 'Switzerland',
-            'Switzerland': 'Switzerland',
-            'UNITED ARAB EMIRATES': 'UAE',
-            'United Arab Emirates': 'UAE'
+          // Normalization helper for region keys
+          const normalizeRegionName = (rawKey: string): string => {
+            if (!rawKey) return 'Other';
+            const cleaned = rawKey
+              .replace(/_/g, ' ')
+              .replace(/\bGeographical\b|\bGeographic\b|\bGeography\b|\bRegion(s)?\b/gi, '')
+              .replace(/\s+/g, ' ')
+              .trim();
+            const keyUpper = cleaned.toUpperCase();
+            const keyLower = cleaned.toLowerCase();
+            
+            // Explicit mappings first
+            const map: Record<string, string> = {
+              'UNITED STATES': 'US',
+              'UNITED STATES GEOGRAPHIC': 'US',
+              'UNITED STATES GEOGRAPHIC REGION': 'US',
+              'US': 'US',
+              'U.S.': 'US',
+              'USA': 'US',
+              'UNITED KINGDOM': 'UK',
+              'EMEA': 'EMEA',
+              'EMEA GEOGRAPHIC': 'EMEA',
+              'EMEA GEOGRAPHIC REGION': 'EMEA',
+              'APAC': 'APAC',
+              'ASIA PACIFIC': 'Asia-Pacific',
+              'AMERICAS': 'Americas',
+              'AMERICAS EXCLUDING UNITED STATES': 'Americas ex-US',
+              'REST OF WORLD': 'Rest of World',
+              'INTERNATIONAL': 'International',
+              'NON-US': 'Non-US',
+              'JAPA GEOGRAPHIC REGION': 'Japan',
+              'JAPA': 'Japan',
+              'COUNTRIES OTHER THAN US AND UNITED KINGDOM': 'Outside US & UK',
+              'COUNTRIES OTHER THAN U S AND UNITED KINGDOM': 'Outside US & UK',
+            };
+            if (map[keyUpper]) return map[keyUpper];
+            
+            // Common camel/snake cases
+            if (keyLower === 'united states') return 'US';
+            if (keyLower === 'united arab emirates') return 'UAE';
+            if (keyLower === 'united kingdom') return 'UK';
+            if (keyLower === 'americas excluding united states') return 'Americas ex-US';
+            if (keyLower === 'japan') return 'Japan';
+            
+            // Preserve only known acronyms; otherwise title-case
+            const allowedAcronyms = new Set(['US', 'UK', 'EMEA', 'APAC', 'UAE']);
+            if (/^[A-Z]{2,}$/.test(cleaned)) {
+              return allowedAcronyms.has(cleaned) ? cleaned : cleaned
+                .toLowerCase()
+                .split(' ')
+                .map(w => w.length ? w[0].toUpperCase() + w.slice(1) : w)
+                .join(' ');
+            }
+            
+            // Title-case otherwise
+            return cleaned
+              .toLowerCase()
+              .split(' ')
+              .map(w => w.length ? w[0].toUpperCase() + w.slice(1) : w)
+              .join(' ');
           };
           
           // Extract all numeric values that look like revenue
           Object.entries(latestGeo).forEach(([key, value]) => {
             if (typeof value === 'number' && value > 0 && key !== 'date' && !key.includes('period')) {
-              // Try to find a mapping for the key
-              const mappedRegion = regionKeyMappings[key] || key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+              const mappedRegion = normalizeRegionName(key);
               geoEntries.push({
                 region: mappedRegion,
                 revenue: value

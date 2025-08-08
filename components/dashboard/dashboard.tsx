@@ -14,12 +14,13 @@ import { WatchlistTable } from "@/components/dashboard/tabs/watchlist-table";
 import SECFilingsTranscripts from "@/components/dashboard/tabs/sec-filings-transcripts";
 import { LBOAnalysis } from "@/components/dashboard/tabs/lbo-analysis";
 import { useSearchStore } from "@/lib/store/search-store";
-import { AnalystCopilot } from "@/components/ui/analyst-copilot";
+import { AnalystTeam } from "@/components/ui/analyst-team";
 import { KeyMetricsPanel } from "@/components/ui/key-metrics-panel";
 import { HighlightToChat } from "@/components/ui/highlight-to-chat";
 import { AnalysisPopup } from "@/components/ui/analysis-popup";
 import { useIncomeStatements, useCashFlows, useBalanceSheets, useSECFilings, useEarningsTranscriptDates, useCompanyProfile, useFinancialRatios, useKeyMetrics } from "@/lib/api/financial";
 import { useStockQuote } from "@/lib/api/stock";
+import { useTickerPreloader } from "@/lib/api/data-preloader";
 import useSWR from "swr";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,8 @@ import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { StockSearch } from "@/components/search/stock-search";
 import { CompanyHeader } from "@/components/dashboard/company-header";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { PreloadIndicator } from "@/components/ui/preload-indicator";
+import React from "react";
 
 const tabConfig = [
   { 
@@ -113,7 +116,15 @@ const tabConfig = [
 ];
 
 export function Dashboard() {
-  const [activeTab, setActiveTab] = useState("home");
+  const searchParams = useSearchParams();
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const currentSymbol = useSearchStore((state) => state.currentSymbol);
+  const currentCompanyName = useSearchStore((state) => state.currentCompanyName);
+  const resolvedCompanyName = currentCompanyName || currentSymbol;
+  
+  // Set default tab based on whether a symbol is selected
+  const defaultTab = currentSymbol ? "company-snapshot" : "home";
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [highlightQuery, setHighlightQuery] = useState('');
@@ -123,16 +134,17 @@ export function Dashboard() {
     symbol: ''
   });
   const [mounted, setMounted] = useState(false);
-  const isMobile = useMediaQuery("(max-width: 640px)");
-  
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const searchParams = useSearchParams();
-  const currentSymbol = useSearchStore((state) => state.currentSymbol);
-  const currentCompanyName = useSearchStore((state) => state.currentCompanyName);
-  const resolvedCompanyName = currentCompanyName || currentSymbol;
+  // Update active tab when symbol changes
+  React.useEffect(() => {
+    if (currentSymbol && activeTab === "home") {
+      setActiveTab("company-snapshot");
+    }
+  }, [currentSymbol, activeTab]);
 
   // Handle URL parameter for tab switching
   useEffect(() => {
@@ -159,6 +171,9 @@ export function Dashboard() {
   const { quote } = useStockQuote(currentSymbol || '');
   const { ratios } = useFinancialRatios(currentSymbol || '');
   const { metrics: keyMetrics } = useKeyMetrics(currentSymbol || '');
+
+  // Preload all tab data when symbol changes
+  useTickerPreloader(currentSymbol);
 
   const toggleWatchlist = () => {
     if (!currentSymbol) return;
@@ -456,7 +471,7 @@ export function Dashboard() {
               financialData={analysisData}
               onOpenChat={handleOpenChatFromAnalysis}
             />
-            <AnalystCopilot
+            <AnalystTeam
               symbol={currentSymbol}
               companyName={resolvedCompanyName}
               financialData={analysisData}
@@ -467,6 +482,9 @@ export function Dashboard() {
             />
           </>
         )}
+        
+        {/* Preload Indicator */}
+        <PreloadIndicator />
       </div>
     </>
   );

@@ -23,6 +23,7 @@ import debounce from "lodash/debounce";
 import { useSWRConfig } from "swr";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PeerPricePerformance } from "./peer-price-performance";
+import { preloadPeerData } from "@/lib/api/data-preloader";
 
 interface PeerCompany {
   id: string;
@@ -128,7 +129,7 @@ const fetcher = async (url: string) => {
 };
 
 // Cache search results
-const searchStocks = async (query: string): Promise<StockSearchResult[]> => {
+const searchStocksLocal = async (query: string): Promise<StockSearchResult[]> => {
   if (!query || query.length < 2) return [];
   const cacheKey = `search-${query}`;
   const cached = sessionStorage.getItem(cacheKey);
@@ -182,6 +183,15 @@ const formatFinancialValue = (value: number): string => {
   })}B`;
   
   return value < 0 ? `(${formatted})` : formatted;
+};
+
+// Format valuation multiples with parentheses for negatives (e.g., (3.2)x)
+const formatMultipleX = (value?: number | null): string => {
+  if (value == null || isNaN(value)) return '-';
+  const num = Number(value);
+  if (!isFinite(num)) return '-';
+  const abs = Math.abs(num).toFixed(1);
+  return num < 0 ? `(${abs})x` : `${abs}x`;
 };
 
 // Country code to full name mapping
@@ -299,9 +309,12 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
       onSuccess: (data) => {
         console.log("SWR Success - data received:", data);
         if (data?.peerCompanies) {
-          // Always select the first 5 peers when data is loaded
-          const firstFivePeers = data.peerCompanies.slice(0, 5).map(company => company.id);
-          setSelectedPeers(firstFivePeers);
+          // Select ALL suggested peers by default
+          const allPeerSymbols = data.peerCompanies.map(company => company.id);
+          setSelectedPeers(allPeerSymbols);
+          
+          // Preload data for all peer companies
+          preloadPeerData(allPeerSymbols);
         }
         setError(null); // Clear any previous errors
       },
@@ -322,6 +335,12 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
     }
   );
 
+  // Derive default peers and an effective selection (all by default)
+  const defaultPeerIds = useMemo(() => (data?.peerCompanies || []).map(c => c.id), [data?.peerCompanies]);
+  const effectiveSelectedPeers = useMemo(() => (
+    selectedPeers.length > 0 ? selectedPeers : defaultPeerIds
+  ), [selectedPeers, defaultPeerIds]);
+
   // Filter out duplicates from search results
   const filteredSearchResults = useMemo(() => {
     const existingTickers = new Set([
@@ -341,7 +360,7 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
       }
       try {
         setIsSearching(true);
-        const results = await searchStocks(query);
+        const results = await searchStocksLocal(query);
         setSearchResults(results);
       } catch (error) {
         console.error('Search error:', error);
@@ -491,6 +510,14 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
   };
 
   const togglePeer = (peerId: string) => {
+    // If no explicit selection (interpreted as "all selected"), clicking should deselect just this peer
+    if (selectedPeers.length === 0) {
+      // Start from all defaults, then remove the clicked one
+      const newSelection = defaultPeerIds.filter(id => id !== peerId);
+      setSelectedPeers(newSelection);
+      return;
+    }
+
     if (selectedPeers.includes(peerId)) {
       // Only remove if we have more than one peer selected
       if (selectedPeers.length > 1) {
@@ -508,13 +535,13 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
 
   // Memoize filtered data
   const filteredValuationData = useMemo(() => 
-    data?.peerValuationData.filter(company => selectedPeers.includes(company.ticker)) || [],
-    [data?.peerValuationData, selectedPeers]
+    data?.peerValuationData.filter(company => effectiveSelectedPeers.includes(company.ticker)) || [],
+    [data?.peerValuationData, effectiveSelectedPeers]
   );
 
   const filteredPerformanceData = useMemo(() => 
-    data?.peerPerformanceData.filter(company => selectedPeers.includes(company.ticker)) || [],
-    [data?.peerPerformanceData, selectedPeers]
+    data?.peerPerformanceData.filter(company => effectiveSelectedPeers.includes(company.ticker)) || [],
+    [data?.peerPerformanceData, effectiveSelectedPeers]
   );
 
   // Memoize search results component
@@ -721,15 +748,15 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                 {data.peerCompanies.map((company) => (
                 <Badge
                   key={company.id}
-                  variant={selectedPeers.includes(company.id) ? "default" : "outline"}
+                  variant={effectiveSelectedPeers.includes(company.id) ? "default" : "outline"}
                   className={cn(
                     "cursor-pointer px-3 py-1 transition-all",
-                    selectedPeers.includes(company.id) ? "hover:bg-primary/80" : "hover:bg-secondary"
+                    effectiveSelectedPeers.includes(company.id) ? "hover:bg-primary/80" : "hover:bg-secondary"
                   )}
                   onClick={() => togglePeer(company.id)}
                 >
                   {company.id}
-                  {selectedPeers.includes(company.id) && (
+                  {effectiveSelectedPeers.includes(company.id) && (
                     <X className="ml-1 h-3 w-3 inline-block" />
                   )}
                 </Badge>
@@ -737,10 +764,10 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                 {manualTickers.map((ticker) => (
                   <Badge
                     key={ticker}
-                    variant={selectedPeers.includes(ticker) ? "default" : "outline"}
+                    variant={effectiveSelectedPeers.includes(ticker) ? "default" : "outline"}
                     className={cn(
                       "cursor-pointer px-3 py-1 transition-all",
-                      selectedPeers.includes(ticker) ? "hover:bg-primary/80" : "hover:bg-secondary"
+                      effectiveSelectedPeers.includes(ticker) ? "hover:bg-primary/80" : "hover:bg-secondary"
                     )}
                     onClick={() => togglePeer(ticker)}
                   >
@@ -820,7 +847,7 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                 <tbody>
                   {/* All peer companies with selection indicator */}
                   {data?.peerCompanies?.map((company) => {
-                    const isSelected = selectedPeers.includes(company.id);
+                    const isSelectedPeer = effectiveSelectedPeers.includes(company.id);
                     const valuationData = data?.peerValuationData?.find(v => v.ticker === company.id);
                     const qualitativeInfo = data?.peerQualitativeData?.find(q => q.ticker === company.id);
                     
@@ -834,11 +861,11 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                     
                     return (
                       <tr key={company.id} className={cn(
-                        "hover:bg-muted/50 transition-colors text-xs border-b border-border/30",
-                        isSelected && "bg-blue-50/50 dark:bg-blue-950/20"
-                      )}>
+                          "hover:bg-muted/50 transition-colors text-xs border-b border-border/30",
+                          isSelectedPeer && "bg-blue-50/50 dark:bg-blue-950/20"
+                        )}>
                         <td className="py-3 px-2 text-center align-middle">
-                          {isSelected ? (
+                          {isSelectedPeer ? (
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger>
@@ -884,16 +911,16 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                   
                   {/* Manual tickers */}
                   {manualTickers.map((ticker) => {
-                    const isSelected = selectedPeers.includes(ticker);
+                    const isSelectedManual = effectiveSelectedPeers.includes(ticker);
                     const qualitativeInfo = data?.peerQualitativeData?.find(q => q.ticker === ticker);
                     
                     return (
                       <tr key={ticker} className={cn(
                         "hover:bg-muted/50 transition-colors text-xs border-b border-border/30",
-                        isSelected && "bg-blue-50/50 dark:bg-blue-950/20"
+                        isSelectedManual && "bg-blue-50/50 dark:bg-blue-950/20"
                       )}>
                         <td className="py-3 px-2 text-center align-middle">
-                          {isSelected ? (
+                          {isSelectedManual ? (
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger>
@@ -1075,13 +1102,13 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                       <td className="text-right py-2 px-2 tabular-nums align-middle">{formatFinancialValue(company.netDebt)}</td>
                       <td className="text-right py-2 px-2 tabular-nums align-middle">{formatFinancialValue(company.enterpriseValue)}</td>
                       {/* LTM Metrics */}
-                      <td className="text-right py-2 px-2 tabular-nums align-middle">{company.ltmPriceToSales ? company.ltmPriceToSales.toFixed(1) + 'x' : '-'}</td>
-                      <td className="text-right py-2 px-2 tabular-nums align-middle">{company.ltmEvToEbitda ? company.ltmEvToEbitda.toFixed(1) + 'x' : '-'}</td>
-                      <td className="text-right py-2 px-2 tabular-nums align-middle">{company.ltmPeRatio ? company.ltmPeRatio.toFixed(1) + 'x' : '-'}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatMultipleX(company.ltmPriceToSales)}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatMultipleX(company.ltmEvToEbitda)}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatMultipleX(company.ltmPeRatio)}</td>
                       {/* Forward Metrics */}
-                      <td className="text-right py-2 px-2 tabular-nums align-middle">{company.fwdPriceToSales ? company.fwdPriceToSales.toFixed(1) + 'x' : '-'}</td>
-                      <td className="text-right py-2 px-2 tabular-nums align-middle">{company.fwdEvToEbitda ? company.fwdEvToEbitda.toFixed(1) + 'x' : '-'}</td>
-                      <td className="text-right py-2 px-2 tabular-nums align-middle">{company.fwdPeRatio ? company.fwdPeRatio.toFixed(1) + 'x' : '-'}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatMultipleX(company.fwdPriceToSales)}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatMultipleX(company.fwdEvToEbitda)}</td>
+                      <td className="text-right py-2 px-2 tabular-nums align-middle">{formatMultipleX(company.fwdPeRatio)}</td>
                       {/* Other Metrics */}
                       <td className="text-right py-2 px-2 tabular-nums align-middle">{company.priceToBook ? company.priceToBook.toFixed(1) + 'x' : '-'}</td>
                       <td className="text-right py-2 px-2 tabular-nums align-middle">{formatPercentage(company.dividendYield)}</td>
@@ -1091,92 +1118,70 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                   {/* Separator */}
                   <tr className="h-2"/>
                   
-                  {/* Median row */}
+                  {/* Median and Average combined row */}
                   {filteredValuationData.length > 0 && (
-                    <>
-                      <tr className="border-b-2 border-border bg-blue-25 dark:bg-blue-900/20">
-                        <td className="py-2 px-2 text-xs font-bold text-blue-600 dark:text-blue-400 align-middle">Median</td>
-                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
-                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatMarketCap(calculateMetrics(filteredValuationData).median.marketCap)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatFinancialValue(calculateMetrics(filteredValuationData).median.netDebt)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatFinancialValue(calculateMetrics(filteredValuationData).median.enterpriseValue)}
-                        </td>
-                        {/* LTM Metrics */}
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).median.ltmPriceToSales?.toFixed(1) || '-'}x
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).median.ltmEvToEbitda?.toFixed(1) || '-'}x
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).median.ltmPeRatio?.toFixed(1) || '-'}x
-                        </td>
-                        {/* Forward Metrics */}
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).median.fwdPriceToSales?.toFixed(1) || '-'}x
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).median.fwdEvToEbitda?.toFixed(1) || '-'}x
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).median.fwdPeRatio?.toFixed(1) || '-'}x
-                        </td>
-                        {/* Other Metrics */}
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).median.priceToBook?.toFixed(1) || '-'}x
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatPercentage(calculateMetrics(filteredValuationData).median.dividendYield)}
-                        </td>
-                      </tr>
-                      <tr className="border-b-2 border-border bg-yellow-25 dark:bg-yellow-900/20">
-                        <td className="py-2 px-2 text-xs font-bold text-yellow-600 dark:text-yellow-400 align-middle">Average</td>
-                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
-                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatMarketCap(calculateMetrics(filteredValuationData).average.marketCap)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatFinancialValue(calculateMetrics(filteredValuationData).average.netDebt)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatFinancialValue(calculateMetrics(filteredValuationData).average.enterpriseValue)}
-                        </td>
-                        {/* LTM Metrics */}
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).average.ltmPriceToSales?.toFixed(1) || '-'}x
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).average.ltmEvToEbitda?.toFixed(1) || '-'}x
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).average.ltmPeRatio?.toFixed(1) || '-'}x
-                        </td>
-                        {/* Forward Metrics */}
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).average.fwdPriceToSales?.toFixed(1) || '-'}x
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).average.fwdEvToEbitda?.toFixed(1) || '-'}x
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).average.fwdPeRatio?.toFixed(1) || '-'}x
-                        </td>
-                        {/* Other Metrics */}
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {calculateMetrics(filteredValuationData).average.priceToBook?.toFixed(1) || '-'}x
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatPercentage(calculateMetrics(filteredValuationData).average.dividendYield)}
-                        </td>
-                      </tr>
-                    </>
+                    <tr className="border-b-2 border-border bg-blue-25 dark:bg-blue-900/20">
+                      <td className="py-2 px-2 text-xs font-bold text-blue-600 dark:text-blue-400 align-middle">Median</td>
+                      <td className="py-2 px-2 text-xs font-bold align-middle"></td>
+                      <td className="py-2 px-2 text-xs font-bold align-middle"></td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatMarketCap(calculateMetrics(filteredValuationData).median.marketCap)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatFinancialValue(calculateMetrics(filteredValuationData).median.netDebt)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatFinancialValue(calculateMetrics(filteredValuationData).median.enterpriseValue)}
+                      </td>
+                      {/* LTM Metrics */}
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">{formatMultipleX(calculateMetrics(filteredValuationData).median.ltmPriceToSales)}</td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">{formatMultipleX(calculateMetrics(filteredValuationData).median.ltmEvToEbitda)}</td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">{formatMultipleX(calculateMetrics(filteredValuationData).median.ltmPeRatio)}</td>
+                      {/* Forward Metrics */}
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">{formatMultipleX(calculateMetrics(filteredValuationData).median.fwdPriceToSales)}</td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">{formatMultipleX(calculateMetrics(filteredValuationData).median.fwdEvToEbitda)}</td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">{formatMultipleX(calculateMetrics(filteredValuationData).median.fwdPeRatio)}</td>
+                      {/* Other Metrics */}
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {calculateMetrics(filteredValuationData).median.priceToBook?.toFixed(1) || '-'}x
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatPercentage(calculateMetrics(filteredValuationData).median.dividendYield)}
+                      </td>
+                    </tr>
+                  )}
+                  
+                  {/* Average row */}
+                  {filteredValuationData.length > 0 && (
+                    <tr className="border-b-2 border-border bg-blue-25 dark:bg-blue-900/20">
+                      <td className="py-2 px-2 text-xs font-bold text-blue-600 dark:text-blue-400 align-middle">Average</td>
+                      <td className="py-2 px-2 text-xs font-bold align-middle"></td>
+                      <td className="py-2 px-2 text-xs font-bold align-middle"></td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatMarketCap(calculateMetrics(filteredValuationData).average.marketCap)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatFinancialValue(calculateMetrics(filteredValuationData).average.netDebt)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatFinancialValue(calculateMetrics(filteredValuationData).average.enterpriseValue)}
+                      </td>
+                      {/* LTM Metrics */}
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">{formatMultipleX(calculateMetrics(filteredValuationData).average.ltmPriceToSales)}</td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">{formatMultipleX(calculateMetrics(filteredValuationData).average.ltmEvToEbitda)}</td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">{formatMultipleX(calculateMetrics(filteredValuationData).average.ltmPeRatio)}</td>
+                      {/* Forward Metrics */}
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">{formatMultipleX(calculateMetrics(filteredValuationData).average.fwdPriceToSales)}</td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">{formatMultipleX(calculateMetrics(filteredValuationData).average.fwdEvToEbitda)}</td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">{formatMultipleX(calculateMetrics(filteredValuationData).average.fwdPeRatio)}</td>
+                      {/* Other Metrics */}
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {calculateMetrics(filteredValuationData).average.priceToBook?.toFixed(1) || '-'}x
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatPercentage(calculateMetrics(filteredValuationData).average.dividendYield)}
+                      </td>
+                    </tr>
                   )}
                   
                   {/* Separator before subject company */}
@@ -1206,25 +1211,13 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                           {formatFinancialValue(subjectCompany.enterpriseValue)}
                         </td>
                         {/* LTM Metrics */}
-                        <td className="text-right py-2 px-2 text-xs tabular-nums">
-                          {subjectCompany.ltmPriceToSales ? subjectCompany.ltmPriceToSales.toFixed(1) + 'x' : '-'}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums">
-                          {subjectCompany.ltmEvToEbitda ? subjectCompany.ltmEvToEbitda.toFixed(1) + 'x' : '-'}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums">
-                          {subjectCompany.ltmPeRatio ? subjectCompany.ltmPeRatio.toFixed(1) + 'x' : '-'}
-                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">{formatMultipleX(subjectCompany.ltmPriceToSales)}</td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">{formatMultipleX(subjectCompany.ltmEvToEbitda)}</td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">{formatMultipleX(subjectCompany.ltmPeRatio)}</td>
                         {/* Forward Metrics */}
-                        <td className="text-right py-2 px-2 text-xs tabular-nums">
-                          {subjectCompany.fwdPriceToSales ? subjectCompany.fwdPriceToSales.toFixed(1) + 'x' : '-'}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums">
-                          {subjectCompany.fwdEvToEbitda ? subjectCompany.fwdEvToEbitda.toFixed(1) + 'x' : '-'}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums">
-                          {subjectCompany.fwdPeRatio ? subjectCompany.fwdPeRatio.toFixed(1) + 'x' : '-'}
-                        </td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">{formatMultipleX(subjectCompany.fwdPriceToSales)}</td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">{formatMultipleX(subjectCompany.fwdEvToEbitda)}</td>
+                        <td className="text-right py-2 px-2 text-xs tabular-nums">{formatMultipleX(subjectCompany.fwdPeRatio)}</td>
                         {/* Other Metrics */}
                         <td className="text-right py-2 px-2 text-xs tabular-nums">
                           {subjectCompany.priceToBook ? subjectCompany.priceToBook.toFixed(1) + 'x' : '-'}
@@ -1298,60 +1291,62 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                   
                   {/* Median row */}
                   {filteredPerformanceData.length > 0 && (
-                    <>
-                      <tr className="border-b-2 border-border bg-blue-25 dark:bg-blue-900/20">
-                        <td className="py-2 px-2 text-xs font-bold text-blue-600 dark:text-blue-400 align-middle">Median</td>
-                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
-                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
-                        <td className={cn(
-                          "text-right py-2 px-2 text-xs tabular-nums font-bold align-middle",
-                          calculateMetrics(filteredPerformanceData).median.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                        )}>
-                          {formatPercentage(calculateMetrics(filteredPerformanceData).median.revenueGrowth)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatPercentage(calculateMetrics(filteredPerformanceData).median.grossMargin)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatPercentage(calculateMetrics(filteredPerformanceData).median.operatingMargin)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatPercentage(calculateMetrics(filteredPerformanceData).median.netMargin)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatPercentage(calculateMetrics(filteredPerformanceData).median.roic)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatPercentage(calculateMetrics(filteredPerformanceData).median.roe)}
-                        </td>
-                      </tr>
-                      <tr className="border-b-2 border-border bg-yellow-25 dark:bg-yellow-900/20">
-                        <td className="py-2 px-2 text-xs font-bold text-yellow-600 dark:text-yellow-400 align-middle">Average</td>
-                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
-                        <td className="py-2 px-2 text-xs font-bold align-middle">-</td>
-                        <td className={cn(
-                          "text-right py-2 px-2 text-xs tabular-nums font-bold align-middle",
-                          calculateMetrics(filteredPerformanceData).average.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                        )}>
-                          {formatPercentage(calculateMetrics(filteredPerformanceData).average.revenueGrowth)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatPercentage(calculateMetrics(filteredPerformanceData).average.grossMargin)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatPercentage(calculateMetrics(filteredPerformanceData).average.operatingMargin)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatPercentage(calculateMetrics(filteredPerformanceData).average.netMargin)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatPercentage(calculateMetrics(filteredPerformanceData).average.roic)}
-                        </td>
-                        <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
-                          {formatPercentage(calculateMetrics(filteredPerformanceData).average.roe)}
-                        </td>
-                      </tr>
-                    </>
+                    <tr className="border-b-2 border-border bg-blue-25 dark:bg-blue-900/20">
+                      <td className="py-2 px-2 text-xs font-bold text-blue-600 dark:text-blue-400 align-middle">Median</td>
+                      <td className="py-2 px-2 text-xs font-bold align-middle"></td>
+                      <td className="py-2 px-2 text-xs font-bold align-middle"></td>
+                      <td className={cn(
+                        "text-right py-2 px-2 text-xs tabular-nums font-bold align-middle",
+                        calculateMetrics(filteredPerformanceData).median.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                      )}>
+                        {formatPercentage(calculateMetrics(filteredPerformanceData).median.revenueGrowth)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatPercentage(calculateMetrics(filteredPerformanceData).median.grossMargin)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatPercentage(calculateMetrics(filteredPerformanceData).median.operatingMargin)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatPercentage(calculateMetrics(filteredPerformanceData).median.netMargin)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatPercentage(calculateMetrics(filteredPerformanceData).median.roic)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatPercentage(calculateMetrics(filteredPerformanceData).median.roe)}
+                      </td>
+                    </tr>
+                  )}
+                  
+                  {/* Average row */}
+                  {filteredPerformanceData.length > 0 && (
+                    <tr className="border-b-2 border-border bg-blue-25 dark:bg-blue-900/20">
+                      <td className="py-2 px-2 text-xs font-bold text-blue-600 dark:text-blue-400 align-middle">Average</td>
+                      <td className="py-2 px-2 text-xs font-bold align-middle"></td>
+                      <td className="py-2 px-2 text-xs font-bold align-middle"></td>
+                      <td className={cn(
+                        "text-right py-2 px-2 text-xs tabular-nums font-bold align-middle",
+                        calculateMetrics(filteredPerformanceData).average.revenueGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                      )}>
+                        {formatPercentage(calculateMetrics(filteredPerformanceData).average.revenueGrowth)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatPercentage(calculateMetrics(filteredPerformanceData).average.grossMargin)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatPercentage(calculateMetrics(filteredPerformanceData).average.operatingMargin)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatPercentage(calculateMetrics(filteredPerformanceData).average.netMargin)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatPercentage(calculateMetrics(filteredPerformanceData).average.roic)}
+                      </td>
+                      <td className="text-right py-2 px-2 text-xs tabular-nums font-bold align-middle">
+                        {formatPercentage(calculateMetrics(filteredPerformanceData).average.roe)}
+                      </td>
+                    </tr>
                   )}
                   
                   {/* Separator before subject company */}
@@ -1425,7 +1420,7 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
         <TabsContent value="price-performance" className="mt-3">
           <PeerPricePerformance 
             currentSymbol={currentSymbol}
-            selectedPeers={selectedPeers}
+            selectedPeers={effectiveSelectedPeers}
             peerCompanies={data?.peerCompanies || []}
           />
         </TabsContent>

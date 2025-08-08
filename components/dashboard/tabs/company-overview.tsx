@@ -505,11 +505,19 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
     console.log('[DEBUG] Using enhanced LTM calculation for canonical revenue:', canonicalLTMRevenue);
   }
   
+  // Get fiscal year revenue for segment/geographic data (since FMP provides FY data, not TTM)
+  let fiscalYearRevenue: number | null = null;
+  if (statements && statements.length > 0) {
+    fiscalYearRevenue = statements[0].revenue / 1e9; // Most recent fiscal year
+    console.log('[DEBUG] Fiscal year revenue for segments/geography:', fiscalYearRevenue);
+  }
+  
   // Log revenue consistency check
   console.log('[DEBUG] Revenue Consistency Check:', {
     canonicalLTMRevenue,
-    segmentTotal: ttmSegmentData.reduce((sum, s) => sum + s.value, 0),
-    geographyTotal: ttmGeographyData.reduce((sum, s) => sum + s.value, 0)
+    fiscalYearRevenue,
+    segmentTotal: ttmSegmentData.reduce((sum: number, s: any) => sum + s.value, 0),
+    geographyTotal: ttmGeographyData.reduce((sum: number, s: any) => sum + s.value, 0)
   });
 
   const TOP_N = 6; // Show top 6, rest as 'Other'
@@ -535,7 +543,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   const latestQuarterDate = statements && statements.length > 0 ? statements[0].date : null;
 
   // Prepare annual revenue bars with FYXX labels
-  const annualBars = statements.slice(0, 5).reverse().map(statement => ({
+  const annualBars = statements.slice(0, 5).reverse().map((statement: any) => ({
     year: 'FY' + statement.calendarYear.toString().slice(-2),
     value: statement.revenue / 1e9,
     isLTM: false
@@ -568,7 +576,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   const revenueData = ltmBar ? [...annualBars, ltmBar] : annualBars;
 
   // Prepare annual EBITDA bars with FYXX labels
-  const annualEbitdaBars = statements.slice(0, 5).reverse().map(statement => ({
+  const annualEbitdaBars = statements.slice(0, 5).reverse().map((statement: any) => ({
     year: 'FY' + statement.calendarYear.toString().slice(-2),
     value: statement.ebitda / 1e9,
     margin: statement.ebitdaratio ? (statement.ebitdaratio * 100) : 0
@@ -701,32 +709,27 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
     });
   }
 
-  // Scale segment data to match canonical LTM revenue if needed
+  // Use fiscal year data for segments/geography (no scaling needed since FMP provides FY data)
   let scaledSegmentData = [...ttmSegmentData];
-  if (canonicalLTMRevenue && ttmSegmentData.length > 0) {
-    const segmentTotal = ttmSegmentData.reduce((sum, s) => sum + s.value, 0);
-    if (segmentTotal > 0 && Math.abs(segmentTotal - canonicalLTMRevenue) > 0.1) {
-      const scaleFactor = canonicalLTMRevenue / segmentTotal;
-      console.log(`[DEBUG] Scaling segments by ${scaleFactor} to match canonical revenue`);
+  let scaledGeographyData = [...ttmGeographyData];
+  
+  // Calculate percentages based on fiscal year revenue if available
+  if (fiscalYearRevenue && ttmSegmentData.length > 0) {
+    const segmentTotal = ttmSegmentData.reduce((sum: number, s: any) => sum + s.value, 0);
+    if (segmentTotal > 0) {
       scaledSegmentData = ttmSegmentData.map(seg => ({
         ...seg,
-        value: seg.value * scaleFactor,
-        percentage: (seg.value * scaleFactor / canonicalLTMRevenue) * 100
+        percentage: (seg.value / segmentTotal) * 100
       }));
     }
   }
   
-  // Scale geography data to match canonical LTM revenue if needed
-  let scaledGeographyData = [...ttmGeographyData];
-  if (canonicalLTMRevenue && ttmGeographyData.length > 0) {
-    const geoTotal = ttmGeographyData.reduce((sum, s) => sum + s.value, 0);
-    if (geoTotal > 0 && Math.abs(geoTotal - canonicalLTMRevenue) > 0.1) {
-      const scaleFactor = canonicalLTMRevenue / geoTotal;
-      console.log(`[DEBUG] Scaling geography by ${scaleFactor} to match canonical revenue`);
+  if (fiscalYearRevenue && ttmGeographyData.length > 0) {
+    const geoTotal = ttmGeographyData.reduce((sum: number, s: any) => sum + s.value, 0);
+    if (geoTotal > 0) {
       scaledGeographyData = ttmGeographyData.map(geo => ({
         ...geo,
-        value: geo.value * scaleFactor,
-        percentage: (geo.value * scaleFactor / canonicalLTMRevenue) * 100
+        percentage: (geo.value / geoTotal) * 100
       }));
     }
   }
@@ -953,10 +956,10 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
       <Card>
         <CardHeader className="pb-0 flex flex-row items-center justify-between">
           <CardTitle className="text-xs font-medium">
-            {fyLabel} Revenue by Segment
-            {canonicalLTMRevenue && (
+            FY{statements && statements.length > 0 ? statements[0].calendarYear.toString().slice(-2) : ''} Revenue by Segment
+            {fiscalYearRevenue && (
               <span className="text-xs text-muted-foreground ml-1">
-                (${canonicalLTMRevenue.toFixed(1)}B)
+                (${fiscalYearRevenue.toFixed(1)}B)
               </span>
             )}
           </CardTitle>
@@ -987,10 +990,10 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
       <Card>
         <CardHeader className="pb-0 flex flex-row items-center justify-between">
           <CardTitle className="text-xs font-medium">
-            {fyLabel} Revenue by Geography
-            {canonicalLTMRevenue && (
+            FY{statements && statements.length > 0 ? statements[0].calendarYear.toString().slice(-2) : ''} Revenue by Geography
+            {fiscalYearRevenue && (
               <span className="text-xs text-muted-foreground ml-1">
-                (${canonicalLTMRevenue.toFixed(1)}B)
+                (${fiscalYearRevenue.toFixed(1)}B)
               </span>
             )}
           </CardTitle>

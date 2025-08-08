@@ -25,19 +25,6 @@ export default function IdeaGeneration() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lightbulb className="h-5 w-5" />
-            Investment Idea Generation
-          </CardTitle>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Discover investment opportunities through screening and AI-powered analysis
-          </p>
-        </CardHeader>
-      </Card>
-
       {/* Sub-tabs */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
         <div className="premium-tabs">

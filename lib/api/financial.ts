@@ -295,11 +295,71 @@ export function useESGScore(symbol: string) {
 }
 
 export function useSECFilings(symbol: string) {
-  return { data: [], error: null };
+  const { data, error, isLoading } = useSWR(
+    symbol ? `/api/stock/${symbol}/sec-filings` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 5 * 60 * 1000, // 5 minutes
+    }
+  );
+
+  return {
+    data: data || [],
+    error,
+    isLoading
+  };
+}
+
+export function useAnalystEstimates(symbol: string, period: 'annual' | 'quarter' | 'both' = 'both') {
+  const { data, error, isLoading } = useSWR(
+    symbol ? `/api/analyst-estimates?symbol=${symbol}&period=${period}` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 24 * 60 * 60 * 1000, // 24 hours
+    }
+  );
+
+  return {
+    estimates: data?.estimates || [],
+    isLoading,
+    error
+  };
+}
+
+export function useEarningsTranscript(symbol: string, quarter: number, year: number) {
+  const { data, error, isLoading } = useSWR(
+    symbol && quarter && year ? `/api/stock/${symbol}/earnings-transcript/${quarter}/${year}` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 5 * 60 * 1000, // 5 minutes
+    }
+  );
+
+  return {
+    transcript: data,
+    isLoading,
+    error
+  };
 }
 
 export function useEarningsTranscriptDates(symbol: string) {
-  return { data: [], error: null };
+  const { data, error, isLoading } = useSWR(
+    symbol ? `/api/stock/${symbol}/earnings-transcript-dates` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 5 * 60 * 1000, // 5 minutes
+    }
+  );
+
+  return {
+    data: data || [],
+    error,
+    isLoading
+  };
 }
 
 // DCF Analysis Hook

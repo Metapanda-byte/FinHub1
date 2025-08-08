@@ -7,7 +7,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, BarChartBig, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { DemoButton } from "@/components/ui/video-modal";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -26,6 +25,10 @@ export default function Home() {
       router.push(newUrl);
     }
   }, [searchParams, router]);
+ 
+  // Hero inline video (autoplay in browser)
+  const testVideoUrl =
+    "https://okatwepzvilznkyspxlg.supabase.co/storage/v1/object/public/images/Area.mp4";
 
   return (
     <div>
@@ -53,10 +56,14 @@ export default function Home() {
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
-              Financial Analytics Platform for Investors
+              <span className="text-foreground">Fundamental Analysis.</span>{" "}
+              <span className="text-foreground">Streamlined.</span>
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
-             Seamless tools. Informed decisions.
+              <span className="bg-gradient-to-r from-finhub-orange to-amber-500 bg-clip-text text-transparent">Next generation</span>{" "}
+              equity research tools for {" "}
+              <span className="bg-gradient-to-r from-finhub-orange to-amber-500 bg-clip-text text-transparent">every</span>{" "}
+              investor
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <div className="flex flex-col items-center">
@@ -65,22 +72,23 @@ export default function Home() {
                 </Button>
                 <p className="text-xs text-muted-foreground mt-2">Free Access</p>
               </div>
-              <DemoButton 
-                videoUrl="https://okatwepzvilznkyspxlg.supabase.co/storage/v1/object/public/demo/Screen%20Recording%202025-08-02%20at%202.58.18%20AM.mov" 
-                title="FinHubIQ Platform Demo"
-              />
             </div>
           </div>
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent h-40 -bottom-1"></div>
-            <Image
-              src="https://okatwepzvilznkyspxlg.supabase.co/storage/v1/object/public/images/platformshot.png"
-              alt="FinHubIQ Dashboard Preview"
-              className="rounded-lg shadow-2xl border"
-              width={1200}
-              height={800}
-              priority
-            />
+            <video
+              className="rounded-lg shadow-2xl border w-full h-auto"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+            >
+              <source src={testVideoUrl} type="video/mp4" />
+              <source src={testVideoUrl} type="video/quicktime" />
+              <source src={testVideoUrl} type="video/webm" />
+              Your browser does not support the video tag.
+            </video>
           </div>
         </div>
       </section>

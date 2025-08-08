@@ -19,6 +19,7 @@ import { useWatchlistStore } from "@/lib/store/watchlist-store";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useDebounce } from "@/hooks/use-debounce";
 import useSWR from "swr";
+import { preloadTickerData, preloadCriticalData } from "@/lib/api/data-preloader";
 
 interface StockSearchProps {
   className?: string;
@@ -146,6 +147,12 @@ export function StockSearch({ className, placeholder = "Search companies...", sh
 
   const onSelect = React.useCallback(
     (symbol: string) => {
+      // Start loading critical data immediately for instant render
+      preloadCriticalData(symbol).then(() => {
+        // Then load the rest in background
+        preloadTickerData(symbol);
+      });
+      
       // First try to find from search results
       const selectedResult = searchResults?.find((r: SearchResult) => r.symbol === symbol);
       if (selectedResult) {

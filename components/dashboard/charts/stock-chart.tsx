@@ -154,6 +154,25 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
 
   const { formatter: dateFormatter, ticks: dateTicks } = getDateConfig();
 
+  // Compact tooltip content for smaller hover box
+  const CompactTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload || !payload.length) return null;
+    const value = Number(payload[0].value);
+    return (
+      <div
+        className="rounded-md border border-border bg-popover/95 supports-[backdrop-filter]:bg-popover/80 shadow-sm px-2.5 py-1.5"
+        style={{ fontSize: 12, lineHeight: 1.1 }}
+      >
+        <div className="text-[10px] text-muted-foreground mb-0.5">
+          {format(new Date(label), 'MMM d, yyyy')}
+        </div>
+        <div className="text-xs font-semibold">
+          Price: <span className="ml-1">${value.toFixed(2)}</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <ClientOnly fallback={
       <div className="w-full space-y-2 sm:space-y-3">
@@ -243,27 +262,18 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
                 width={50}
               />
 
-              <Tooltip
-                contentStyle={{
-                  borderRadius: "6px",
-                  padding: "8px 12px",
-                  border: "1px solid var(--border)",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                }}
-                labelFormatter={(label) => format(new Date(label), 'MMM d, yyyy')}
-                formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Price']}
-              />
+              <Tooltip content={<CompactTooltip />} />
 
               {/* Price line with gradient fill */}
               <Area
                 type="monotone"
                 dataKey="price"
                 stroke="#3b82f6"
-                strokeWidth={2}
+                strokeWidth={1.75}
                 fill="url(#stockPriceGradient)"
                 dot={false}
                 activeDot={{ 
-                  r: 4, 
+                  r: 3, 
                   fill: "#3b82f6", 
                   stroke: "#ffffff", 
                   strokeWidth: 2 

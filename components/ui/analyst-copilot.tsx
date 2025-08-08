@@ -18,17 +18,15 @@ import {
   FileText,
   Brain,
   Minimize2,
-  Maximize2
+  Maximize2,
+  MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useConversationStore, type Message } from "@/lib/store/conversation-store";
+import { ConversationSelector } from "./conversation-selector";
+import { ChartDisplay } from "./chart-display";
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  suggestions?: string[];
-}
+
 
 interface AnalystCopilotProps {
   symbol: string | null;
@@ -58,16 +56,39 @@ export function AnalystCopilot({
   initialQuery,
   onQueryProcessed 
 }: AnalystCopilotProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [showConversationSelector, setShowConversationSelector] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize with welcome message
+  // Add chart generation suggestions
+  const CHART_SUGGESTIONS = [
+    "Show me a revenue trend chart",
+    "Create a profitability analysis chart",
+    "Generate a segment breakdown chart",
+    "Display geographic revenue distribution",
+    "Show stock price performance",
+    "Create a balance sheet trend chart"
+  ];
+
+  const {
+    conversations,
+    currentConversationId,
+    createConversation,
+    getCurrentConversation,
+    addMessage,
+    updateConversationTitle
+  } = useConversationStore();
+
+  const currentConversation = getCurrentConversation();
+  const messages = currentConversation?.messages || [];
+
+  // Initialize conversation and welcome message
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    if (isOpen && !currentConversationId) {
+      const conversationId = createConversation(symbol || 'NEW', companyName || 'New Analysis');
       const welcomeMessage: Message = {
         id: 'welcome',
         role: 'assistant',
@@ -75,9 +96,18 @@ export function AnalystCopilot({
         timestamp: new Date(),
         suggestions: SUGGESTED_QUERIES
       };
-      setMessages([welcomeMessage]);
+      addMessage(conversationId, welcomeMessage);
+    } else if (isOpen && currentConversationId && messages.length === 0) {
+      const welcomeMessage: Message = {
+        id: 'welcome',
+        role: 'assistant',
+        content: `Hello! I'm your AI Analyst Co-pilot for ${companyName || symbol}. I can help you analyze financial data, understand trends, and provide insights. What would you like to explore?`,
+        timestamp: new Date(),
+        suggestions: SUGGESTED_QUERIES
+      };
+      addMessage(currentConversationId, welcomeMessage);
     }
-  }, [isOpen, symbol, companyName, messages.length]);
+  }, [isOpen, symbol, companyName, currentConversationId, messages.length, createConversation, addMessage]);
 
   // Handle initial query
   useEffect(() => {
@@ -99,20 +129,52 @@ export function AnalystCopilot({
     if (!messageText.trim() || isLoading) return;
 
     // Add user message if not hidden
-    if (!hideQuery) {
+    if (!hideQuery && currentConversationId) {
       const userMessage: Message = {
         id: Date.now().toString(),
         role: 'user',
         content: messageText,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, userMessage]);
+      addMessage(currentConversationId, userMessage);
     }
 
     setInput('');
     setIsLoading(true);
 
     try {
+      // Check if this is a chart request
+      const isChartRequest = messageText.toLowerCase().includes('chart') || 
+                            messageText.toLowerCase().includes('graph') ||
+                            messageText.toLowerCase().includes('show me') ||
+                            messageText.toLowerCase().includes('create') ||
+                            messageText.toLowerCase().includes('generate') ||
+                            messageText.toLowerCase().includes('display');
+
+      let chartData = null;
+
+      if (isChartRequest) {
+        // Generate chart
+        const chartResponse = await fetch('/api/generate-chart', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: messageText,
+            financialData,
+            symbol
+          }),
+        });
+
+        const chartResult = await chartResponse.json();
+        
+        if (!chartResult.error) {
+          chartData = chartResult.chartData;
+        }
+      }
+
+      // Get AI analysis
       const response = await fetch('/api/financial-ai', {
         method: 'POST',
         headers: {
@@ -138,10 +200,13 @@ export function AnalystCopilot({
           "Tell me more about this",
           "What are the implications?",
           "Compare with industry average"
-        ] : undefined
+        ] : undefined,
+        chartData: chartData
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      if (currentConversationId) {
+        addMessage(currentConversationId, assistantMessage);
+      }
     } catch (error) {
       console.error('Analyst error:', error);
       const errorMessage: Message = {
@@ -150,7 +215,9 @@ export function AnalystCopilot({
         content: 'I apologize, but I encountered an error while analyzing the data. Please try again.',
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, errorMessage]);
+      if (currentConversationId) {
+        addMessage(currentConversationId, errorMessage);
+      }
     } finally {
       setIsLoading(false);
       inputRef.current?.focus();
@@ -180,6 +247,14 @@ export function AnalystCopilot({
           </div>
         </div>
         <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowConversationSelector(!showConversationSelector)}
+            className="h-8 w-8"
+          >
+            <MessageSquare className="h-4 w-4" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -223,9 +298,19 @@ export function AnalystCopilot({
                     )}>
                       <p className="whitespace-pre-wrap">{message.content}</p>
                       <p className="text-xs opacity-70 mt-1">
-                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {typeof message.timestamp === 'string' 
+                    ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  }
                       </p>
                     </div>
+
+                    {/* Chart display */}
+                    {message.chartData && (
+                      <div className="ml-11 mt-2">
+                        <ChartDisplay chartData={message.chartData} />
+                      </div>
+                    )}
                   </div>
 
                   {/* Suggestions */}
@@ -319,10 +404,28 @@ export function AnalystCopilot({
                 <DollarSign className="w-3 h-3 mr-1" />
                 Peers
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleSuggestionClick("Show me a revenue trend chart")}
+                className="h-6 text-xs px-2 rounded-full"
+              >
+                <BarChart3 className="w-3 h-3 mr-1" />
+                Charts
+              </Button>
             </div>
           </div>
         </>
       )}
+
+      {/* Conversation Selector */}
+      <ConversationSelector
+        isOpen={showConversationSelector}
+        onClose={() => setShowConversationSelector(false)}
+        onSelectConversation={(conversationId) => {
+          setShowConversationSelector(false);
+        }}
+      />
     </div>
   );
 } 

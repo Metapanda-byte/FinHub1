@@ -15,8 +15,8 @@ export async function GET(
       );
     }
 
-    // Try v4 endpoint first (more recent data)
-    let url = `https://financialmodelingprep.com/api/v4/revenue-product-segmentation?symbol=${symbol}&apikey=${FMP_API_KEY}`;
+    // Try v4 endpoint first (request flat structure if supported)
+    let url = `https://financialmodelingprep.com/api/v4/revenue-product-segmentation?symbol=${symbol}&structure=flat&apikey=${FMP_API_KEY}`;
     let response = await fetch(url);
     
     if (!response.ok) {
@@ -38,19 +38,38 @@ export async function GET(
       const dateKey = Object.keys(mostRecentData)[0];
       const revenueData = mostRecentData[dateKey];
       
+      const buildFromEntries = (entries: Record<string, any>) => {
+        const numericPairs = Object.entries(entries).filter(([k, v]) => typeof v === 'number' && isFinite(v));
+        if (numericPairs.length === 0) return [] as any[];
+        const total = numericPairs.reduce((sum, [, v]) => sum + (Number(v) || 0), 0);
+        if (total <= 0) return [] as any[];
+        return numericPairs
+          .sort((a, b) => Number(b[1]) - Number(a[1]))
+          .map(([name, value]) => ({
+            name,
+            value: Number(value) || 0,
+            percentage: total > 0 ? ((Number(value) || 0) / total) * 100 : 0,
+          }));
+      };
+      
       if (revenueData && typeof revenueData === 'object') {
-        // Navigate through the nested structure to find segments
-        for (const revenueCategory of Object.values(revenueData)) {
-          if (revenueCategory && typeof revenueCategory === 'object' && 'Segments' in revenueCategory) {
-            const segments = revenueCategory.Segments;
-            if (segments && typeof segments === 'object') {
-              const totalRevenue = Object.values(segments).reduce((sum: number, value: any) => sum + (Number(value) || 0), 0);
-              processedData = Object.entries(segments).map(([segment, revenue]) => ({
-                name: segment,
-                value: Number(revenue) || 0,
-                percentage: totalRevenue > 0 ? ((Number(revenue) || 0) / totalRevenue) * 100 : 0
-              }));
-              break; // Use the first revenue category with segments
+        // 1) Direct flat object with numeric values
+        const direct = buildFromEntries(revenueData as Record<string, any>);
+        if (direct.length > 0) {
+          processedData = direct;
+        } else {
+          // 2) Walk nested categories to find either 'Segments'/'Product' or any numeric object
+          for (const revenueCategory of Object.values(revenueData)) {
+            if (revenueCategory && typeof revenueCategory === 'object') {
+              // Named fields commonly used by FMP
+              const candidate = (revenueCategory as any).Segments || (revenueCategory as any).Product || (revenueCategory as any).Products || (revenueCategory as any).segments || (revenueCategory as any).product;
+              if (candidate && typeof candidate === 'object') {
+                const fromKnown = buildFromEntries(candidate as Record<string, any>);
+                if (fromKnown.length > 0) { processedData = fromKnown; break; }
+              }
+              // Otherwise, try to treat the object itself as the map of segments
+              const fromAnonymous = buildFromEntries(revenueCategory as Record<string, any>);
+              if (fromAnonymous.length > 0) { processedData = fromAnonymous; break; }
             }
           }
         }
