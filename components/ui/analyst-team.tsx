@@ -44,6 +44,13 @@ import { useAnalystTeamStore, type TeamMessage, type TaskPriority } from "@/lib/
 import { ChartDisplay } from "./chart-display";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
+// Helper to gather visible page text for context (bounded for token safety)
+function gatherSiteContent(maxChars: number = 10000): string {
+  if (typeof document === 'undefined') return '';
+  const text = document.body?.innerText || '';
+  return text.replace(/\s+/g, ' ').trim().slice(0, maxChars);
+}
+
 interface AnalystTeamProps {
   symbol: string | null;
   companyName: string | null;
@@ -109,7 +116,8 @@ export function AnalystTeam({
     selectAnalyst,
     getSelectedAnalyst,
     canUseAnalyst,
-    setUserSubscriptionTier
+    setUserSubscriptionTier,
+    clearMessages
   } = useAnalystTeamStore();
 
   const selectedAnalyst = getSelectedAnalyst();
@@ -145,10 +153,10 @@ export function AnalystTeam({
         symbol,
         companyName,
         financialData: financialData ? {
-          // Include relevant financial data without overwhelming the context
           hasData: true,
           dataPoints: Object.keys(financialData).length
-        } : null
+        } : null,
+        siteContent: gatherSiteContent(12000)
       }
     }));
 
@@ -209,6 +217,13 @@ export function AnalystTeam({
         };
       });
     }
+  };
+
+  // Reset chat: clear messages, reinitialize team, and default to Brian
+  const handleReset = () => {
+    clearMessages();
+    initializeTeam();
+    selectAnalyst('brian');
   };
 
   const handleSend = async (queryText?: string, hideQuery?: boolean) => {

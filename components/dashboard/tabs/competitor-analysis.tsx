@@ -341,15 +341,21 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
     selectedPeers.length > 0 ? selectedPeers : defaultPeerIds
   ), [selectedPeers, defaultPeerIds]);
 
-  // Filter out duplicates from search results
+  // Normalize/base ticker (strip exchange suffix like .PA)
+  const getBase = useCallback((s: string | null | undefined) => (s ? s.split('.')[0] : ''), []);
+
+  // Filter out duplicates from search results (by exact and base symbol)
   const filteredSearchResults = useMemo(() => {
-    const existingTickers = new Set([
+    const existing = new Set([
       ...(data?.peerCompanies?.map(company => company.id) || []),
       ...manualTickers,
       currentSymbol
-    ]);
-    return searchResults.filter(result => !existingTickers.has(result.symbol));
-  }, [searchResults, data?.peerCompanies, manualTickers, currentSymbol]);
+    ].filter(Boolean) as string[]);
+    const existingBases = new Set(Array.from(existing).map(getBase));
+    return searchResults
+      .filter(result => !existing.has(result.symbol) && !existingBases.has(getBase(result.symbol)))
+      .slice(0, 10);
+  }, [searchResults, data?.peerCompanies, manualTickers, currentSymbol, getBase]);
 
   // Optimize debounce time
   const debouncedSearch = useRef(
@@ -447,40 +453,49 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
       ...(data?.peerCompanies?.map(company => company.id) || []),
       ...manualTickers,
       currentSymbol
-    ]);
+    ].filter(Boolean) as string[]);
+    const baseTicker = getBase(ticker);
+    const hasByBase = Array.from(existingTickers).some(t => getBase(t) === baseTicker);
 
-    if (existingTickers.has(ticker)) {
+    if (existingTickers.has(ticker) || hasByBase) {
       setError("This ticker is already in the comparison");
       return;
     }
     
-    // Optimistically update the UI
+    // Optimistically update pills/selection only (avoid global revalidation)
     const newManualTickers = [...manualTickers, ticker];
     setManualTickers(newManualTickers);
-    setSelectedPeers(prevSelected => {
-      const uniqueSelected = new Set([...prevSelected, ticker]);
-      return Array.from(uniqueSelected);
-    });
-    
-    // Optimistically update the cache
-    if (apiUrl) {
-      await mutate(
-        apiUrl,
-        updateDataOptimistically(ticker),
-        {
-          optimisticData: updateDataOptimistically(ticker),
-          rollbackOnError: true,
-          populateCache: true,
-          revalidate: true
-        }
-      );
+    setSelectedPeers(prevSelected => Array.from(new Set([...prevSelected, ticker])));
+
+    try {
+      // Fetch incremental data just for the added peer
+      const incResp = await fetch(`/api/competitors/incremental?peer=${encodeURIComponent(ticker)}`);
+      if (!incResp.ok) throw new Error('Failed to fetch incremental peer data');
+      const inc = await incResp.json();
+
+      if (apiUrl && data) {
+        // Merge returned single-peer data into SWR cache without refetching all
+        const merged: CompetitorData = {
+          ...data,
+          peerCompanies: [...data.peerCompanies, inc.peerCompany],
+          peerValuationData: [...data.peerValuationData, inc.peerValuationData],
+          peerPerformanceData: [...data.peerPerformanceData, inc.peerPerformanceData],
+          peerQualitativeData: [...(data.peerQualitativeData || []), inc.peerQualitativeData]
+        };
+        await mutate(apiUrl, merged, { revalidate: false, populateCache: true });
+      }
+    } catch (err) {
+      console.error('Incremental add failed:', err);
+      // Rollback UI on failure
+      setManualTickers(prev => prev.filter(t => t !== ticker));
+      setSelectedPeers(prev => prev.filter(t => t !== ticker));
+      setError('Could not add ticker. Please try again.');
     }
     
     setManualTicker("");
     setSearchResults([]);
     setIsSearchOpen(false);
-    setError(null);
-  }, [data?.peerCompanies, manualTickers, currentSymbol, apiUrl, mutate, updateDataOptimistically]);
+  }, [data, manualTickers, currentSymbol, apiUrl, mutate, getBase]);
 
   const handleRemoveManualTicker = async (ticker: string) => {
     const newManualTickers = manualTickers.filter(t => t !== ticker);
@@ -704,89 +719,7 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
 
   return (
     <div className="space-y-4">
-      {/* Integrated Peer Selection Controls */}
-        <div className="mb-4 pb-4 border-b">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h3 className="text-sm font-semibold">Peer Selection</h3>
-              <p className="text-xs text-muted-foreground">Add companies for comparison</p>
-            </div>
-            <div className="flex flex-col gap-3 w-full md:w-auto">
-              <div className="flex justify-end w-full">
-                <Popover open={isSearchOpen} onOpenChange={setIsSearchOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={isSearchOpen}
-                      className="w-full md:w-[200px] justify-between"
-                    >
-                      {manualTicker ? manualTicker : "Search ticker..."}
-                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full md:w-[200px] p-0">
-                    <Command>
-                      <CommandInput
-                        placeholder="Search ticker..."
-                        value={manualTicker}
-                        onValueChange={(value) => {
-                          const upperValue = value.toUpperCase();
-                          if (upperValue !== manualTicker) {
-                            setManualTicker(upperValue);
-                            debouncedSearch(upperValue);
-                          }
-                        }}
-                      />
-                      {SearchResultsList}
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <div className="flex flex-wrap gap-2">
-                {data.peerCompanies.map((company) => (
-                <Badge
-                  key={company.id}
-                  variant={effectiveSelectedPeers.includes(company.id) ? "default" : "outline"}
-                  className={cn(
-                    "cursor-pointer px-3 py-1 transition-all",
-                    effectiveSelectedPeers.includes(company.id) ? "hover:bg-primary/80" : "hover:bg-secondary"
-                  )}
-                  onClick={() => togglePeer(company.id)}
-                >
-                  {company.id}
-                  {effectiveSelectedPeers.includes(company.id) && (
-                    <X className="ml-1 h-3 w-3 inline-block" />
-                  )}
-                </Badge>
-              ))}
-                {manualTickers.map((ticker) => (
-                  <Badge
-                    key={ticker}
-                    variant={effectiveSelectedPeers.includes(ticker) ? "default" : "outline"}
-                    className={cn(
-                      "cursor-pointer px-3 py-1 transition-all",
-                      effectiveSelectedPeers.includes(ticker) ? "hover:bg-primary/80" : "hover:bg-secondary"
-                    )}
-                    onClick={() => togglePeer(ticker)}
-                  >
-                    {ticker}
-                    <X 
-                      className="ml-1 h-3 w-3 inline-block hover:text-red-500" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveManualTicker(ticker);
-                      }}
-                    />
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs with Peer Overview as first tab */}
+      {/* Tabs with Peer Overview as first tab */}
         <Tabs defaultValue="peer-overview" className="w-full space-y-3">
           <div className="premium-tabs">
             <TabsList className="h-10 bg-transparent border-none p-0 gap-0 w-full justify-start">
@@ -1425,6 +1358,57 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
           />
         </TabsContent>
       </Tabs>
+
+      {/* Moved: Peer Selection Controls (now after tables) */}
+      <div className="pt-4 mt-2 border-t">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold">Peer Selection</h3>
+            <p className="text-xs text-muted-foreground">Amend peer group selection</p>
+          </div>
+          <div className="flex flex-col gap-3 w-full md:w-auto">
+            {error && <p className="text-sm text-red-500">{error}</p>}
+            <div className="flex flex-wrap gap-2">
+              {data.peerCompanies.map((company) => (
+                <Badge
+                  key={company.id}
+                  variant={effectiveSelectedPeers.includes(company.id) ? "default" : "outline"}
+                  className={cn(
+                    "cursor-pointer px-3 py-1 transition-all",
+                    effectiveSelectedPeers.includes(company.id) ? "hover:bg-primary/80" : "hover:bg-secondary"
+                  )}
+                  onClick={() => togglePeer(company.id)}
+                >
+                  {company.id}
+                  {effectiveSelectedPeers.includes(company.id) && (
+                    <X className="ml-1 h-3 w-3 inline-block" />
+                  )}
+                </Badge>
+              ))}
+              {manualTickers.map((ticker) => (
+                <Badge
+                  key={ticker}
+                  variant={effectiveSelectedPeers.includes(ticker) ? "default" : "outline"}
+                  className={cn(
+                    "cursor-pointer px-3 py-1 transition-all",
+                    effectiveSelectedPeers.includes(ticker) ? "hover:bg-primary/80" : "hover:bg-secondary"
+                  )}
+                  onClick={() => togglePeer(ticker)}
+                >
+                  {ticker}
+                  <X
+                    className="ml-1 h-3 w-3 inline-block hover:text-red-500"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveManualTicker(ticker);
+                    }}
+                  />
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

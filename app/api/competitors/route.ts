@@ -167,6 +167,158 @@ const extractKeyInfo = (text: string): string => {
   return text || 'Business description not available';
 };
 
+// ---- Robust mix extraction helpers (reuse logic from stock/[symbol] routes) ----
+function normalizeRegionName(rawKey: string): string {
+  if (!rawKey) return 'Other';
+  const cleaned = rawKey
+    .replace(/_/g, ' ')
+    .replace(/\bGeographical\b|\bGeographic\b|\bGeography\b|\bRegion(s)?\b|\bArea(s)?\b/gi, '')
+    .replace(/\bSegment\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const upper = cleaned.toUpperCase();
+  const explicit: Record<string, string> = {
+    'UNITED STATES': 'US',
+    'UNITED STATES OF AMERICA': 'US',
+    'US': 'US',
+    'U.S.': 'US',
+    'UNITED KINGDOM': 'UK',
+    'U.K.': 'UK',
+    'JAPA': 'Japan',
+    'JAPAN': 'Japan',
+    'GREATER CHINA': 'Greater China',
+    'REST OF ASIA PACIFIC': 'Rest of Asia Pacific',
+    'ASIA PACIFIC': 'Asia Pacific',
+    'APAC': 'APAC',
+    'EMEA': 'EMEA',
+    'EUROPE': 'Europe',
+    'AMERICAS': 'Americas',
+    'NORTH AMERICA': 'North America',
+    'SOUTH AMERICA': 'South America',
+    'INTERNATIONAL MARKETS': 'International',
+    'INTERNATIONAL': 'International',
+    'NON-US': 'Non-US',
+    'OUTSIDE US & UK': 'Outside US & UK',
+    'COUNTRIES OTHER THAN US AND UNITED KINGDOM': 'Outside US & UK',
+  };
+  if (explicit[upper]) return explicit[upper];
+  const acronymAllowlist = new Set(['US', 'UK', 'EMEA', 'APAC', 'UAE']);
+  const titleCased = cleaned
+    .split(' ')
+    .map((part) => {
+      const normalized = part.replace(/[^A-Za-z\-\&]/g, '');
+      const uc = normalized.toUpperCase();
+      if (acronymAllowlist.has(uc)) return uc;
+      if (/^non-us$/i.test(normalized)) return 'Non-US';
+      if (!normalized) return part;
+      return normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
+    })
+    .join(' ')
+    .replace(/\s+&\s+/g, ' & ')
+    .trim();
+  return titleCased || 'Other';
+}
+
+function collectNumericMap(obj: any, into: Record<string, number>, normalizer?: (k: string) => string) {
+  if (!obj || typeof obj !== 'object') return;
+  for (const [k, v] of Object.entries(obj)) {
+    const key = String(k);
+    if (key.toLowerCase() === 'date' || /period/i.test(key)) continue;
+
+    const labelRaw = normalizer ? normalizer(key) : key.replace(/_/g, ' ');
+
+    let num: number | null = null;
+    if (typeof v === 'number') {
+      num = v;
+    } else if (typeof v === 'string') {
+      // Accept "33.2%" or "33,2%" or numeric strings
+      const cleaned = v.replace(/%/g, '').replace(',', '.');
+      const parsed = Number(cleaned);
+      if (Number.isFinite(parsed)) num = parsed;
+    } else if (v && typeof v === 'object') {
+      // Look for common numeric fields
+      const candidates = ['percentage', 'percent', 'share', 'value'];
+      for (const field of candidates) {
+        const maybe = (v as any)[field];
+        if (typeof maybe === 'number') { num = maybe; break; }
+        if (typeof maybe === 'string') {
+          const cleaned = maybe.replace(/%/g, '').replace(',', '.');
+          const parsed = Number(cleaned);
+          if (Number.isFinite(parsed)) { num = parsed; break; }
+        }
+      }
+    }
+
+    if (num == null || !Number.isFinite(num) || Number(num) <= 0) continue;
+    into[labelRaw] = (into[labelRaw] || 0) + Number(num);
+  }
+}
+
+function deriveGeographicMixFromAny(data: any): string {
+  if (!data) return 'N/A';
+  const regions: Record<string, number> = {};
+  const scan = (node: any) => {
+    if (!node) return;
+    if (Array.isArray(node)) { node.forEach(scan); return; }
+    if (typeof node !== 'object') return;
+    if ((node as any).Geographical && typeof (node as any).Geographical === 'object') {
+      collectNumericMap((node as any).Geographical, regions, normalizeRegionName);
+    }
+    if ((node as any).geographic && typeof (node as any).geographic === 'object') {
+      collectNumericMap((node as any).geographic, regions, normalizeRegionName);
+    }
+    const keys = Object.keys(node);
+    if (keys.length === 1 && /\d{4}-\d{2}-\d{2}/.test(keys[0]) && typeof (node as any)[keys[0]] === 'object') {
+      collectNumericMap((node as any)[keys[0]], regions, normalizeRegionName);
+    }
+    collectNumericMap(node, regions, normalizeRegionName);
+    for (const value of Object.values(node)) if (value && typeof value === 'object') scan(value);
+  };
+  scan(data);
+  const entries = Object.entries(regions).filter(([, v]) => Number(v) > 0);
+  if (entries.length === 0) return 'N/A';
+  entries.sort((a, b) => Number(b[1]) - Number(a[1]));
+  const total = entries.reduce((s, [, v]) => s + Number(v), 0);
+  const top = entries.slice(0, 3).map(([name, v]) => `${name} ${Math.round((Number(v) / total) * 100)}%`);
+  if (entries.length > 3) {
+    const other = entries.slice(3).reduce((s, [, v]) => s + Number(v), 0);
+    const pct = Math.round((other / total) * 100);
+    if (pct > 0) top.push(`Other ${pct}%`);
+  }
+  return top.join(', ');
+}
+
+function deriveSegmentMixFromAny(data: any): string {
+  if (!data) return 'N/A';
+  const segments: Record<string, number> = {};
+  const scan = (node: any) => {
+    if (!node) return;
+    if (Array.isArray(node)) { node.forEach(scan); return; }
+    if (typeof node !== 'object') return;
+    const candidate = (node as any).Segments || (node as any).Product || (node as any).Products || (node as any).segments || (node as any).product;
+    if (candidate && typeof candidate === 'object') collectNumericMap(candidate, segments);
+    const keys = Object.keys(node);
+    if (keys.length === 1 && /\d{4}-\d{2}-\d{2}/.test(keys[0]) && typeof (node as any)[keys[0]] === 'object') {
+      collectNumericMap((node as any)[keys[0]], segments);
+    }
+    collectNumericMap(node, segments);
+    for (const value of Object.values(node)) if (value && typeof value === 'object') scan(value);
+  };
+  scan(data);
+  const entries = Object.entries(segments).filter(([k, v]) => Number(v) > 0 && k.toLowerCase() !== 'date' && !/period/i.test(k));
+  if (entries.length === 0) return 'N/A';
+  entries.sort((a, b) => Number(b[1]) - Number(a[1]));
+  const total = entries.reduce((s, [, v]) => s + Number(v), 0);
+  const top = entries.slice(0, 3).map(([name, v]) => `${name} ${Math.round((Number(v) / total) * 100)}%`);
+  if (entries.length > 3) {
+    const other = entries.slice(3).reduce((s, [, v]) => s + Number(v), 0);
+    const pct = Math.round((other / total) * 100);
+    if (pct > 0) top.push(`Other ${pct}%`);
+  }
+  return top.join(', ');
+}
+// ---- End helpers ----
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   let symbol = searchParams.get('symbol');
@@ -441,7 +593,101 @@ export async function GET(request: Request) {
       }
     }
     
-    // 5. Filter out excluded peers
+    // 5. Use Perplexity AI to analyze and improve peer selection if we have questionable peers
+    if (peerSymbols.length > 0 && symbol !== 'AAPL' && symbol !== 'GOOGL') { // Skip for common tech stocks
+      try {
+        const profileResponse = await fetch(
+          `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${apiKey}`
+        );
+        
+        if (profileResponse.ok) {
+          const [profile] = await profileResponse.json();
+          
+          // Analyze peers using Perplexity for luxury goods and other specific sectors
+          const shouldAnalyzePeers = profile && (
+            profile.sector?.toLowerCase().includes('consumer') ||
+            profile.industry?.toLowerCase().includes('luxury') ||
+            profile.industry?.toLowerCase().includes('apparel') ||
+            profile.companyName?.toLowerCase().includes('lvmh') ||
+            profile.companyName?.toLowerCase().includes('hermès') ||
+            profile.companyName?.toLowerCase().includes('kering')
+          );
+
+          if (shouldAnalyzePeers) {
+            console.log(`Analyzing peer quality for ${symbol} using AI...`);
+            
+            const perplexityApiKey = process.env.PERPLEXITY_API_KEY;
+            if (perplexityApiKey) {
+              try {
+                const analyzeResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${perplexityApiKey}`
+                  },
+                  body: JSON.stringify({
+                    model: 'sonar',
+                    messages: [
+                      {
+                        role: 'system',
+                        content: 'You are a financial analyst. Provide peer analysis in JSON format only.'
+                      },
+                      {
+                        role: 'user',
+                        content: `For ${profile.companyName} (${symbol}), which operates in the ${profile.industry || profile.sector}, identify 8-10 highly relevant public company peers.
+
+Current peers: ${peerSymbols.join(', ')}
+
+Requirements:
+- Similar business segments and models
+- Comparable market positioning
+- Publicly traded with stock symbols
+- For luxury companies, focus on luxury peers (Richemont, Kering, Hermès, etc)
+
+Response format:
+{
+  "recommendedPeers": [
+    {"symbol": "TICKER", "name": "Company Name", "reason": "Brief reason"}
+  ],
+  "analysis": "Brief rationale"
+}`
+                      }
+                    ],
+                    temperature: 0.3,
+                    max_tokens: 1000
+                  })
+                });
+
+                if (analyzeResponse.ok) {
+                  const data = await analyzeResponse.json();
+                  const content = data.choices[0]?.message?.content || '';
+                  
+                  try {
+                    const analysis = JSON.parse(content);
+                    if (analysis.recommendedPeers && analysis.recommendedPeers.length > 0) {
+                      // Replace with better peers from AI analysis
+                      peerSymbols = analysis.recommendedPeers
+                        .map((p: any) => p.symbol)
+                        .filter((s: string) => s && s !== symbol)
+                        .slice(0, 10);
+                      console.log(`AI suggested better peers for ${symbol}:`, peerSymbols);
+                    }
+                  } catch (parseError) {
+                    console.error('Failed to parse AI response:', parseError);
+                  }
+                }
+              } catch (error) {
+                console.error('Error calling Perplexity API directly:', error);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error analyzing peers with AI:', error);
+      }
+    }
+
+    // 6. Filter out excluded peers
     if (excludePeers.length > 0) {
       peerSymbols = peerSymbols.filter(peer => !excludePeers.includes(peer));
       console.log(`Filtered out excluded peers. Remaining peers:`, peerSymbols);
@@ -616,10 +862,40 @@ Provide response in JSON format:
             fetch(`https://financialmodelingprep.com/api/v4/revenue-geographic-segmentation?symbol=${sym}&structure=flat&period=annual&apikey=${apiKey}`)
           ]);
           
-          const segmentData = segmentResponse.ok ? await segmentResponse.json() : null;
-          const geoData = geoResponse.ok ? await geoResponse.json() : null;
-          
+          let segmentData = segmentResponse.ok ? await segmentResponse.json() : null;
+          let geoData = geoResponse.ok ? await geoResponse.json() : null;
 
+          // Helper to check if payload appears empty/useless
+          const isEmptyPayload = (d: any): boolean => {
+            if (!d) return true;
+            if (Array.isArray(d) && d.length === 0) return true;
+            if (Array.isArray(d) && d.length > 0) {
+              // if first entry is an object with date key but no numerics
+              const first = d[0];
+              if (first && typeof first === 'object') {
+                const dateKey = Object.keys(first)[0];
+                const inner = first[dateKey];
+                if (inner && typeof inner === 'object') {
+                  const hasNumeric = Object.values(inner).some((v: any) => typeof v === 'number' || (typeof v === 'string' && /%|\d/.test(v)));
+                  return !hasNumeric;
+                }
+              }
+            }
+            return false;
+          };
+
+          // Fallback: retry with base symbol without suffix (e.g., KER.PA -> KER)
+          if (isEmptyPayload(segmentData) && isEmptyPayload(geoData)) {
+            const base = sym.split('.')[0].split('-')[0];
+            if (base && base !== sym) {
+              const [seg2, geo2] = await Promise.all([
+                fetch(`https://financialmodelingprep.com/api/v4/revenue-product-segmentation?symbol=${base}&structure=flat&period=annual&apikey=${apiKey}`),
+                fetch(`https://financialmodelingprep.com/api/v4/revenue-geographic-segmentation?symbol=${base}&structure=flat&period=annual&apikey=${apiKey}`)
+              ]);
+              if (seg2.ok) segmentData = await seg2.json();
+              if (geo2.ok) geoData = await geo2.json();
+            }
+          }
           
           return {
             product: segmentData,
@@ -912,70 +1188,14 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
           
           // Normalization helper for region keys
           const normalizeRegionName = (rawKey: string): string => {
-            if (!rawKey) return 'Other';
-            const cleaned = rawKey
-              .replace(/_/g, ' ')
-              .replace(/\bGeographical\b|\bGeographic\b|\bGeography\b|\bRegion(s)?\b/gi, '')
-              .replace(/\s+/g, ' ')
-              .trim();
-            const keyUpper = cleaned.toUpperCase();
-            const keyLower = cleaned.toLowerCase();
-            
-            // Explicit mappings first
-            const map: Record<string, string> = {
-              'UNITED STATES': 'US',
-              'UNITED STATES GEOGRAPHIC': 'US',
-              'UNITED STATES GEOGRAPHIC REGION': 'US',
-              'US': 'US',
-              'U.S.': 'US',
-              'USA': 'US',
-              'UNITED KINGDOM': 'UK',
-              'EMEA': 'EMEA',
-              'EMEA GEOGRAPHIC': 'EMEA',
-              'EMEA GEOGRAPHIC REGION': 'EMEA',
-              'APAC': 'APAC',
-              'ASIA PACIFIC': 'Asia-Pacific',
-              'AMERICAS': 'Americas',
-              'AMERICAS EXCLUDING UNITED STATES': 'Americas ex-US',
-              'REST OF WORLD': 'Rest of World',
-              'INTERNATIONAL': 'International',
-              'NON-US': 'Non-US',
-              'JAPA GEOGRAPHIC REGION': 'Japan',
-              'JAPA': 'Japan',
-              'COUNTRIES OTHER THAN US AND UNITED KINGDOM': 'Outside US & UK',
-              'COUNTRIES OTHER THAN U S AND UNITED KINGDOM': 'Outside US & UK',
-            };
-            if (map[keyUpper]) return map[keyUpper];
-            
-            // Common camel/snake cases
-            if (keyLower === 'united states') return 'US';
-            if (keyLower === 'united arab emirates') return 'UAE';
-            if (keyLower === 'united kingdom') return 'UK';
-            if (keyLower === 'americas excluding united states') return 'Americas ex-US';
-            if (keyLower === 'japan') return 'Japan';
-            
-            // Preserve only known acronyms; otherwise title-case
-            const allowedAcronyms = new Set(['US', 'UK', 'EMEA', 'APAC', 'UAE']);
-            if (/^[A-Z]{2,}$/.test(cleaned)) {
-              return allowedAcronyms.has(cleaned) ? cleaned : cleaned
-                .toLowerCase()
-                .split(' ')
-                .map(w => w.length ? w[0].toUpperCase() + w.slice(1) : w)
-                .join(' ');
-            }
-            
-            // Title-case otherwise
-            return cleaned
-              .toLowerCase()
-              .split(' ')
-              .map(w => w.length ? w[0].toUpperCase() + w.slice(1) : w)
-              .join(' ');
+            // local shadowed impl removed in favor of global helper
+            return rawKey;
           };
           
           // Extract all numeric values that look like revenue
           Object.entries(latestGeo).forEach(([key, value]) => {
             if (typeof value === 'number' && value > 0 && key !== 'date' && !key.includes('period')) {
-              const mappedRegion = normalizeRegionName(key);
+              const mappedRegion = key;
               geoEntries.push({
                 region: mappedRegion,
                 revenue: value
@@ -1012,6 +1232,13 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
         } catch (error) {
           console.log(`Error processing geographic data for ${sym}:`, error);
         }
+      }
+
+      // Fallback: robust scan if still N/A
+      if (geographicMix === 'N/A') {
+        try {
+          geographicMix = deriveGeographicMixFromAny(segments.geographic);
+        } catch {}
       }
 
       // Process segment/product mix from FMP data
@@ -1143,6 +1370,13 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
         } catch (error) {
           console.log(`Error processing product segment data for ${sym}:`, error);
         }
+      }
+
+      // Fallback: robust scan if still N/A
+      if (segmentMix === 'N/A') {
+        try {
+          segmentMix = deriveSegmentMixFromAny(segments.product);
+        } catch {}
       }
 
       let description = profile.description || 'No description available';

@@ -113,30 +113,44 @@ Please provide comprehensive research with current data, citations, and sources.
       }
     } else {
       // Use OpenAI for Brian and John
-      if (!openai) {
-        throw new Error('OpenAI API key not configured.');
+      // Prefer Perplexity if available (for better retrieval), else fallback to OpenAI
+      if (PERPLEXITY_API_KEY) {
+        const messages = [
+          { role: 'system', content: analyst.systemPrompt },
+          { role: 'user', content: `Context: ${JSON.stringify(task.context)}\n\nQuery: ${task.query}\n\nIf siteContent is present within context, leverage it to ground your answer.` }
+        ];
+        const resp = await fetch(PERPLEXITY_API_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ model: 'sonar', messages, temperature: analyst.temperature, max_tokens: 800 })
+        });
+        if (!resp.ok) throw new Error(`Perplexity error ${resp.status}`);
+        const json = await resp.json();
+        content = json.choices[0]?.message?.content || 'No response generated';
+      } else {
+        if (!openai) {
+          throw new Error('OpenAI API key not configured.');
+        }
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4-turbo-preview',
+          messages: [
+            {
+              role: 'system',
+              content: analyst.systemPrompt,
+            },
+            {
+              role: 'user',
+              content: `Context: ${JSON.stringify(task.context)}\n\nQuery: ${task.query}\n\nPlease provide your specialized analysis based on your expertise.`,
+            },
+          ],
+          temperature: analyst.temperature,
+          max_tokens: 1000,
+        });
+        content = completion.choices[0]?.message?.content || 'No response generated';
       }
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: analyst.systemPrompt,
-          },
-          {
-            role: 'user',
-            content: `Context: ${JSON.stringify(task.context)}
-            
-Query: ${task.query}
-
-Please provide your specialized analysis based on your expertise.`,
-          },
-        ],
-        temperature: analyst.temperature,
-        max_tokens: 1000,
-      });
-
-      content = completion.choices[0]?.message?.content || 'No response generated';
     }
 
     // Generate chart data if this is John

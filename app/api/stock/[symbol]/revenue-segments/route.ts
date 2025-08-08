@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FMP_API_KEY } from '@/lib/config';
 
+function collectNumericMap(obj: any, into: Record<string, number>) {
+  if (!obj || typeof obj !== 'object') return;
+  for (const [k, v] of Object.entries(obj)) {
+    if (k.toLowerCase() === 'date' || /period/i.test(k)) continue;
+    const num = typeof v === 'number' ? v : Number(v);
+    if (!Number.isFinite(num)) continue;
+    const label = String(k).replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+    into[label] = (into[label] || 0) + num;
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { symbol: string } }
@@ -31,50 +42,52 @@ export async function GET(
     
     const data = await response.json();
     
-    // Process the nested data structure to extract segments
-    let processedData: any[] = [];
-    if (Array.isArray(data) && data.length > 0) {
-      const mostRecentData = data[0];
-      const dateKey = Object.keys(mostRecentData)[0];
-      const revenueData = mostRecentData[dateKey];
-      
-      const buildFromEntries = (entries: Record<string, any>) => {
-        const numericPairs = Object.entries(entries).filter(([k, v]) => typeof v === 'number' && isFinite(v));
-        if (numericPairs.length === 0) return [] as any[];
-        const total = numericPairs.reduce((sum, [, v]) => sum + (Number(v) || 0), 0);
-        if (total <= 0) return [] as any[];
-        return numericPairs
+    // Robust parse: recursively scan payload for numeric segment maps
+    const segmentsMap: Record<string, number> = {};
+
+    const scan = (node: any) => {
+      if (!node) return;
+      if (Array.isArray(node)) { node.forEach(scan); return; }
+      if (typeof node !== 'object') return;
+
+      // Known containers
+      const candidate = (node as any).Segments || (node as any).Product || (node as any).Products || (node as any).segments || (node as any).product;
+      if (candidate && typeof candidate === 'object') {
+        collectNumericMap(candidate, segmentsMap);
+      }
+
+      // Date-keyed entry: { '2024-09-28': { ... } }
+      const keys = Object.keys(node);
+      if (keys.length === 1 && /\d{4}-\d{2}-\d{2}/.test(keys[0]) && typeof (node as any)[keys[0]] === 'object') {
+        collectNumericMap((node as any)[keys[0]], segmentsMap);
+      }
+
+      // Treat the object itself as a potential numeric map
+      collectNumericMap(node, segmentsMap);
+
+      // Recurse
+      for (const value of Object.values(node)) {
+        if (value && typeof value === 'object') scan(value);
+      }
+    };
+
+    scan(data);
+
+    const entries = Object.entries(segmentsMap);
+    const positives = entries.filter(([, v]) => v > 0);
+    const chosen = positives.length > 0 ? positives : entries;
+
+    const total = chosen.reduce((s, [, v]) => s + (Number(v) || 0), 0);
+
+    const processedData = total > 0
+      ? chosen
           .sort((a, b) => Number(b[1]) - Number(a[1]))
           .map(([name, value]) => ({
             name,
             value: Number(value) || 0,
             percentage: total > 0 ? ((Number(value) || 0) / total) * 100 : 0,
-          }));
-      };
-      
-      if (revenueData && typeof revenueData === 'object') {
-        // 1) Direct flat object with numeric values
-        const direct = buildFromEntries(revenueData as Record<string, any>);
-        if (direct.length > 0) {
-          processedData = direct;
-        } else {
-          // 2) Walk nested categories to find either 'Segments'/'Product' or any numeric object
-          for (const revenueCategory of Object.values(revenueData)) {
-            if (revenueCategory && typeof revenueCategory === 'object') {
-              // Named fields commonly used by FMP
-              const candidate = (revenueCategory as any).Segments || (revenueCategory as any).Product || (revenueCategory as any).Products || (revenueCategory as any).segments || (revenueCategory as any).product;
-              if (candidate && typeof candidate === 'object') {
-                const fromKnown = buildFromEntries(candidate as Record<string, any>);
-                if (fromKnown.length > 0) { processedData = fromKnown; break; }
-              }
-              // Otherwise, try to treat the object itself as the map of segments
-              const fromAnonymous = buildFromEntries(revenueCategory as Record<string, any>);
-              if (fromAnonymous.length > 0) { processedData = fromAnonymous; break; }
-            }
-          }
-        }
-      }
-    }
+          }))
+      : [];
 
     return NextResponse.json(processedData);
   } catch (error) {

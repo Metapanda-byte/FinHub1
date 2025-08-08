@@ -10,11 +10,14 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { FinHubIQLogo } from "@/components/ui/finhubiq-logo";
 
 export default function Home() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showError, setShowError] = useState(false);
+  const [reveal] = useState(true);
   
   useEffect(() => {
     const error = searchParams.get("error");
@@ -25,10 +28,14 @@ export default function Home() {
       router.push(newUrl);
     }
   }, [searchParams, router]);
- 
+  
   // Hero inline video (autoplay in browser)
   const testVideoUrl =
-    "https://okatwepzvilznkyspxlg.supabase.co/storage/v1/object/public/images/Area.mp4";
+    "https://okatwepzvilznkyspxlg.supabase.co/storage/v1/object/public/images/Arearevised.mp4";
+
+  // Product highlight video for split section
+  const highlightVideoUrl =
+    "https://okatwepzvilznkyspxlg.supabase.co/storage/v1/object/public/images/125_1440x60_shots_so.mp4";
 
   return (
     <div>
@@ -52,7 +59,7 @@ export default function Home() {
       )}
       
       {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-b from-background to-muted/30">
+      <section className="py-20">
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
@@ -75,7 +82,6 @@ export default function Home() {
             </div>
           </div>
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent h-40 -bottom-1"></div>
             <video
               className="rounded-lg shadow-2xl border w-full h-auto"
               autoPlay
@@ -93,48 +99,80 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Product Highlight Split Section (replaces previous Features Section) */}
       <section className="py-20">
         <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold mb-4">Everything you need to analyze the market</h2>
-            <p className="text-muted-foreground">
-              Powerful tools and insights to help you make data-driven investment decisions
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {[
-              {
-                title: "Real-time Market Data",
-                description: "Access live market data, price movements, and trading volumes across global markets."
-              },
-              {
-                title: "Advanced Analytics",
-                description: "Comprehensive financial analysis tools including technical indicators and fundamental metrics."
-              },
-              {
-                title: "Portfolio Tracking",
-                description: "Monitor your investments with real-time portfolio tracking and performance analytics."
-              },
-              {
-                title: "Custom Alerts",
-                description: "Set up personalized alerts for price movements, volume spikes, and market events."
-              },
-              {
-                title: "Research Tools",
-                description: "Access company financials, earnings reports, and analyst recommendations."
-              },
-              {
-                title: "Market Insights",
-                description: "Get actionable insights and market analysis from industry experts."
-              }
-            ].map((feature, index) => (
-              <Card key={index} className="p-6">
-                <BarChartBig className="h-12 w-12 text-primary mb-4" />
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
-              </Card>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
+            {/* Left: Tagline and brief copy */}
+            <div className="flex flex-col justify-center gap-8 md:gap-10">
+              <h2
+                className={cn(
+                  "text-4xl md:text-5xl lg:text-6xl font-bold leading-tight",
+                  "bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text",
+                  "transition-all duration-700",
+                  reveal ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+                )}
+              >
+                From Company deep-dives to{" "}
+                <span className="bg-gradient-to-r from-finhub-orange to-orange-600 bg-clip-text text-transparent">
+                  idea generation
+                </span>{" "}
+                at your fingertips
+              </h2>
+              
+              <p
+                className={cn(
+                  "text-lg text-muted-foreground leading-relaxed",
+                  "opacity-100 translate-y-0"
+                )}
+               >
+                A modern equity research workstation that helps you explore companies, compare peers, and turn insights into action.
+               </p>
+                
+               {/* Feature list with FinHub icons */}
+               <div
+                 className={cn(
+                   "space-y-5",
+                   "opacity-100 translate-y-0"
+                 )}
+               >
+                {[
+                  {
+                    text: "Over 70,000 stocks and 30 years of data"
+                  },
+                  {
+                    text: "Enhanced workflow with your own analyst team"
+                  },
+                  {
+                    text: "Detailed peer benchmarking, historical financials, LBO analysis, DCF modelling made easy"
+                  }
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                      <FinHubIQLogo variant="icon" className="w-5 h-5" />
+                    </div>
+                    <span className="text-sm md:text-base text-muted-foreground leading-relaxed">{item.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Video with subtle styling */}
+            <div className="relative w-full">
+              <video
+                className="rounded-lg shadow-2xl border w-full h-auto"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+              >
+                <source src={highlightVideoUrl} type="video/mp4" />
+                <source src={highlightVideoUrl} type="video/quicktime" />
+                <source src={highlightVideoUrl} type="video/webm" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
           </div>
         </div>
       </section>
