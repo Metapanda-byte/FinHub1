@@ -1113,7 +1113,7 @@ export function HistoricalFinancials() {
         unit: 'millions'
       },
       {
-        label: "% Margin",
+        label: "Gross Margin %",
         isMargin: true,
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.grossProfit && periodMap[p]?.revenue ? (periodMap[p].grossProfit / periodMap[p].revenue) * 100 : null])),
@@ -1226,7 +1226,7 @@ export function HistoricalFinancials() {
         unit: 'millions'
       },
       {
-        label: "% Margin",
+        label: "EBITDA Margin %",
         isMargin: true,
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.ebitda && periodMap[p]?.revenue ? (periodMap[p].ebitda / periodMap[p].revenue) * 100 : null])),
@@ -1256,7 +1256,7 @@ export function HistoricalFinancials() {
         unit: 'millions'
       },
       {
-        label: "% Margin",
+        label: "Operating Margin %",
         isMargin: true,
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.operatingIncome && periodMap[p]?.revenue ? (periodMap[p].operatingIncome / periodMap[p].revenue) * 100 : null])),
@@ -1326,7 +1326,7 @@ export function HistoricalFinancials() {
         unit: 'millions'
       },
       {
-        label: "% Margin",
+        label: "Net Margin %",
         isMargin: true,
         isIndented: true,
         ...Object.fromEntries(periods.map(p => [p, periodMap[p]?.netIncome && periodMap[p]?.revenue ? (periodMap[p].netIncome / periodMap[p].revenue) * 100 : null])),
