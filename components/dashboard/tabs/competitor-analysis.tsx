@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -326,6 +327,8 @@ const formatNoCapsUnlessAcronym = (text: string | undefined | null): string => {
 export function CompetitorAnalysis() {
   console.log("🔍 CompetitorAnalysis component rendering");
 const currentSymbol = useSearchStore((state) => state.currentSymbol);
+const searchParams = useSearchParams();
+const [activePeerTab, setActivePeerTab] = useState<string>('peer-overview');
 const { profile, isLoading: profileLoading } = useCompanyProfile(currentSymbol || '');
 const { quote, loading: quoteLoading } = useStockQuote(currentSymbol || '');
 const { ratios, isLoading: ratiosLoading } = useFinancialRatios(currentSymbol || '');
@@ -338,6 +341,15 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
   const [searchResults, setSearchResults] = useState<StockSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const { mutate } = useSWRConfig();
+  
+  // Sync tab with URL param
+  useEffect(() => {
+    const peerParam = searchParams.get('peerTab');
+    const allowed = ['peer-overview', 'valuation', 'operating', 'correlation-charts', 'price-performance'];
+    if (peerParam && allowed.includes(peerParam)) {
+      setActivePeerTab(peerParam);
+    }
+  }, [searchParams]);
 
 
 
@@ -765,10 +777,20 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
     );
   }
 
+  const handlePeerTabChange = (value: string) => {
+    setActivePeerTab(value);
+    // Update URL without navigating
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('peerTab', value);
+      window.history.replaceState(null, '', url.toString());
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Tabs with Peer Overview as first tab */}
-        <Tabs defaultValue="peer-overview" className="w-full space-y-3">
+        <Tabs value={activePeerTab} onValueChange={handlePeerTabChange} className="w-full space-y-3">
           <div className="premium-tabs">
             <TabsList className="h-10 bg-transparent border-none p-0 gap-0 w-full justify-start">
               <TabsTrigger 

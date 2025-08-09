@@ -10,10 +10,6 @@ const nextConfig = {
       type: 'filesystem',
     };
     return config;
-  },
-  // Fix serverActions configuration
-  experimental: {
-    serverActions: true
   }
 }
 

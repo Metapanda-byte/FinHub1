@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { symbol: string } }
+  { params }: { params: Promise<{ symbol: string }> }
 ) {
+  const { symbol } = await params;
   try {
     // Placeholder - ESG score data not yet implemented
     return NextResponse.json({ esgScore: null });

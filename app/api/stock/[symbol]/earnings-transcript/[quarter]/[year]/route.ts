@@ -11,12 +11,14 @@ export interface EarningsTranscript {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { symbol: string; quarter: string; year: string } }
+  { params }: { params: Promise<{ symbol: string; quarter: string; year: string }> }
 ) {
+  const { symbol: rawSymbol, quarter: rawQuarter, year: rawYear } = await params;
+  const symbol = rawSymbol.toUpperCase();
+  const quarter = parseInt(rawQuarter);
+  const year = parseInt(rawYear);
+  
   try {
-    const symbol = params.symbol.toUpperCase();
-    const quarter = parseInt(params.quarter);
-    const year = parseInt(params.year);
 
     if (!FMP_API_KEY) {
       return NextResponse.json(
@@ -47,7 +49,7 @@ export async function GET(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error(`[Error] earnings-transcript/${params.symbol}/${params.quarter}/${params.year}:`, error);
+    console.error(`[Error] earnings-transcript/${symbol}/${quarter}/${year}:`, error);
     return NextResponse.json(
       { error: 'Failed to fetch earnings transcript' },
       { status: 500 }

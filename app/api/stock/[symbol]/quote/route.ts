@@ -34,13 +34,12 @@ const limiter = rateLimit({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { symbol: string } }
+  { params }: { params: Promise<{ symbol: string }> }
 ) {
+  const { symbol } = await params;
   try {
     // Apply rate limiting
     await limiter(request);
-
-    const { symbol } = params;
 
     if (!symbol) {
       throw new ApiError("Symbol is required", 400, "MISSING_SYMBOL");

@@ -10,10 +10,11 @@ export interface EarningsTranscriptDate {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { symbol: string } }
+  { params }: { params: Promise<{ symbol: string }> }
 ) {
+  const { symbol } = await params;
   try {
-    const symbol = params.symbol.toUpperCase();
+    const upperSymbol = symbol.toUpperCase();
 
     if (!FMP_API_KEY) {
       return NextResponse.json(
@@ -22,9 +23,9 @@ export async function GET(
       );
     }
 
-    const url = `https://financialmodelingprep.com/api/v4/earning_call_transcript?symbol=${symbol}&apikey=${FMP_API_KEY}&limit=10`;
+    const url = `https://financialmodelingprep.com/api/v4/earning_call_transcript?symbol=${upperSymbol}&apikey=${FMP_API_KEY}&limit=10`;
     
-    console.log(`[API Request] earning_call_transcript dates/${symbol}`);
+    console.log(`[API Request] earning_call_transcript dates/${upperSymbol}`);
     
     const response = await fetch(url);
     if (!response.ok) {
@@ -34,7 +35,7 @@ export async function GET(
 
     const result = await response.json();
     if (!result || (Array.isArray(result) && result.length === 0)) {
-      console.warn(`No earnings transcript dates for ${symbol}`);
+      console.warn(`No earnings transcript dates for ${upperSymbol}`);
       return NextResponse.json([], { status: 200 });
     }
 
@@ -50,7 +51,7 @@ export async function GET(
           quarter: item[0],
           year: item[1], 
           date: item[2],
-          symbol
+          symbol: upperSymbol
         };
       }
       return null;
@@ -58,7 +59,7 @@ export async function GET(
 
     return NextResponse.json(transformed);
   } catch (error) {
-    console.error(`Error fetching earnings transcript dates for ${params.symbol}:`, error);
+    console.error(`Error fetching earnings transcript dates for ${symbol}:`, error);
     return NextResponse.json(
       { error: 'Failed to fetch earnings transcript dates' },
       { status: 500 }

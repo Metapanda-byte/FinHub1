@@ -10,6 +10,12 @@ interface PreloadIndicatorProps {
 }
 
 export function PreloadIndicator({ className }: PreloadIndicatorProps) {
+  // Hard-disable UI rendering
+  return null;
+}
+/*
+Previous implementation kept for debugging if ever needed again.
+export function PreloadIndicator({ className }: PreloadIndicatorProps) {
   const [isPreloading, setIsPreloading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [loadedEndpoints, setLoadedEndpoints] = useState(0);
@@ -21,7 +27,12 @@ export function PreloadIndicator({ className }: PreloadIndicatorProps) {
     tertiary: number;
   } | null>(null);
 
+  // Disable in production unless explicitly enabled
+  const isProd = typeof process !== 'undefined' && process.env.NODE_ENV === 'production';
+  const allowInProd = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SHOW_PRELOAD === '1';
+
   useEffect(() => {
+    if (isProd && !allowInProd) return; // skip listeners entirely in production
     const handlePreloadStart = (event: CustomEvent) => {
       setIsPreloading(true);
       setProgress(0);
@@ -58,9 +69,9 @@ export function PreloadIndicator({ className }: PreloadIndicatorProps) {
       window.removeEventListener('preloadProgress' as any, handlePreloadProgress);
       window.removeEventListener('preloadComplete' as any, handlePreloadComplete);
     };
-  }, []);
+  }, [isProd, allowInProd]);
 
-  if (!isPreloading) return null;
+  if ((isProd && !allowInProd) || !isPreloading) return null;
 
   const getPriorityLabel = () => {
     switch (currentPriority) {
@@ -137,4 +148,5 @@ export function PreloadIndicator({ className }: PreloadIndicatorProps) {
       )}
     </div>
   );
-} 
+}
+*/ 

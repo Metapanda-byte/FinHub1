@@ -3,12 +3,13 @@ import { FMP_API_KEY } from '@/lib/config';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { symbol: string } }
+  { params }: { params: Promise<{ symbol: string }> }
 ) {
+  const { symbol } = await params;
   try {
     const { searchParams } = new URL(request.url);
     const timeframe = searchParams.get('timeframe') || '1Y';
-    const symbol = params.symbol.toUpperCase();
+    const upperSymbol = symbol.toUpperCase();
 
     if (!FMP_API_KEY) {
       return NextResponse.json(
@@ -28,7 +29,7 @@ export async function GET(
     };
     const timeseries = timeseriesMap[timeframe as keyof typeof timeseriesMap] || 365;
 
-    const url = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?serietype=line&timeseries=${timeseries}&apikey=${FMP_API_KEY}`;
+    const url = `https://financialmodelingprep.com/api/v3/historical-price-full/${upperSymbol}?serietype=line&timeseries=${timeseries}&apikey=${FMP_API_KEY}`;
     const response = await fetch(url);
     
     if (!response.ok) {

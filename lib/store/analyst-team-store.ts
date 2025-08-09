@@ -3,7 +3,8 @@ import { persist } from 'zustand/middleware';
 
 export type AnalystRole = 'research' | 'financial' | 'charts';
 export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+// Priority concept removed
+// export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type SubscriptionTier = 'free' | 'pro' | 'enterprise';
 
 export interface Analyst {
@@ -28,7 +29,7 @@ export interface Task {
   query: string;
   assignedTo: string[]; // analyst IDs
   status: TaskStatus;
-  priority: TaskPriority;
+  // priority removed
   createdAt: Date;
   startedAt?: Date;
   completedAt?: Date;
@@ -81,7 +82,7 @@ interface AnalystTeamStore {
 
   // Actions
   initializeTeam: () => void;
-  createTask: (query: string, priority?: TaskPriority, context?: any) => Task;
+  createTask: (query: string, _priority?: undefined, context?: any) => Task;
   assignTask: (taskId: string, analystIds: string[]) => void;
   updateTaskStatus: (taskId: string, status: TaskStatus) => void;
   completeTask: (taskId: string, results: TaskResult[]) => void;
@@ -214,13 +215,12 @@ export const useAnalystTeamStore = create<AnalystTeamStore>()(
         });
       },
 
-      createTask: (query: string, priority: TaskPriority = 'medium', context?: any) => {
+      createTask: (query: string, _priority?: undefined, context?: any) => {
         const task: Task = {
           id: `task_${Date.now()}`,
           query,
           assignedTo: [],
           status: 'pending',
-          priority,
           createdAt: new Date(),
           context
         };

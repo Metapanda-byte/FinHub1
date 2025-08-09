@@ -13,10 +13,11 @@ export interface SECFiling {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { symbol: string } }
+  { params }: { params: Promise<{ symbol: string }> }
 ) {
+  const { symbol } = await params;
   try {
-    const symbol = params.symbol.toUpperCase();
+    const upperSymbol = symbol.toUpperCase();
 
     if (!FMP_API_KEY) {
       return NextResponse.json(
@@ -26,9 +27,9 @@ export async function GET(
     }
 
     // Get 3 years of data (approximately 100-150 filings should cover 3 years)
-    const url = `https://financialmodelingprep.com/api/v3/sec_filings/${symbol}?apikey=${FMP_API_KEY}&limit=150`;
+    const url = `https://financialmodelingprep.com/api/v3/sec_filings/${upperSymbol}?apikey=${FMP_API_KEY}&limit=150`;
     
-    console.log(`[API Request] sec_filings/${symbol}`);
+    console.log(`[API Request] sec_filings/${upperSymbol}`);
     
     const response = await fetch(url);
     if (!response.ok) {
@@ -38,7 +39,7 @@ export async function GET(
 
     const result = await response.json();
     if (!result || (Array.isArray(result) && result.length === 0)) {
-      console.warn(`No SEC filings data for ${symbol}`);
+      console.warn(`No SEC filings data for ${upperSymbol}`);
       return NextResponse.json([], { status: 200 });
     }
 
@@ -64,7 +65,7 @@ export async function GET(
 
     return NextResponse.json(sortedFilings);
   } catch (error) {
-    console.error(`Error fetching SEC filings for ${params.symbol}:`, error);
+    console.error(`Error fetching SEC filings for ${symbol}:`, error);
     return NextResponse.json(
       { error: 'Failed to fetch SEC filings' },
       { status: 500 }

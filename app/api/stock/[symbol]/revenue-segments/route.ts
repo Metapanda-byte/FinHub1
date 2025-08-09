@@ -14,10 +14,11 @@ function collectNumericMap(obj: any, into: Record<string, number>) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { symbol: string } }
+  { params }: { params: Promise<{ symbol: string }> }
 ) {
+  const { symbol } = await params;
   try {
-    const symbol = params.symbol.toUpperCase();
+    const upperSymbol = symbol.toUpperCase();
 
     if (!FMP_API_KEY) {
       return NextResponse.json(
@@ -27,12 +28,12 @@ export async function GET(
     }
 
     // Try v4 endpoint first (request flat structure if supported)
-    let url = `https://financialmodelingprep.com/api/v4/revenue-product-segmentation?symbol=${symbol}&structure=flat&apikey=${FMP_API_KEY}`;
+    let url = `https://financialmodelingprep.com/api/v4/revenue-product-segmentation?symbol=${upperSymbol}&structure=flat&apikey=${FMP_API_KEY}`;
     let response = await fetch(url);
     
     if (!response.ok) {
       // Fallback to v3 endpoint
-      url = `https://financialmodelingprep.com/api/v3/revenue-product-segmentation/${symbol}?apikey=${FMP_API_KEY}`;
+      url = `https://financialmodelingprep.com/api/v3/revenue-product-segmentation/${upperSymbol}?apikey=${FMP_API_KEY}`;
       response = await fetch(url);
       
       if (!response.ok) {

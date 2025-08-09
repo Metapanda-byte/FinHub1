@@ -11,6 +11,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Menu, X, ChevronDown, Star } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -73,7 +77,7 @@ export default function Header() {
                     <ChevronDown className="ml-1 h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuContent align="start" className="w-64">
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard?tab=company-snapshot" className="w-full text-xs">
                       Company Overview
@@ -84,26 +88,60 @@ export default function Header() {
                       Historical Financials
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=competitor-analysis" className="w-full text-xs">
-                      Valuation Comparables
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=competitor-analysis" className="w-full text-xs">
-                      Operating Benchmarks
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=dcf-analysis" className="w-full text-xs">
-                      DCF Analysis
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=lbo-analysis" className="w-full text-xs">
-                      LBO Analysis
-                    </Link>
-                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  {/* Competitor Analysis grouped submenu */}
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="text-xs">Competitor Analysis</DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="w-64">
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard?tab=competitor-analysis&peerTab=peer-overview" className="w-full text-xs">
+                          Peer Overview
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard?tab=competitor-analysis&peerTab=valuation" className="w-full text-xs">
+                          Valuation Comparables
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard?tab=competitor-analysis&peerTab=operating" className="w-full text-xs">
+                          Operating Benchmarks
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard?tab=competitor-analysis&peerTab=correlation-charts" className="w-full text-xs">
+                          Correlation Charts
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard?tab=competitor-analysis&peerTab=price-performance" className="w-full text-xs">
+                          Price Performance
+                        </Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+
+                  {/* Financial Analysis grouped submenu */}
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="text-xs">Financial Analysis</DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="w-64">
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard?tab=dcf-analysis" className="w-full text-xs">
+                          DCF Analysis
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard?tab=lbo-analysis" className="w-full text-xs">
+                          LBO Analysis
+                        </Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+
+                  <DropdownMenuSeparator />
+
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard?tab=sec-filings" className="w-full text-xs">
                       SEC Filings & Transcripts
@@ -240,26 +278,50 @@ export default function Header() {
                       Historical Financials
                     </Button>
                   </Link>
-                  <Link href="/dashboard?tab=competitor-analysis" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
-                      Valuation Comparables
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard?tab=competitor-analysis" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
-                      Operating Benchmarks
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard?tab=dcf-analysis" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
-                      DCF Analysis
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard?tab=lbo-analysis" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start touch-target text-sm">
-                      LBO Analysis
-                    </Button>
-                  </Link>
+
+                  <div className="pt-2">
+                    <p className="text-[11px] font-medium text-muted-foreground px-2">Competitor Analysis</p>
+                    <Link href="/dashboard?tab=competitor-analysis&peerTab=peer-overview" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start touch-target text-sm pl-6">
+                        Peer Overview
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard?tab=competitor-analysis&peerTab=valuation" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start touch-target text-sm pl-6">
+                        Valuation Comparables
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard?tab=competitor-analysis&peerTab=operating" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start touch-target text-sm pl-6">
+                        Operating Benchmarks
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard?tab=competitor-analysis&peerTab=correlation-charts" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start touch-target text-sm pl-6">
+                        Correlation Charts
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard?tab=competitor-analysis&peerTab=price-performance" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start touch-target text-sm pl-6">
+                        Price Performance
+                      </Button>
+                    </Link>
+                  </div>
+
+                  <div className="pt-2">
+                    <p className="text-[11px] font-medium text-muted-foreground px-2">Financial Analysis</p>
+                    <Link href="/dashboard?tab=dcf-analysis" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start touch-target text-sm pl-6">
+                        DCF Analysis
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard?tab=lbo-analysis" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start touch-target text-sm pl-6">
+                        LBO Analysis
+                      </Button>
+                    </Link>
+                  </div>
+
                   <Link href="/dashboard?tab=sec-filings" onClick={() => setIsMobileMenuOpen(false)}>
                     <Button variant="ghost" className="w-full justify-start touch-target text-sm">
                       SEC Filings & Transcripts

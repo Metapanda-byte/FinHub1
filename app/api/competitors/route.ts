@@ -1024,7 +1024,31 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
       KRW: 0.00073,
       TWD: 0.031,
       SGD: 0.74,
-      ZAR: 0.055
+      ZAR: 0.055,
+      MXN: 0.056,
+      BRL: 0.18,
+      RUB: 0.011,
+      TRY: 0.030,
+      PLN: 0.26,
+      CZK: 0.044,
+      HUF: 0.0027,
+      ILS: 0.27,
+      SAR: 0.27,
+      AED: 0.27,
+      THB: 0.027,
+      MYR: 0.22,
+      PHP: 0.017,
+      IDR: 0.000061,
+      VND: 0.000039,
+      ZWL: 0.003
+    };
+    // Currency symbol map for consistency in UI wherever needed
+    const currencySymbolMap: Record<string, string> = {
+      USD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', CNH: '¥', HKD: 'HK$',
+      AUD: 'A$', CAD: 'C$', NZD: 'NZ$', SGD: 'S$', TWD: 'NT$', KRW: '₩', INR: '₹',
+      CHF: 'CHF', SEK: 'kr', NOK: 'kr', DKK: 'kr', ZAR: 'R', BRL: 'R$', MXN: 'MX$',
+      RUB: '₽', TRY: '₺', PLN: 'zł', CZK: 'Kč', HUF: 'Ft', ILS: '₪', SAR: '﷼', AED: 'د.إ',
+      THB: '฿', MYR: 'RM', PHP: '₱', IDR: 'Rp', VND: '₫'
     };
 
     const valuationData = allSymbols.map((sym, index) => {

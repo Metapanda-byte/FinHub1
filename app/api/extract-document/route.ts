@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mammoth from 'mammoth';
-import XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,15 +77,20 @@ async function extractWord(buffer: Buffer): Promise<{ content: string; metadata:
 // Extract text from Excel file
 async function extractExcel(buffer: Buffer): Promise<{ content: string; metadata: any }> {
   try {
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    const workbook = new ExcelJS.Workbook();
+    // Cast buffer to ArrayBuffer for ExcelJS compatibility
+    await workbook.xlsx.load(buffer as any);
     let content = '';
     const sheets: string[] = [];
     
-    workbook.SheetNames.forEach(sheetName => {
-      sheets.push(sheetName);
-      const worksheet = workbook.Sheets[sheetName];
-      const sheetText = XLSX.utils.sheet_to_txt(worksheet);
-      content += `\n--- Sheet: ${sheetName} ---\n${sheetText}\n`;
+    workbook.worksheets.forEach(worksheet => {
+      sheets.push(worksheet.name);
+      let sheetText = '';
+      worksheet.eachRow((row, rowNumber) => {
+        const values = row.values as any[];
+        sheetText += values.slice(1).join('\t') + '\n';
+      });
+      content += `\n--- Sheet: ${worksheet.name} ---\n${sheetText}\n`;
     });
     
     return {

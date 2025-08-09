@@ -78,10 +78,11 @@ function collectNumericMap(obj: any, into: Record<string, number>) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { symbol: string } }
+  { params }: { params: Promise<{ symbol: string }> }
 ) {
+  const { symbol } = await params;
   try {
-    const symbol = params.symbol.toUpperCase();
+    const upperSymbol = symbol.toUpperCase();
 
     if (!FMP_API_KEY) {
       return NextResponse.json(
@@ -92,9 +93,9 @@ export async function GET(
 
     // Try v4 endpoint first (request flat structure if supported), then fallback to v3
     const urls = [
-      `https://financialmodelingprep.com/api/v4/revenue-geographic-segmentation?symbol=${symbol}&structure=flat&apikey=${FMP_API_KEY}`,
-      `https://financialmodelingprep.com/api/v4/revenue-geographic-segmentation?symbol=${symbol}&apikey=${FMP_API_KEY}`,
-      `https://financialmodelingprep.com/api/v3/revenue-geographic-segmentation/${symbol}?apikey=${FMP_API_KEY}`,
+      `https://financialmodelingprep.com/api/v4/revenue-geographic-segmentation?symbol=${upperSymbol}&structure=flat&apikey=${FMP_API_KEY}`,
+      `https://financialmodelingprep.com/api/v4/revenue-geographic-segmentation?symbol=${upperSymbol}&apikey=${FMP_API_KEY}`,
+      `https://financialmodelingprep.com/api/v3/revenue-geographic-segmentation/${upperSymbol}?apikey=${FMP_API_KEY}`,
     ];
 
     let data: any = null;

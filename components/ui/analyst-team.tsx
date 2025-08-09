@@ -40,7 +40,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAnalystTeamStore, type TeamMessage, type TaskPriority } from "@/lib/store/analyst-team-store";
+import { useAnalystTeamStore, type TeamMessage } from "@/lib/store/analyst-team-store";
 import { ChartDisplay } from "./chart-display";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -61,12 +61,7 @@ interface AnalystTeamProps {
   onQueryProcessed?: () => void;
 }
 
-const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  low: "bg-gray-500",
-  medium: "bg-blue-500",
-  high: "bg-orange-500",
-  urgent: "bg-red-500"
-};
+// Priority removed
 
 const ROLE_ICONS = {
   research: Search,
@@ -93,7 +88,8 @@ export function AnalystTeam({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
-  const [selectedPriority, setSelectedPriority] = useState<TaskPriority>('medium');
+  // Priority removed
+  // const [selectedPriority, setSelectedPriority] = useState<TaskPriority>('medium');
   const [showAnalystSelector, setShowAnalystSelector] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -103,7 +99,7 @@ export function AnalystTeam({
     tasks,
     messages,
     activeTaskCount,
-    teamPerformance,
+    
     selectedAnalystId,
     userSubscriptionTier,
     initializeTeam,
@@ -258,7 +254,7 @@ export function AnalystTeam({
 
     try {
       // Create task
-      const task = createTask(messageText, selectedPriority, {
+      const task = createTask(messageText, undefined, {
         symbol,
         companyName,
         financialData
@@ -415,7 +411,7 @@ export function AnalystTeam({
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="font-medium flex items-center gap-2">
+                              <div className="font-medium flex items-center gap-2">
                                 {analyst.name}
                                 {analyst.isPrimary && (
                                   <Badge variant="secondary" className="text-xs">Default</Badge>
@@ -423,7 +419,7 @@ export function AnalystTeam({
                                 {isSelected && (
                                   <Check className="w-4 h-4 text-green-600" />
                                 )}
-                              </p>
+                              </div>
                               <p className="text-xs text-muted-foreground">{analyst.title}</p>
                             </div>
                             {isLocked && (
@@ -650,25 +646,7 @@ export function AnalystTeam({
 
           {/* Input Area */}
           <div className="flex-shrink-0 p-4 border-t border-border bg-muted/10">
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant="outline" className="text-xs">Priority:</Badge>
-              <div className="flex gap-1">
-                {(['low', 'medium', 'high', 'urgent'] as TaskPriority[]).map((priority) => (
-                  <Button
-                    key={priority}
-                    variant={selectedPriority === priority ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setSelectedPriority(priority)}
-                    className={cn(
-                      "h-6 px-2 text-xs capitalize",
-                      selectedPriority === priority && PRIORITY_COLORS[priority]
-                    )}
-                  >
-                    {priority}
-                  </Button>
-                ))}
-              </div>
-            </div>
+
             <div className="flex gap-2">
               <Input
                 ref={inputRef}
@@ -735,36 +713,7 @@ export function AnalystTeam({
         <TabsContent value="team" className="flex-1 p-0 min-h-0 overflow-hidden">
           <ScrollArea className="h-full p-4">
             <div className="space-y-4">
-              {/* Team Performance */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Award className="w-4 h-4 text-orange-500" />
-                    Team Performance
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Total Tasks</p>
-                      <p className="text-lg font-semibold">{teamPerformance.totalTasks}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Completed</p>
-                      <p className="text-lg font-semibold text-green-600">{teamPerformance.completedTasks}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Avg Response</p>
-                      <p className="text-lg font-semibold">{teamPerformance.averageResponseTime.toFixed(1)}s</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Success Rate</p>
-                      <p className="text-lg font-semibold">{teamPerformance.successRate.toFixed(0)}%</p>
-                    </div>
-                  </div>
-                  <Progress value={teamPerformance.successRate} className="h-2" />
-                </CardContent>
-              </Card>
+              
 
               {/* Analyst Cards */}
               <div className="space-y-3">
@@ -916,8 +865,8 @@ export function AnalystTeam({
                       <div className="flex-1">
                         <p className="text-sm font-medium line-clamp-2">{task.query}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className={cn("text-xs", PRIORITY_COLORS[task.priority])}>
-                            {task.priority}
+                          <Badge variant="outline" className={cn("text-xs")}>
+                            Priority removed
                           </Badge>
                           <span className="text-xs text-muted-foreground">
                             {new Date(task.createdAt).toLocaleTimeString()}
