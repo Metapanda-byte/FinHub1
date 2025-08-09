@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface SearchHistory {
   symbol: string;
@@ -57,6 +57,22 @@ export const useSearchStore = create<SearchState>()(
     }),
     {
       name: 'search-store',
+      version: 2,
+      storage: createJSONStorage(() => localStorage),
+      migrate: (persisted: any, version) => {
+        const base = {
+          recentSearches: [] as SearchHistory[],
+          favorites: [] as FavoriteStock[],
+          currentSymbol: 'NVDA' as string | null,
+          currentCompanyName: null as string | null,
+        };
+        if (!persisted) return base;
+        return {
+          ...base,
+          ...persisted,
+          currentSymbol: persisted.currentSymbol || 'NVDA',
+        };
+      },
     }
   )
 );

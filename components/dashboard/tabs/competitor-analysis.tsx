@@ -276,31 +276,30 @@ const optimizeDescription = (description: string): string => {
   return description;
 };
 
-// Normalize display: lower-case unless acronym, and fix spaced acronyms (e.g., 'E M E A' → 'EMEA')
+// Normalize display: sentence-case with acronym handling and spaced-letter collapse
 const formatNoCapsUnlessAcronym = (text: string | undefined | null): string => {
   if (!text || text === 'N/A') return 'N/A';
-  let s = String(text);
-  // Collapse common spaced acronyms
-  const spacedMap: Record<string, string> = {
-    'E M E A': 'EMEA',
-    'A P A C': 'APAC',
-    'U S A': 'USA',
-    'U S': 'US',
-    'U K': 'UK',
-  };
-  Object.entries(spacedMap).forEach(([k, v]) => {
-    const rx = new RegExp(`\\b${k.replace(/ /g, '\\s*')}\\b`, 'gi');
-    s = s.replace(rx, v);
-  });
-  // Acronyms to preserve
-  const acronyms = new Set(['US', 'USA', 'UK', 'EU', 'EMEA', 'APAC', 'UAE', 'ROW', 'ASEAN', 'LATAM', 'NA', 'ANZ']);
-  // Lower-case everything except numbers and acronyms first
-  s = s.replace(/([A-Za-z][A-Za-z]+|[A-Za-z]+|\d+%?)/g, (m) => {
-    if (acronyms.has(m.toUpperCase())) return m.toUpperCase();
-    if (/^\d+%?$/.test(m)) return m; // numbers untouched
-    return m.toLowerCase();
-  });
-  // Title-case known countries/regions (first letter caps; multi-word handled)
+  let s = String(text).trim();
+
+  // 1) Collapse any spaced-letter sequences of length 2–6 into a compact token (e.g., "C M B U" -> "CMBU")
+  s = s.replace(/\b(?:[A-Za-z]\s+){1,5}[A-Za-z]\b/g, (m) => m.replace(/\s+/g, ''));
+
+  // 2) Normalize punctuation/commas spacing
+  s = s.replace(/\s*,\s*/g, ', ').replace(/\s{2,}/g, ' ');
+
+  // 3) Acronyms to preserve
+  const acronyms = new Set(['US','USA','UK','EU','EMEA','APAC','UAE','ROW','ASEAN','LATAM','NA','ANZ','CMBU','DCG','DPU','GPU']);
+
+  // 4) Token-wise normalization: keep acronyms uppercase; lowercase other words
+  s = s.split(/(,\s*)/).map(part => {
+    if (part.match(/^,\s*$/)) return part; // keep delimiters
+    return part.replace(/\b([A-Za-z][A-Za-z0-9]{0,5})\b/g, (m) => {
+      if (acronyms.has(m.toUpperCase())) return m.toUpperCase();
+      return m.toLowerCase();
+    });
+  }).join('');
+
+  // 5) Title-case known countries/regions (first letter caps; multi-word handled)
   const titleList = [
     'asia', 'europe', 'americas', 'north america', 'south america', 'greater china', 'china', 'japan', 'australia',
     'canada', 'mexico', 'brazil', 'india', 'thailand', 'malaysia', 'philippines', 'vietnam', 'indonesia',
@@ -314,6 +313,9 @@ const formatNoCapsUnlessAcronym = (text: string | undefined | null): string => {
     const rx = new RegExp(`\\b${phrase.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'g');
     s = s.replace(rx, toTitle(phrase));
   });
+
+  // 6) Ensure the first character of the entire sentence is capitalized
+  s = s.charAt(0).toUpperCase() + s.slice(1);
   return s;
 };
 

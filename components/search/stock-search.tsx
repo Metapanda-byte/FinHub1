@@ -86,6 +86,13 @@ export function StockSearch({ className, placeholder = "Search companies...", sh
     toggleFavorite,
     isFavorite
   } = useSearchStore();
+  // Safety: initialize default on client if null (deployment edge cases)
+  React.useEffect(() => {
+    if (!currentSymbol) {
+      setCurrentSymbol('NVDA');
+      preloadCriticalData('NVDA').then(() => preloadTickerData('NVDA'));
+    }
+  }, []);
   
   const { 
     stocks: watchlistStocks, 
