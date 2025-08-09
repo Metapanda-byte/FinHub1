@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -16,12 +16,16 @@ const COLORS = ["#3b82f6", "#f97316", "#10b981", "#8b5cf6", "#ef4444", "#14b8a6"
 
 function useSymbolsFromQuery(): string[] {
   const searchParams = useSearchParams();
+  const single = searchParams.get("symbol");
   const symbolsParam = searchParams.get("symbols");
-  const defaults = ["AAPL", "MSFT", "NVDA", "GOOGL"];
+  const defaults = ["AAPL"];
   try {
-    if (!symbolsParam) return defaults;
-    const raw = symbolsParam.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
-    return raw.length > 0 ? raw : defaults;
+    if (single) return [single.trim().toUpperCase()];
+    if (symbolsParam) {
+      const raw = symbolsParam.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
+      return raw.length > 0 ? [raw[0]] : defaults;
+    }
+    return defaults;
   } catch {
     return defaults;
   }
@@ -74,16 +78,99 @@ export default function SharePriceFormatPreviewPage() {
   const symbols = useSymbolsFromQuery();
   const [timeframe, setTimeframe] = useState<string>("YTD");
   const subject = symbols[0];
+  const [realDates, setRealDates] = useState<string[] | null>(null);
+  const [realSeries, setRealSeries] = useState<number[] | null>(null);
+  const [realOHLC, setRealOHLC] = useState<Array<[string, number, number, number, number]> | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  const priceData = useMemo(() => generateMockPriceData(symbols, timeframe), [symbols, timeframe]);
-  const dates = priceData.map((d) => d.date as string);
+  // Map UI timeframe to API timeframe (daily series)
+  const apiTimeframe = useMemo(() => {
+    switch (timeframe) {
+      case "12H":
+      case "1D":
+      case "1W":
+        return "1M"; // Collapse intraday/weekly to 1M daily
+      case "1M":
+      case "3M":
+      case "YTD":
+      case "1Y":
+      case "5Y":
+        return timeframe;
+      default:
+        return "1Y";
+    }
+  }, [timeframe]);
 
-  const getSeriesData = (symbol: string) => priceData.map((d) => Number(d[symbol] || 0));
+  useEffect(() => {
+    let cancelled = false;
+    const fetchReal = async () => {
+      if (!subject) return;
+      setLoading(true);
+      setApiError(null);
+      try {
+        const res = await fetch(`/api/stock/${encodeURIComponent(subject)}/price?timeframe=${apiTimeframe}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: Array<{ date: string; close: number; open: number; high: number; low: number; price?: number } & any> = await res.json();
+        // Ensure ascending order
+        const sorted = [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const dates = sorted.map(d => d.date);
+        const series = sorted.map(d => Number(d.close ?? d.price));
+        const ohlc: Array<[string, number, number, number, number]> = sorted.map(d => [
+          d.date,
+          Number((d.open ?? d.close).toFixed(2)),
+          Number((d.close ?? d.price).toFixed(2)),
+          Number((d.low ?? d.close).toFixed(2)),
+          Number((d.high ?? d.close).toFixed(2)),
+        ]);
+        if (!cancelled) {
+          setRealDates(dates);
+          setRealSeries(series);
+          setRealOHLC(ohlc);
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          setApiError(e?.message || "Failed to load");
+          setRealDates(null);
+          setRealSeries(null);
+          setRealOHLC(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchReal();
+    return () => { cancelled = true; };
+  }, [subject, apiTimeframe]);
+
+  // Fallback mock data if API fails
+  const fallbackPriceData = useMemo(() => generateMockPriceData([subject], timeframe), [subject, timeframe]);
+  const dates = (realDates ?? fallbackPriceData.map(d => d.date as string));
+  const getSeriesData = (symbol: string) => (realSeries ?? fallbackPriceData.map(d => Number(d[symbol] || 0)));
   const getChangePct = (symbol: string) => {
     const data = getSeriesData(symbol);
     const first = data[0] || 0;
     const last = data[data.length - 1] || 0;
     return first > 0 ? ((last / first) - 1) * 100 : 0;
+  };
+
+  // Create mock OHLC from price path for candlestick option
+  const buildOHLC = () => {
+    if (realOHLC) return realOHLC;
+    const s = subject;
+    const ohlc = [] as Array<[string, number, number, number, number]>; // [date, open, close, low, high]
+    const series = getSeriesData(s);
+    for (let i = 0; i < series.length; i++) {
+      const open = i === 0 ? series[i] : series[i - 1];
+      const close = series[i];
+      const baseLow = Math.min(open, close);
+      const baseHigh = Math.max(open, close);
+      const jitter = 0.01 * baseHigh; // ~1%
+      const low = Math.max(1, baseLow - jitter * 0.6);
+      const high = baseHigh + jitter * 0.6;
+      ohlc.push([dates[i], Number(open.toFixed(2)), Number(close.toFixed(2)), Number(low.toFixed(2)), Number(high.toFixed(2))]);
+    }
+    return ohlc;
   };
 
   const buildLineWithEndLabels = () => {
@@ -171,25 +258,24 @@ export default function SharePriceFormatPreviewPage() {
     } as any;
   };
 
-  const buildRankBars = () => {
-    const lastValues = symbols.map((s) => {
-      const data = getSeriesData(s);
-      const first = data[0] || 0;
-      const last = data[data.length - 1] || 0;
-      const pct = first > 0 ? ((last / first) - 1) * 100 : 0;
-      return { symbol: s, pct };
-    }).sort((a, b) => a.pct - b.pct);
-
+  const buildCandlesticks = () => {
+    const ohlc = buildOHLC();
     return {
-      grid: { top: 10, right: 20, bottom: 20, left: 60 },
-      tooltip: { trigger: 'item', valueFormatter: (v: any) => `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(2)}%` },
-      xAxis: { type: 'value', axisLabel: { formatter: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(0)}%` } },
-      yAxis: { type: 'category', data: lastValues.map((d) => d.symbol) },
+      grid: { top: 10, right: 20, bottom: 30, left: 60 },
+      tooltip: { trigger: 'axis' },
+      xAxis: { type: 'category', data: ohlc.map(o => o[0]) },
+      yAxis: { scale: true },
       series: [
         {
-          type: 'bar',
-          data: lastValues.map((d, idx) => ({ value: d.pct, itemStyle: { color: d.symbol === subject ? '#f97316' : COLORS[idx % COLORS.length] } })),
-          label: { show: true, position: 'right', formatter: (p: any) => `${p.data.value >= 0 ? '+' : ''}${p.data.value.toFixed(2)}%` },
+          type: 'candlestick',
+          name: subject,
+          data: ohlc.map(o => [o[1], o[2], o[3], o[4]]), // [open, close, low, high]
+          itemStyle: {
+            color: '#16a34a',
+            color0: '#ef4444',
+            borderColor: '#16a34a',
+            borderColor0: '#ef4444',
+          },
         },
       ],
     } as any;
@@ -198,9 +284,9 @@ export default function SharePriceFormatPreviewPage() {
   const renderSparklines = () => {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {symbols.map((s, idx) => {
+        {[subject].map((s, idx) => {
           const data = getSeriesData(s);
-          const color = s === subject ? "#f97316" : COLORS[idx % COLORS.length];
+          const color = "#f97316";
           const first = data[0] || 0;
           const last = data[data.length - 1] || 0;
           const pct = first > 0 ? ((last / first) - 1) * 100 : 0;
@@ -215,7 +301,7 @@ export default function SharePriceFormatPreviewPage() {
           return (
             <Card key={s} className="p-3">
               <div className="text-xs font-medium mb-2 flex items-center justify-between">
-                <span className={s === subject ? "text-orange-600" : ""}>{s}</span>
+                <span className="text-orange-600">{s}</span>
                 <span className={pct >= 0 ? "text-green-600" : "text-red-600"}>
                   ${last.toFixed(2)} ({pct >= 0 ? '+' : ''}{pct.toFixed(1)}%)
                 </span>
@@ -235,8 +321,11 @@ export default function SharePriceFormatPreviewPage() {
       <div className="container mx-auto p-4 space-y-4">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h1 className="text-xl font-semibold">Share Price Performance – Format Options</h1>
-            <p className="text-sm text-muted-foreground">Previewed using the same editor controls as in the peers section. Use symbols= query param to customize.</p>
+            <h1 className="text-xl font-semibold">Share Price – Single Stock Format Options</h1>
+            <p className="text-sm text-muted-foreground">Use ?symbol=AAPL to choose the ticker. Timeframe controls match the peers editor.</p>
+            {apiError && (
+              <p className="text-xs text-red-500">Live price fetch failed: {apiError}. Showing fallback data.</p>
+            )}
           </div>
           <ToggleGroup type="single" value={timeframe} onValueChange={(v) => v && setTimeframe(v)}>
             <ToggleGroupItem value="12H" className="text-xs">12H</ToggleGroupItem>
@@ -252,28 +341,40 @@ export default function SharePriceFormatPreviewPage() {
         </div>
 
         <Card className="p-4">
-          <h2 className="text-sm font-semibold mb-3">Option A: Multi-line with end labels (current style)</h2>
+          <h2 className="text-sm font-semibold mb-3">Option A: Line with end label (price + period %)</h2>
           <div className="h-[360px] w-full">
-            <ReactECharts notMerge lazyUpdate style={{ height: '100%', width: '100%' }} option={buildLineWithEndLabels()} />
+            {loading ? (
+              <div className="h-full w-full flex items-center justify-center text-sm text-muted-foreground">Loading live prices…</div>
+            ) : (
+              <ReactECharts notMerge lazyUpdate style={{ height: '100%', width: '100%' }} option={buildLineWithEndLabels()} />
+            )}
           </div>
         </Card>
 
         <Card className="p-4">
-          <h2 className="text-sm font-semibold mb-3">Option B: Emphasis area for subject, subtle peers</h2>
+          <h2 className="text-sm font-semibold mb-3">Option B: Emphasis area (subject focus)</h2>
           <div className="h-[360px] w-full">
-            <ReactECharts notMerge lazyUpdate style={{ height: '100%', width: '100%' }} option={buildEmphasisArea()} />
+            {loading ? (
+              <div className="h-full w-full flex items-center justify-center text-sm text-muted-foreground">Loading live prices…</div>
+            ) : (
+              <ReactECharts notMerge lazyUpdate style={{ height: '100%', width: '100%' }} option={buildEmphasisArea()} />
+            )}
           </div>
         </Card>
 
         <Card className="p-4">
-          <h2 className="text-sm font-semibold mb-3">Option C: Ranked performance bars</h2>
-          <div className="h-[320px] w-full">
-            <ReactECharts notMerge lazyUpdate style={{ height: '100%', width: '100%' }} option={buildRankBars()} />
+          <h2 className="text-sm font-semibold mb-3">Option C: Candlestick (derived OHLC)</h2>
+          <div className="h-[360px] w-full">
+            {loading ? (
+              <div className="h-full w-full flex items-center justify-center text-sm text-muted-foreground">Loading live prices…</div>
+            ) : (
+              <ReactECharts notMerge lazyUpdate style={{ height: '100%', width: '100%' }} option={buildCandlesticks()} />
+            )}
           </div>
         </Card>
 
         <Card className="p-4">
-          <h2 className="text-sm font-semibold mb-3">Option D: Mini sparklines per symbol</h2>
+          <h2 className="text-sm font-semibold mb-3">Option D: Compact sparkline</h2>
           {renderSparklines()}
         </Card>
       </div>

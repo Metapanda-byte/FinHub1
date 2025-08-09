@@ -12,6 +12,7 @@ import { useCompanyProfile, useIncomeStatements, useStockPriceData } from "@/lib
 import { useStockQuote } from "@/lib/api/stock";
 import { formatFinancialNumber, formatLargeNumber } from "@/lib/formatters";
 import { StockChart } from "@/components/dashboard/charts/stock-chart";
+import { OverviewPriceOptionA } from "@/components/dashboard/charts/overview-price-option-a";
 import { cn } from "@/lib/utils";
 
 interface MetricCardProps {
@@ -191,8 +192,8 @@ export function CompanyOverviewMobile() {
         </div>
         
         {/* Compact Chart - Fixed Height */}
-        <div className="h-[100px] overflow-hidden">
-          <StockChart symbol={currentSymbol} timeframe="YTD" />
+        <div className="h-[140px] overflow-hidden">
+          <OverviewPriceOptionA symbol={currentSymbol || ''} timeframe="YTD" height={140} />
         </div>
       </div>
 

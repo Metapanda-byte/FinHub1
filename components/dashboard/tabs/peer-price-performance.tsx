@@ -34,6 +34,7 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
   const [priceData, setPriceData] = useState<PriceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([]);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const symbolsToFetch = useMemo(() => {
     const symbols = [currentSymbol, ...selectedPeers].filter(Boolean);
@@ -41,15 +42,87 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
   }, [currentSymbol, selectedPeers]);
 
   useEffect(() => {
-    const fetchPriceData = async () => {
-      setLoading(true);
-      const mockData = generateMockPriceData(symbolsToFetch, timeframe);
-      setPriceData(mockData.chartData);
-      setPerformanceData(mockData.performanceData);
-      setLoading(false);
+    let cancelled = false;
+    const mapTimeframeForApi = (tf: string): string => {
+      switch (tf) {
+        case "12H":
+        case "1D":
+        case "1W":
+          return "1M"; // collapse to daily 1M
+        case "3Y":
+          return "3Y"; // supported by backend mapping
+        default:
+          return tf; // 1M, 3M, YTD, 1Y, 5Y
+      }
     };
-    if (symbolsToFetch.length > 0) fetchPriceData();
-  }, [symbolsToFetch, timeframe]);
+
+    const fetchAll = async () => {
+      if (symbolsToFetch.length === 0) return;
+      setLoading(true);
+      setApiError(null);
+      try {
+        // Fetch each symbol in parallel
+        const apiTF = mapTimeframeForApi(timeframe);
+        const results = await Promise.all(
+          symbolsToFetch.map(async (s) => {
+            const res = await fetch(`/api/stock/${encodeURIComponent(s)}/price?timeframe=${apiTF}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status} for ${s}`);
+            const json: Array<{ date: string; close: number; price?: number }> = await res.json();
+            const sorted = json
+              .map((d) => ({ date: d.date, value: Number(d.close ?? d.price) }))
+              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            return { symbol: s, data: sorted };
+          })
+        );
+
+        // Build unified date axis (use union of all dates, ascending)
+        const dateSet = new Set<string>();
+        results.forEach(r => r.data.forEach(d => dateSet.add(d.date)));
+        const dates = Array.from(dateSet).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+        // Align series to unified dates, filling with nulls
+        const chartRows: PriceData[] = dates.map((date) => ({ date }));
+        for (const { symbol, data } of results) {
+          const map = new Map(data.map(d => [d.date, d.value] as const));
+          dates.forEach((date, i) => {
+            (chartRows[i] as any)[symbol] = map.has(date) ? map.get(date) : null;
+          });
+        }
+
+        if (cancelled) return;
+        setPriceData(chartRows);
+
+        // Compute relative performance (% change from first available) for summary
+        const perf: PerformanceData[] = symbolsToFetch.map((symbol, idx) => {
+          const series = chartRows.map(r => Number((r as any)[symbol] ?? NaN)).filter(v => !Number.isNaN(v));
+          const first = series[0] ?? 0;
+          const last = series[series.length - 1] ?? 0;
+          const pct = first > 0 ? ((last / first) - 1) * 100 : 0;
+          const company = peerCompanies.find(c => c.id === symbol);
+          return {
+            symbol,
+            name: company?.name || symbol,
+            performance: pct,
+            color: symbol === currentSymbol ? "#f97316" : COLORS[idx % COLORS.length],
+          };
+        }).sort((a, b) => b.performance - a.performance);
+        setPerformanceData(perf);
+      } catch (e: any) {
+        if (!cancelled) {
+          setApiError(e?.message || 'Failed to load');
+          // Fallback to mock data for visual continuity
+          const mock = generateMockPriceData(symbolsToFetch, timeframe);
+          setPriceData(mock.chartData);
+          setPerformanceData(mock.performanceData);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchAll();
+    return () => { cancelled = true; };
+  }, [symbolsToFetch, timeframe, peerCompanies, currentSymbol]);
 
   const generateMockPriceData = (symbols: string[], period: string) => {
     const periods: Record<string, number> = {
@@ -82,7 +155,7 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
         const trend = (((timeSeed * 1103515245 + 12345) % 65536) / 65536 - 0.5) * 0.001;
         const previousValue = i === 0 ? 0 : (chartData[i - 1]?.[symbol] as number || 0);
         const change = (((timeSeed * 1664525 + 1013904223) % 65536) / 65536 - 0.5) * volatility + trend * i;
-        dataPoint[symbol] = previousValue + change;
+        (dataPoint as any)[symbol] = previousValue + change;
       });
       chartData.push(dataPoint);
     }
@@ -92,7 +165,7 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
       return {
         symbol,
         name: company?.name || symbol,
-        performance: finalValue * 100,
+        performance: Number(finalValue) * 100,
         color: symbol === currentSymbol ? "#f97316" : COLORS[idx % COLORS.length],
       };
     }).sort((a, b) => b.performance - a.performance);
@@ -103,10 +176,16 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
 
   const buildOption = () => {
     const series = symbolsToFetch.map((symbol, idx) => {
-      const data = priceData.map(d => Number(d[symbol] || 0) * 100);
+      const raw = priceData.map(d => (d as any)[symbol]);
+      // Convert to relative % from first non-null point
+      const first = raw.find((v) => typeof v === 'number') as number | undefined;
+      const data = raw.map((v) => {
+        if (typeof v !== 'number' || first === undefined) return null;
+        return ((v / first) - 1) * 100;
+      });
       const isSubject = symbol === currentSymbol;
       const color = isSubject ? "#f97316" : COLORS[idx % COLORS.length];
-      const last = data[data.length - 1] || 0;
+      const last = (data.filter((v) => typeof v === 'number') as number[]).slice(-1)[0] || 0;
       return {
         name: symbol,
         type: 'line',
@@ -117,7 +196,7 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
         itemStyle: { color },
         endLabel: {
           show: true,
-          formatter: (p: any) => `${symbol}  ${(last >= 0 ? '+' : '')}${last.toFixed(2)}%`,
+          formatter: () => `${symbol}  ${(last >= 0 ? '+' : '')}${last.toFixed(2)}%`,
           color,
           fontSize: 11,
           padding: [2, 4, 2, 4],
@@ -126,7 +205,13 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
     });
 
     // Compute y extents for better relative scale
-    const allValues = symbolsToFetch.flatMap(s => priceData.map(d => Number(d[s] || 0) * 100));
+    const allValues = symbolsToFetch.flatMap(s => priceData.map(d => {
+      const arr = priceData.map(pd => (pd as any)[s]);
+      const first = arr.find((v) => typeof v === 'number') as number | undefined;
+      const val = (d as any)[s];
+      if (typeof val !== 'number' || first === undefined) return 0;
+      return ((val / first) - 1) * 100;
+    }));
     const minV = Math.min(0, ...allValues);
     const maxV = Math.max(0, ...allValues);
     const pad = Math.max(5, (maxV - minV) * 0.08);
@@ -172,6 +257,9 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
           <div>
             <h3 className="text-lg font-semibold">Share Price Performance</h3>
             <p className="text-sm text-muted-foreground">Relative performance comparison with peer group</p>
+            {apiError && (
+              <p className="text-xs text-red-500">Live price fetch failed: {apiError}. Showing fallback data.</p>
+            )}
           </div>
           <ToggleGroup type="single" value={timeframe} onValueChange={(v) => v && setTimeframe(v)}>
             <ToggleGroupItem value="12H" className="text-xs">12H</ToggleGroupItem>

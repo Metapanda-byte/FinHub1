@@ -10,6 +10,7 @@ import { RevenueChart } from "@/components/dashboard/charts/revenue-chart";
 import { EbitdaChart } from "@/components/dashboard/charts/ebitda-chart";
 import { PieChart } from "@/components/dashboard/charts/pie-chart";
 import { StockChart } from "@/components/dashboard/charts/stock-chart";
+import { OverviewPriceOptionA } from "@/components/dashboard/charts/overview-price-option-a";
 import { ShareholdersTable } from "@/components/dashboard/tables/shareholders-table";
 import { useState, useMemo, useEffect } from "react";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -871,7 +872,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
           <CardTitle className="text-xs font-medium">Share Price Performance</CardTitle>
         </CardHeader>
         <CardContent className="pt-0 px-3">
-          <StockChart symbol={currentSymbol} timeframe={timeframe} currencySymbol={currencySymbol} />
+          <OverviewPriceOptionA symbol={currentSymbol} timeframe={timeframe as any} height={240} />
         </CardContent>
       </Card>
     );
@@ -1045,6 +1046,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
 
   // Create carousel cards array (excluding company info card)
   const carouselCards = [
+    createCompanyInfoCard(),
     createSharePriceCard(),
     createCapitalStructureCard(),
     createRevenueChartCard(),
