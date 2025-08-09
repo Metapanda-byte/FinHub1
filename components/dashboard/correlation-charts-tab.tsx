@@ -1,15 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { Lightbulb, TrendingUp, BarChart3, Target } from "lucide-react";
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { formatCurrency, formatPercentage } from "@/lib/formatters";
+import { useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import ReactECharts from 'echarts-for-react';
+import * as echarts from 'echarts/core';
+import 'echarts/lib/component/tooltip';
+import 'echarts/lib/component/legend';
+import 'echarts/lib/chart/scatter';
+import ecStat from 'echarts-stat';
 
 interface ValuationData {
   ticker: string;
@@ -33,6 +32,7 @@ interface PerformanceData {
   netMargin: number;
   roic: number;
   roe: number;
+  ebitdaMargin?: number;
 }
 
 interface CorrelationChartsTabProps {
@@ -43,166 +43,26 @@ interface CorrelationChartsTabProps {
   allPerformanceData: PerformanceData[];
 }
 
-// Chart configuration for professional predefined charts
-const PREDEFINED_CHARTS = [
-  {
-    id: 'pe-vs-growth',
-    title: 'P/E Ratio vs Revenue Growth',
-    xAxis: 'revenueGrowth',
-    yAxis: 'peRatio',
-    xLabel: 'Revenue Growth (%)',
-    yLabel: 'P/E Ratio (x)',
-    category: 'valuation',
-    description: 'High growth companies typically trade at premium valuations',
-    insight: 'Companies above the trend line may be overvalued relative to growth'
-  },
-  {
-    id: 'pb-vs-roe',
-    title: 'P/B Ratio vs ROE',
-    xAxis: 'roe',
-    yAxis: 'priceToBook',
-    xLabel: 'Return on Equity (%)',
-    yLabel: 'P/B Ratio (x)',
-    category: 'profitability',
-    description: 'Companies with higher ROE typically command higher P/B multiples',
-    insight: 'Particularly relevant for asset-heavy and financial businesses'
-  },
-  {
-    id: 'ev-ebitda-vs-roic',
-    title: 'EV/EBITDA vs ROIC',
-    xAxis: 'roic',
-    yAxis: 'evToEbitda',
-    xLabel: 'Return on Invested Capital (%)',
-    yLabel: 'EV/EBITDA (x)',
-    category: 'efficiency',
-    description: 'Capital-efficient companies deserve premium enterprise value multiples',
-    insight: 'Companies below the trend line may offer value opportunities'
-  },
-  {
-    id: 'ps-vs-margin',
-    title: 'P/S Ratio vs Operating Margin',
-    xAxis: 'operatingMargin',
-    yAxis: 'priceToSales',
-    xLabel: 'Operating Margin (%)',
-    yLabel: 'P/S Ratio (x)',
-    category: 'profitability',
-    description: 'Higher margin businesses command premium revenue multiples',
-    insight: 'Critical for evaluating software and service companies'
-  },
-  {
-    id: 'size-profitability',
-    title: 'Market Cap vs Net Margin',
-    xAxis: 'netMargin',
-    yAxis: 'marketCap',
-    xLabel: 'Net Margin (%)',
-    yLabel: 'Market Cap ($B)',
-    category: 'size',
-    description: 'Scale advantages often translate to higher profitability',
-    insight: 'Large companies with low margins may face competitive pressure'
-  },
-  {
-    id: 'dividend-yield-growth',
-    title: 'Dividend Yield vs Revenue Growth',
-    xAxis: 'revenueGrowth',
-    yAxis: 'dividendYield',
-    xLabel: 'Revenue Growth (%)',
-    yLabel: 'Dividend Yield (%)',
-    category: 'income',
-    description: 'Growth companies typically reinvest rather than pay dividends',
-    insight: 'High yield with high growth may indicate unsustainable payout'
-  }
-];
+const DASHBOARD_CHARTS = [
+  { id: 'pe_vs_growth', title: 'P/E Ratio vs Revenue Growth', xKey: 'revenueGrowth', xFormat: 'percentage', xLabel: 'Revenue Growth (%)', yKey: 'peRatio', yFormat: 'number', yLabel: 'P/E (x)' },
+  { id: 'pb_vs_roe', title: 'P/B Ratio vs ROE', xKey: 'roe', xFormat: 'percentage', xLabel: 'ROE (%)', yKey: 'priceToBook', yFormat: 'number', yLabel: 'P/B (x)' },
+  { id: 'ev_ebitda_vs_ebitda_margin', title: 'EV/EBITDA vs EBITDA Margin', xKey: 'ebitdaMargin', xFormat: 'percentage', xLabel: 'EBITDA Margin (%)', yKey: 'evToEbitda', yFormat: 'number', yLabel: 'EV/EBITDA (x)' },
+  { id: 'ps_vs_op_margin', title: 'P/S Ratio vs Operating Margin', xKey: 'operatingMargin', xFormat: 'percentage', xLabel: 'Operating Margin (%)', yKey: 'priceToSales', yFormat: 'number', yLabel: 'P/S (x)' },
+  { id: 'div_yield_vs_growth', title: 'Dividend Yield vs Revenue Growth', xKey: 'revenueGrowth', xFormat: 'percentage', xLabel: 'Revenue Growth (%)', yKey: 'dividendYield', yFormat: 'percentage', yLabel: 'Dividend Yield (%)' },
+  { id: 'mcap_vs_net_margin', title: 'Market Cap vs Net Margin', xKey: 'netMargin', xFormat: 'percentage', xLabel: 'Net Margin (%)', yKey: 'marketCap', yFormat: 'currency', yLabel: 'Market Cap (USD)' },
+] as const;
 
-// Sector-specific chart recommendations
-const SECTOR_RECOMMENDATIONS = {
-  'Technology': [
-    'P/S Ratio vs Revenue Growth - Tech companies are valued on growth potential',
-    'EV/EBITDA vs ROIC - Capital efficiency is crucial for SaaS models',
-    'Market Cap vs Operating Margin - Scalability drives margin expansion'
-  ],
-  'Healthcare': [
-    'P/E Ratio vs Revenue Growth - Innovation drives premium valuations',
-    'P/B Ratio vs ROE - Asset utilization in pharma and devices',
-    'EV/EBITDA vs ROIC - R&D investment efficiency'
-  ],
-  'Financial Services': [
-    'P/B Ratio vs ROE - Core metric for banking profitability',
-    'P/E Ratio vs ROE - Earnings quality and sustainability',
-    'Market Cap vs Net Margin - Scale advantages in financial services'
-  ],
-  'Energy': [
-    'EV/EBITDA vs ROIC - Capital intensity requires efficient deployment',
-    'P/B Ratio vs ROE - Asset-heavy business model evaluation',
-    'Dividend Yield vs Revenue Growth - Income vs growth trade-off'
-  ],
-  'Consumer': [
-    'P/S Ratio vs Operating Margin - Brand premium and efficiency',
-    'P/E Ratio vs Revenue Growth - Market share expansion value',
-    'EV/EBITDA vs ROIC - Working capital management efficiency'
-  ],
-  'Industrial': [
-    'EV/EBITDA vs ROIC - Capital allocation in cyclical businesses',
-    'P/B Ratio vs ROE - Asset utilization efficiency',
-    'Market Cap vs Operating Margin - Operational leverage benefits'
-  ]
+type DashboardChart = typeof DASHBOARD_CHARTS[number];
+
+const formatTick = (value: number, format: 'currency' | 'percentage' | 'number') => {
+  if (value == null || isNaN(value)) return 'N/A';
+  if (format === 'currency') return `$${(value / 1_000_000_000).toFixed(1)}B`;
+  if (format === 'percentage') return `${value.toFixed(1)}%`;
+  return `${value.toFixed(1)}`;
 };
 
-// Available metrics for custom chart builder
-const AVAILABLE_METRICS = {
-  valuation: [
-    { key: 'marketCap', label: 'Market Cap ($B)', format: 'currency' },
-    { key: 'evToEbitda', label: 'EV/EBITDA (x)', format: 'number' },
-    { key: 'peRatio', label: 'P/E Ratio (x)', format: 'number' },
-    { key: 'priceToSales', label: 'P/S Ratio (x)', format: 'number' },
-    { key: 'priceToBook', label: 'P/B Ratio (x)', format: 'number' },
-    { key: 'dividendYield', label: 'Dividend Yield (%)', format: 'percentage' }
-  ],
-  performance: [
-    { key: 'revenueGrowth', label: 'Revenue Growth (%)', format: 'percentage' },
-    { key: 'grossMargin', label: 'Gross Margin (%)', format: 'percentage' },
-    { key: 'operatingMargin', label: 'Operating Margin (%)', format: 'percentage' },
-    { key: 'netMargin', label: 'Net Margin (%)', format: 'percentage' },
-    { key: 'roic', label: 'ROIC (%)', format: 'percentage' },
-    { key: 'roe', label: 'ROE (%)', format: 'percentage' }
-  ]
-};
-
-const formatValue = (value: number, format: string) => {
-  if (value === null || value === undefined || isNaN(value)) return 'N/A';
-  
-  switch (format) {
-    case 'currency':
-      return `$${(value / 1000000000).toFixed(1)}B`;
-    case 'percentage':
-      return `${value.toFixed(1)}%`;
-    case 'number':
-      return `${value.toFixed(1)}x`;
-    default:
-      return value.toFixed(1);
-  }
-};
-
-// Custom tooltip component
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    return (
-      <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
-        <p className="font-semibold text-blue-600">{data.ticker}</p>
-        <p className="text-sm text-gray-600 dark:text-gray-400">{data.company}</p>
-        <p className="text-sm text-gray-500">{data.sector}</p>
-        <div className="mt-2 space-y-1">
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm">
-              <span className="font-medium">{entry.name}:</span> {entry.value}
-            </p>
-          ))}
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
+// @ts-ignore - echarts-stat doesn't ship full TS types
+echarts.registerTransform((ecStat as any).transform.regression);
 
 export function CorrelationChartsTab({
   peerValuationData,
@@ -211,312 +71,108 @@ export function CorrelationChartsTab({
   allValuationData,
   allPerformanceData
 }: CorrelationChartsTabProps) {
-  const [selectedChart, setSelectedChart] = useState(PREDEFINED_CHARTS[0].id);
-  const [customXAxis, setCustomXAxis] = useState('revenueGrowth');
-  const [customYAxis, setCustomYAxis] = useState('peRatio');
-  const [activeTab, setActiveTab] = useState('predefined');
-
-  // Combine valuation and performance data
-  const combinedData = useMemo(() => {
-    return allValuationData.map(valuation => {
-      const performance = allPerformanceData.find(p => p.ticker === valuation.ticker);
-      return {
-        ...valuation,
-        ...performance,
-        isSubject: valuation.ticker === currentSymbol,
-        isSelected: peerValuationData.some(p => p.ticker === valuation.ticker)
-      };
-    }).filter(item => item.ticker && item.company); // Filter out any incomplete data
+  const isMobile = useMediaQuery('(max-width: 640px)');
+  const combined = useMemo(() => {
+    return allValuationData.map(v => {
+      const p = allPerformanceData.find(pp => pp.ticker === v.ticker);
+      return { ...v, ...p, isSubject: v.ticker === currentSymbol, isSelected: peerValuationData.some(sel => sel.ticker === v.ticker) };
+    }).filter(d => d.ticker && d.company);
   }, [allValuationData, allPerformanceData, currentSymbol, peerValuationData]);
 
-  // Get sector recommendations
-  const subjectCompany = combinedData.find(d => d.ticker === currentSymbol);
-  const sectorRecommendations = subjectCompany?.sector ? SECTOR_RECOMMENDATIONS[subjectCompany.sector as keyof typeof SECTOR_RECOMMENDATIONS] || [] : [];
+  const buildOption = (cfg: DashboardChart) => {
+    const peers = combined.filter(d => !d.isSubject && Number.isFinite((d as any)[cfg.xKey]) && Number.isFinite((d as any)[cfg.yKey]));
+    const subject = combined.filter(d => d.isSubject && Number.isFinite((d as any)[cfg.xKey]) && Number.isFinite((d as any)[cfg.yKey]));
 
-  // Prepare chart data for selected predefined chart
-  const selectedChartConfig = PREDEFINED_CHARTS.find(c => c.id === selectedChart);
-  const chartData = useMemo(() => {
-    if (!selectedChartConfig) return [];
-    
-    return combinedData.map(item => ({
-      ...item,
-      x: item[selectedChartConfig.xAxis as keyof typeof item] as number,
-      y: item[selectedChartConfig.yAxis as keyof typeof item] as number,
-      size: (item.marketCap || 0) / 1000000000 // Size for bubble charts
-    })).filter(item => 
-      item.x !== null && item.x !== undefined && !isNaN(item.x as number) &&
-      item.y !== null && item.y !== undefined && !isNaN(item.y as number)
-    );
-  }, [combinedData, selectedChartConfig]);
+    // Store market cap in billions for scaling
+    const toPoint = (d: any) => ({
+      value: [Number((d as any)[cfg.xKey]), Number((d as any)[cfg.yKey]), (d.marketCap || 0) / 1_000_000_000, d.ticker],
+      mcapB: (d.marketCap || 0) / 1_000_000_000,
+      ticker: d.ticker,
+    });
+    const peerDataRaw = peers.map(toPoint);
+    const subjectDataRaw = subject.map(toPoint);
 
-  // Prepare custom chart data
-  const customChartData = useMemo(() => {
-    return combinedData.map(item => ({
-      ...item,
-      x: item[customXAxis as keyof typeof item] as number,
-      y: item[customYAxis as keyof typeof item] as number,
-      size: (item.marketCap || 0) / 1000000000
-    })).filter(item => 
-      item.x !== null && item.x !== undefined && !isNaN(item.x as number) &&
-      item.y !== null && item.y !== undefined && !isNaN(item.y as number)
-    );
-  }, [combinedData, customXAxis, customYAxis]);
+    // On mobile, label only subject and top-N by market cap to reduce clutter
+    const topN = 5;
+    const labeledTickers = new Set<string>();
+    subjectDataRaw.forEach(d => labeledTickers.add(d.ticker));
+    if (isMobile) {
+      peerDataRaw
+        .slice()
+        .sort((a, b) => b.mcapB - a.mcapB)
+        .slice(0, topN)
+        .forEach(d => labeledTickers.add(d.ticker));
+    }
+    const peerData = peerDataRaw.map(d => ({
+      ...d,
+      label: { show: !isMobile || labeledTickers.has(d.ticker) }
+    }));
+    const subjectData = subjectDataRaw.map(d => ({ ...d, label: { show: true } }));
 
-  const renderScatterChart = (data: any[], config: any, isCustom = false) => {
-    const xMetric = isCustom ? 
-      [...AVAILABLE_METRICS.valuation, ...AVAILABLE_METRICS.performance].find(m => m.key === customXAxis) :
-      { key: config.xAxis, label: config.xLabel, format: 'number' };
-    const yMetric = isCustom ?
-      [...AVAILABLE_METRICS.valuation, ...AVAILABLE_METRICS.performance].find(m => m.key === customYAxis) :
-      { key: config.yAxis, label: config.yLabel, format: 'number' };
+    // regression on peers + subject for context
+    const regSource = peerData.concat(subjectData).map((p: any) => [p.value[0], p.value[1]]);
 
-    return (
-      <ResponsiveContainer width="100%" height={400}>
-        <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            type="number" 
-            dataKey="x" 
-            name={xMetric?.label || config.xLabel}
-            tickFormatter={(value) => formatValue(value, xMetric?.format || 'number')}
-          />
-          <YAxis 
-            type="number" 
-            dataKey="y" 
-            name={yMetric?.label || config.yLabel}
-            tickFormatter={(value) => formatValue(value, yMetric?.format || 'number')}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-          <Scatter name="Peer Companies" data={data.filter(d => !d.isSubject)} fill="#8884d8">
-            {data.filter(d => !d.isSubject).map((entry, index) => (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={entry.isSelected ? "#3b82f6" : "#94a3b8"} 
-                stroke={entry.isSelected ? "#1e40af" : "#64748b"}
-                strokeWidth={2}
-              />
-            ))}
-          </Scatter>
-          <Scatter 
-            name={`${currentSymbol} (Subject)`} 
-            data={data.filter(d => d.isSubject)} 
-            fill="#dc2626"
-          >
-            {data.filter(d => d.isSubject).map((entry, index) => (
-              <Cell key={`subject-${index}`} fill="#dc2626" stroke="#991b1b" strokeWidth={3} />
-            ))}
-          </Scatter>
-        </ScatterChart>
-      </ResponsiveContainer>
-    );
+    const scaleSize = (billions: number) => {
+      if (!isFinite(billions) || billions <= 0) return 6;
+      const r = 6 + Math.min(40, Math.log10(billions + 1) * 12);
+      return r;
+    };
+
+    return {
+      grid: { top: 12, right: 8, bottom: isMobile ? 10 : 18, left: 30 },
+      tooltip: {
+        trigger: 'item',
+        formatter: (p: any) => {
+          const v = p.data.value || p.data;
+          return `${v[3]}\n${cfg.xLabel}: ${formatTick(v[0], cfg.xFormat as any)}\n${cfg.yLabel}: ${formatTick(v[1], cfg.yFormat as any)}`;
+        },
+        backgroundColor: '#111827', borderColor: '#374151', textStyle: { fontSize: isMobile ? 9 : 10 },
+      },
+      legend: { show: false },
+      xAxis: { name: cfg.xLabel, nameGap: 4, nameTextStyle: { fontSize: isMobile ? 9 : 10, color: '#9ca3af' }, axisLabel: { fontSize: isMobile ? 9 : 10, color: '#9ca3af', formatter: (v: number) => formatTick(v, cfg.xFormat as any) }, splitLine: { lineStyle: { color: 'rgba(148,163,184,0.25)', type: 'dashed' } } },
+      yAxis: { name: cfg.yLabel, nameGap: 6, nameTextStyle: { fontSize: isMobile ? 9 : 10, color: '#9ca3af' }, axisLabel: { fontSize: isMobile ? 9 : 10, color: '#9ca3af', formatter: (v: number) => formatTick(v, cfg.yFormat as any) }, splitLine: { lineStyle: { color: 'rgba(148,163,184,0.25)', type: 'dashed' } } },
+      dataZoom: isMobile ? [
+        { type: 'inside', xAxisIndex: 0 },
+        { type: 'inside', yAxisIndex: 0 }
+      ] : [],
+      series: [
+        {
+          name: 'Peers', type: 'scatter', data: peerData,
+          symbolSize: (val: any) => scaleSize(Number((val.value || val)[2])),
+          itemStyle: { color: '#93C5FD', borderColor: '#60A5FA' },
+          label: { show: !isMobile, formatter: (p: any) => (p.data.value ? p.data.value[3] : p.data[3]), position: 'right', color: '#6B7280', fontSize: isMobile ? 9 : 10 },
+          labelLayout: { moveOverlap: 'shiftX' },
+          emphasis: { label: { show: true } },
+        },
+        {
+          name: currentSymbol, type: 'scatter', data: subjectData,
+          symbolSize: (val: any) => Math.max(10, scaleSize(Number((val.value || val)[2])) + 2),
+          itemStyle: { color: '#FF6B35', borderColor: '#E55A2B' },
+          label: { show: true, formatter: (p: any) => (p.data.value ? p.data.value[3] : p.data[3]), position: 'right', color: '#FF6B35', fontSize: isMobile ? 10 : 11, fontWeight: 600 },
+          labelLayout: { moveOverlap: 'shiftX' },
+        },
+        {
+          name: 'Trend', type: 'line', datasetIndex: 1, smooth: true, symbol: 'none', lineStyle: { color: 'rgba(148,163,184,0.6)', width: 1.5, type: 'dashed' },
+          encode: { x: 0, y: 1 }
+        }
+      ],
+      dataset: [ { source: regSource }, { transform: { type: 'ecStat:regression', config: { method: 'linear' } } } ]
+    } as any;
   };
 
   return (
-    <div className="space-y-6">
-      {/* AI Co-pilot Suggestions */}
-      {sectorRecommendations.length > 0 && (
-        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-blue-600" />
-              <CardTitle className="text-lg text-blue-900 dark:text-blue-100">
-                AI Co-pilot: Sector-Specific Analysis
-              </CardTitle>
-            </div>
-            <CardDescription className="text-blue-800 dark:text-blue-200">
-              Based on {subjectCompany?.sector} sector analysis, focus on these key correlations:
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {sectorRecommendations.map((recommendation, index) => (
-                <div key={index} className="flex items-start gap-2 text-sm text-blue-800 dark:text-blue-200">
-                  <Target className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  <span>{recommendation}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="predefined">Professional Charts</TabsTrigger>
-          <TabsTrigger value="custom">Custom Analysis</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="predefined" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Professional Correlation Charts
-              </CardTitle>
-              <CardDescription>
-                Institutional-grade correlation analysis with professional insights
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Chart Selection */}
-              <div className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  {PREDEFINED_CHARTS.map(chart => (
-                    <Button
-                      key={chart.id}
-                      variant={selectedChart === chart.id ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedChart(chart.id)}
-                      className="text-xs"
-                    >
-                      {chart.title}
-                    </Button>
-                  ))}
-                </div>
-
-                {selectedChartConfig && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-lg">{selectedChartConfig.title}</h3>
-                        <p className="text-sm text-muted-foreground">{selectedChartConfig.description}</p>
-                      </div>
-                      <Badge variant="secondary" className="capitalize">
-                        {selectedChartConfig.category}
-                      </Badge>
-                    </div>
-
-                    {/* Chart */}
-                    <div className="border rounded-lg p-4">
-                      {renderScatterChart(chartData, selectedChartConfig)}
-                    </div>
-
-                    {/* Insight */}
-                    <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp className="h-4 w-4 text-yellow-600" />
-                        <span className="font-medium text-yellow-900 dark:text-yellow-100">Professional Insight</span>
-                      </div>
-                      <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                        {selectedChartConfig.insight}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+        {DASHBOARD_CHARTS.map(cfg => (
+          <Card key={cfg.id} className={`${isMobile ? 'h-[300px]' : 'h-[360px]'} border-0 shadow-none bg-transparent`}>
+            <CardHeader className="pb-1"><CardTitle className="text-[11px] font-medium text-muted-foreground tracking-wide">{cfg.title}</CardTitle></CardHeader>
+            <CardContent className={isMobile ? 'h-[260px]' : 'h-[310px]'}>
+              <ReactECharts notMerge lazyUpdate style={{ height: '100%', width: '100%' }} option={buildOption(cfg)} theme={undefined} />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="custom" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Custom Correlation Analysis
-              </CardTitle>
-              <CardDescription>
-                Build your own correlation charts with any combination of metrics
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Metric Selection */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">X-Axis Metric</label>
-                    <Select value={customXAxis} onValueChange={setCustomXAxis}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Valuation Metrics</div>
-                        {AVAILABLE_METRICS.valuation.map(metric => (
-                          <SelectItem key={metric.key} value={metric.key}>
-                            {metric.label}
-                          </SelectItem>
-                        ))}
-                        <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Performance Metrics</div>
-                        {AVAILABLE_METRICS.performance.map(metric => (
-                          <SelectItem key={metric.key} value={metric.key}>
-                            {metric.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Y-Axis Metric</label>
-                    <Select value={customYAxis} onValueChange={setCustomYAxis}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Valuation Metrics</div>
-                        {AVAILABLE_METRICS.valuation.map(metric => (
-                          <SelectItem key={metric.key} value={metric.key}>
-                            {metric.label}
-                          </SelectItem>
-                        ))}
-                        <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Performance Metrics</div>
-                        {AVAILABLE_METRICS.performance.map(metric => (
-                          <SelectItem key={metric.key} value={metric.key}>
-                            {metric.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Custom Chart */}
-                <div className="border rounded-lg p-4">
-                  {renderScatterChart(customChartData, {
-                    xLabel: AVAILABLE_METRICS.valuation.concat(AVAILABLE_METRICS.performance).find(m => m.key === customXAxis)?.label,
-                    yLabel: AVAILABLE_METRICS.valuation.concat(AVAILABLE_METRICS.performance).find(m => m.key === customYAxis)?.label
-                  }, true)}
-                </div>
-
-                {/* Custom Analysis Helper */}
-                <div className="bg-gray-50 dark:bg-gray-900/50 border rounded-lg p-4">
-                  <h4 className="font-medium mb-2">Analysis Tips</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>• Look for clusters of similar companies to identify peer groups</p>
-                    <p>• Companies far from the trend line may represent opportunities or risks</p>
-                    <p>• The red dot represents your subject company ({currentSymbol})</p>
-                    <p>• Blue dots are selected peers, gray dots are additional companies</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Legend and Data Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Chart Legend & Data Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-600"></div>
-              <span>{currentSymbol} (Subject Company)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-              <span>Selected Peer Companies ({peerValuationData.length})</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-              <span>Additional Companies ({allValuationData.length - peerValuationData.length - 1})</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
+      <div className="text-[11px] text-muted-foreground mt-1">Bubble size represents Market Capitalization (USD).</div>
     </div>
   );
 }

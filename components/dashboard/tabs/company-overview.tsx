@@ -802,7 +802,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
 
   // Create card components for mobile carousel
   const createCompanyInfoCard = () => (
-    <Card>
+    <Card variant="matte" className="border-0 shadow-none bg-transparent">
       <CardContent className="flex items-start space-x-4">
         <div className="space-y-2 flex-1">
           <div className="space-y-0.5">
@@ -866,7 +866,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   const createSharePriceCard = () => {
     if (pricesLoading) return null;
     return (
-      <Card>
+      <Card variant="matte" className="border-0 shadow-none bg-transparent">
         <CardHeader className="pb-0">
           <CardTitle className="text-xs font-medium">Share Price Performance</CardTitle>
         </CardHeader>
@@ -880,7 +880,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   const createCapitalStructureCard = () => {
     if (balanceSheetLoading) return null;
     return (
-      <Card>
+      <Card variant="matte" className="border-0 shadow-none bg-transparent">
         <CardHeader className="pb-0">
           <CardTitle className="text-xs font-medium">Capital Structure</CardTitle>
         </CardHeader>
@@ -930,7 +930,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   const createRevenueChartCard = () => {
     if (statementsLoading) return null;
     return (
-      <Card>
+      <Card variant="matte" className="border-0 shadow-none bg-transparent">
         <CardHeader className="pb-0">
           <CardTitle className="text-xs font-medium">Historical Revenue</CardTitle>
         </CardHeader>
@@ -954,7 +954,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   const createEbitdaChartCard = () => {
     if (statementsLoading) return null;
     return (
-      <Card>
+      <Card variant="matte" className="border-0 shadow-none bg-transparent">
         <CardHeader className="pb-0">
           <CardTitle className="text-xs font-medium">Historical EBITDA & Margin</CardTitle>
         </CardHeader>
@@ -978,7 +978,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   const createSegmentChartCard = () => {
     if (segmentsLoading) return null;
     return (
-      <Card>
+      <Card variant="matte" className="border-0 shadow-none bg-transparent">
         <CardHeader className="pb-0 flex flex-row items-center justify-between">
           <CardTitle className="text-xs font-medium">
             FY{statements && statements.length > 0 ? statements[0].calendarYear.toString().slice(-2) : ''} Revenue by Segment
@@ -1012,7 +1012,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   const createGeographyChartCard = () => {
     if (regionsLoading) return null;
     return (
-      <Card>
+      <Card variant="matte" className="border-0 shadow-none bg-transparent">
         <CardHeader className="pb-0 flex flex-row items-center justify-between">
           <CardTitle className="text-xs font-medium">
             FY{statements && statements.length > 0 ? statements[0].calendarYear.toString().slice(-2) : ''} Revenue by Geography
@@ -1067,10 +1067,10 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
 
 
   return (
-    <div className="space-y-4 company-overview">
+    <div className="space-y-2 company-overview">
       {isMobile ? (
         // Mobile view with simple grid layout
-        <div className="space-y-4">
+        <div className="space-y-2">
           {/* Fixed Company Info Card */}
           {createCompanyInfoCard()}
           
@@ -1080,13 +1080,13 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
               <p className="text-sm">Loading charts...</p>
             </div>
           ) : hasValidCards ? (
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div className="text-center">
                 <p className="text-xs text-muted-foreground mb-2">
                   {finalCarouselCards.length} charts available
                 </p>
               </div>
-              <div className="grid gap-4">
+              <div className="grid gap-2">
                 {finalCarouselCards.map((card, index) => (
                   <div key={`chart-${index}`}>
                     {card}
@@ -1102,7 +1102,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
         </div>
       ) : (
         // Desktop grid view
-        <div className="grid gap-3">
+        <div className="grid gap-1">
           {createCompanyInfoCard()}
           <div className="grid gap-1">
             {/* Share Price Performance and Capital Structure */}

@@ -93,6 +93,12 @@ export async function GET(request: NextRequest) {
     const companyName = profile.companyName || peer;
 
     // Valuation snapshot (aligns with table keys; fallback zeros)
+    const toPercent = (v: any) => {
+      const num = Number(v);
+      if (!isFinite(num)) return 0;
+      return Math.abs(num) <= 1 ? num * 100 : num;
+    };
+
     const valuation = {
       ticker: peer,
       company: companyName,
@@ -107,7 +113,7 @@ export async function GET(request: NextRequest) {
       fwdPeRatio: metrics?.peRatio || 0,
       fwdPriceToSales: metrics?.priceToSalesRatio || 0,
       priceToBook: ratios?.priceToBookRatioTTM || 0,
-      dividendYield: ratios?.dividendYieldPercentageTTM || 0,
+      dividendYield: toPercent(ratios?.dividendYieldPercentageTTM ?? metrics?.dividendYieldTTM ?? metrics?.dividendYieldPercentageTTM ?? 0),
       evToEbitda: ratios?.enterpriseValueOverEBITDATTM || 0,
       peRatio: ratios?.priceEarningsRatioTTM || 0,
       priceToSales: ratios?.priceToSalesRatioTTM || 0,
@@ -126,8 +132,9 @@ export async function GET(request: NextRequest) {
         grossMargin: (current.grossProfitRatio || 0) * 100,
         operatingMargin: (current.operatingIncomeRatio || 0) * 100,
         netMargin: (current.netIncomeRatio || 0) * 100,
-        roic: ratios?.returnOnInvestedCapitalTTM || 0,
-        roe: ratios?.returnOnEquityTTM || 0,
+        roic: toPercent(ratios?.returnOnInvestedCapitalTTM),
+        roe: toPercent(ratios?.returnOnEquityTTM),
+        ebitdaMargin: (current.ebitdaratio || 0) * 100,
       };
     } else {
       performance = {
@@ -138,8 +145,9 @@ export async function GET(request: NextRequest) {
         grossMargin: 0,
         operatingMargin: 0,
         netMargin: 0,
-        roic: ratios?.returnOnInvestedCapitalTTM || 0,
-        roe: ratios?.returnOnEquityTTM || 0,
+        roic: toPercent(ratios?.returnOnInvestedCapitalTTM),
+        roe: toPercent(ratios?.returnOnEquityTTM),
+        ebitdaMargin: 0,
       };
     }
 

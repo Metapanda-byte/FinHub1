@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
 
+// Ensure percentage-like values are consistently in percent units (e.g., 12.3 for 12.3%)
+const normalizePercentage = (value: number | undefined | null): number => {
+  const num = Number(value);
+  if (!isFinite(num)) return 0;
+  // If API returns a fraction (e.g., 0.123), convert to percent; otherwise pass through
+  return Math.abs(num) <= 1 ? num * 100 : num;
+};
+
 interface CompanyProfile {
   symbol: string;
   companyName: string;
@@ -1120,6 +1128,13 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
       const safeFwdEVEBITDA = isFinite(fwdEvToEbitda) && fwdEvToEbitda >= 0 ? fwdEvToEbitda : 0;
       const safeFwdPE = isFinite(fwdPeRatio) && fwdPeRatio >= 0 ? fwdPeRatio : 0;
 
+      // Dividend yield fallback chain
+      const dyRatios = normalizePercentage((ratios as any)?.dividendYieldPercentageTTM ?? (ratios as any)?.dividendYieldTTM ?? 0);
+      const dyMetrics = normalizePercentage((metrics as any)?.dividendYieldTTM ?? (metrics as any)?.dividendYieldPercentageTTM ?? 0);
+      const dps = Number((metrics as any)?.dividendPerShareTTM ?? 0);
+      const dyFromDps = price > 0 && dps > 0 ? (dps / price) * 100 : 0;
+      const dividendYieldResolved = dyRatios || dyMetrics || dyFromDps || 0;
+
       return {
         ticker: sym,
         company,
@@ -1137,7 +1152,7 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
         fwdPriceToSales: safeFwdPS,
         // Other
         priceToBook: ratios?.priceToBookRatioTTM || 0,
-        dividendYield: ratios?.dividendYieldPercentageTTM || 0,
+        dividendYield: dividendYieldResolved,
         // Legacy (kept for compatibility)
         evToEbitda: ltmEvToEbitda,
         peRatio: ltmPeRatio,
@@ -1163,6 +1178,7 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
           netMargin: 0,
           roic: 0,
           roe: 0,
+          ebitdaMargin: 0,
         };
       }
 
@@ -1178,8 +1194,9 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
         grossMargin: (current.grossProfitRatio || 0) * 100,
         operatingMargin: (current.operatingIncomeRatio || 0) * 100,
         netMargin: (current.netIncomeRatio || 0) * 100,
-        roic: ratiosResults[index]?.returnOnInvestedCapitalTTM || 0,
-        roe: ratiosResults[index]?.returnOnEquityTTM || 0,
+        roic: normalizePercentage(ratiosResults[index]?.returnOnInvestedCapitalTTM),
+        roe: normalizePercentage(ratiosResults[index]?.returnOnEquityTTM),
+        ebitdaMargin: (current.ebitdaratio || 0) * 100,
       };
     }).filter((data) => data.grossMargin !== 0); // Filter out companies with no data
 

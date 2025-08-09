@@ -24,6 +24,7 @@ import { useSWRConfig } from "swr";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PeerPricePerformance } from "./peer-price-performance";
 import { preloadPeerData } from "@/lib/api/data-preloader";
+import { CorrelationChartsTab } from "@/components/dashboard/correlation-charts-tab";
 
 interface PeerCompany {
   id: string;
@@ -1370,25 +1371,13 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
         </TabsContent>
         
         <TabsContent value="correlation-charts" className="mt-3">
-          <div className="space-y-4">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold">Correlation Charts</h3>
-              <p className="text-sm text-muted-foreground">Visualize correlations between selected peer companies</p>
-            </div>
-            <div className="space-y-4">
-              <div className="text-sm text-muted-foreground">
-                <p>Correlation analysis charts will be displayed here. This feature is coming soon.</p>
-              </div>
-              
-              <div className="flex items-center justify-center h-64 border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                <div className="text-center text-muted-foreground">
-                  <div className="text-lg font-medium mb-2">Correlation Charts</div>
-                  <div className="text-sm">Interactive correlation analysis between peer companies</div>
-                  <div className="text-xs mt-2">Feature in development</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <CorrelationChartsTab
+            peerValuationData={filteredValuationData}
+            peerPerformanceData={filteredPerformanceData}
+            currentSymbol={currentSymbol}
+            allValuationData={data?.peerValuationData || []}
+            allPerformanceData={data?.peerPerformanceData || []}
+          />
         </TabsContent>
         
         <TabsContent value="price-performance" className="mt-3">
