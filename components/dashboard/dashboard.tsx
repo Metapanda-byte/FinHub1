@@ -170,11 +170,11 @@ export function Dashboard() {
     if (tabParam) {
       // Validate that the tab exists in our configuration
       const validTab = tabConfig.find(tab => tab.id === tabParam);
-      if (validTab) {
+      if (validTab && tabParam !== activeTab) {
         setActiveTab(tabParam);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, activeTab]);
 
   // Watchlist integration
   const stocks = useWatchlistStore((state) => state.stocks);

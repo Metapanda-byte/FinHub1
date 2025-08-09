@@ -812,7 +812,8 @@ Provide response in JSON format:
       ratiosResults,
       incomeResults,
       segmentResults,
-      estimatesResults
+      estimatesResults,
+      balanceResults // Added balance sheets
     ] = await Promise.all([
       // Company profiles
       Promise.all(allSymbols.map(async (sym) => {
@@ -854,6 +855,18 @@ Provide response in JSON format:
       Promise.all(allSymbols.map(async (sym) => {
         try {
           const response = await fetch(`https://financialmodelingprep.com/api/v3/income-statement/${sym}?period=quarter&limit=12&apikey=${apiKey}`);
+          if (!response.ok) return null;
+          const data = await response.json();
+          return data;
+        } catch {
+          return null;
+        }
+      })),
+      
+      // Balance sheets (for net debt fallback)
+      Promise.all(allSymbols.map(async (sym) => {
+        try {
+          const response = await fetch(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${sym}?period=quarter&limit=4&apikey=${apiKey}`);
           if (!response.ok) return null;
           const data = await response.json();
           return data;
@@ -1063,7 +1076,20 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
 
       // Current capital structure: prefer profile.mktCap (more reliable) and fall back to metrics
       const marketCapRaw = Number((profile as any)?.mktCap ?? metrics?.marketCapTTM ?? 0);
-      const netDebtRaw = Number(metrics?.netDebtTTM || 0);
+      let netDebtRaw = Number(metrics?.netDebtTTM || 0);
+      // Fallback: compute from latest balance sheet if TTM metric missing
+      if (!netDebtRaw || !Number.isFinite(netDebtRaw)) {
+        const bs = balanceResults[index];
+        const rows = Array.isArray(bs) ? bs : [];
+        if (rows.length > 0) {
+          const latest = rows[0] as any;
+          if (latest && typeof latest === 'object') {
+            const totalDebt = Number((latest.totalDebt ?? (Number(latest.shortTermDebt || 0) + Number(latest.longTermDebt || 0))) || 0);
+            const cash = Number(((latest.cashAndCashEquivalents ?? latest.cashAndShortTermInvestments) ?? latest.cashAndMarketableSecurities) ?? 0);
+            netDebtRaw = totalDebt - cash; // allow negative (net cash)
+          }
+        }
+      }
       const enterpriseValueRaw = Number(metrics?.enterpriseValueTTM || (marketCapRaw + netDebtRaw));
       const marketCap = marketCapRaw * toUSD;
       const netDebt = netDebtRaw * toUSD;

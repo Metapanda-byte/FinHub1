@@ -779,10 +779,14 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
 
   const handlePeerTabChange = (value: string) => {
     setActivePeerTab(value);
-    // Update URL without navigating
+    // Update URL without navigating, preserving all existing parameters
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('peerTab', value);
+      // Ensure we're not accidentally removing the tab parameter
+      if (!url.searchParams.has('tab')) {
+        url.searchParams.set('tab', 'competitor-analysis');
+      }
       window.history.replaceState(null, '', url.toString());
     }
   };

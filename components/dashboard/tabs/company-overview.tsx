@@ -910,8 +910,8 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
             </div>
           </div>
           <div className="border-t border-slate-200 dark:border-slate-700 mt-6">
-            <div className="py-3 px-6 bg-slate-50 dark:bg-slate-900/50">
-              <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">Key Metrics</div>
+            <div className="py-3 px-6 bg-blue-50 dark:bg-blue-600">
+              <div className="text-sm font-semibold text-slate-700 dark:text-white">Key Metrics</div>
             </div>
             <div className="space-y-0">
               <div className="flex justify-between items-center py-1.5 px-6 text-sm">
