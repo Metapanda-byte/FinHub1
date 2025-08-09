@@ -310,9 +310,13 @@ const formatNoCapsUnlessAcronym = (text: string | undefined | null): string => {
   const toTitle = (str: string) => str.replace(/\b([a-z])([a-z]*)/g, (_, a, b) => a.toUpperCase() + b);
   // Sort longer phrases first to avoid partial overlaps
   titleList.sort((a, b) => b.length - a.length).forEach((phrase) => {
-    const rx = new RegExp(`\\b${phrase.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'g');
+    const rx = new RegExp(`\\b${phrase.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'gi');
     s = s.replace(rx, toTitle(phrase));
   });
+
+  // 5b) Specific geopolitical normalization: Always render Taiwan succinctly
+  s = s.replace(/taiwan\s*,\s*province of china/gi, 'Taiwan');
+  s = s.replace(/taiwan\s*province of china/gi, 'Taiwan');
 
   // 6) Ensure the first character of the entire sentence is capitalized
   s = s.charAt(0).toUpperCase() + s.slice(1);
