@@ -19,9 +19,10 @@ interface EbitdaChartProps {
   palette?: string[];
   tickFontSize?: number;
   ltmBarGradient?: boolean;
+  currencySymbol?: string;
 }
 
-export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient = false }: EbitdaChartProps) {
+export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient = false, currencySymbol = "$" }: EbitdaChartProps) {
   const barColor = palette && palette.length > 0 ? palette[0] : '#2563eb';
   const lineColor = '#1e3a8a';
   
@@ -78,7 +79,7 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
         />
         <YAxis
           yAxisId="left"
-          tickFormatter={(value) => formatBillions(value)}
+          tickFormatter={(value) => `${currencySymbol}${Number(value).toFixed(1)}B`}
           tickLine={false}
           axisLine={false}
           tick={{ fontSize: tickFontSize }}
@@ -90,7 +91,7 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
         <YAxis
           yAxisId="right"
           orientation="right"
-          tickFormatter={(value) => `${value.toFixed(0)}%`}
+          tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
           tickLine={false}
           axisLine={false}
           tick={{ fontSize: tickFontSize }}
@@ -133,7 +134,7 @@ export function EbitdaChart({ data, palette, tickFontSize = 12, ltmBarGradient =
                     letterSpacing: '0.02em',
                   }}
                 >
-                  {`$${ebitdaValue.toFixed(1)}B`}
+                  {`${currencySymbol}${ebitdaValue.toFixed(1)}B`}
                 </text>
               );
             }}

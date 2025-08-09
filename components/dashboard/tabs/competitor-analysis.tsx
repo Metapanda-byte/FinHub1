@@ -275,6 +275,47 @@ const optimizeDescription = (description: string): string => {
   return description;
 };
 
+// Normalize display: lower-case unless acronym, and fix spaced acronyms (e.g., 'E M E A' → 'EMEA')
+const formatNoCapsUnlessAcronym = (text: string | undefined | null): string => {
+  if (!text || text === 'N/A') return 'N/A';
+  let s = String(text);
+  // Collapse common spaced acronyms
+  const spacedMap: Record<string, string> = {
+    'E M E A': 'EMEA',
+    'A P A C': 'APAC',
+    'U S A': 'USA',
+    'U S': 'US',
+    'U K': 'UK',
+  };
+  Object.entries(spacedMap).forEach(([k, v]) => {
+    const rx = new RegExp(`\\b${k.replace(/ /g, '\\s*')}\\b`, 'gi');
+    s = s.replace(rx, v);
+  });
+  // Acronyms to preserve
+  const acronyms = new Set(['US', 'USA', 'UK', 'EU', 'EMEA', 'APAC', 'UAE', 'ROW', 'ASEAN', 'LATAM', 'NA', 'ANZ']);
+  // Lower-case everything except numbers and acronyms first
+  s = s.replace(/([A-Za-z][A-Za-z]+|[A-Za-z]+|\d+%?)/g, (m) => {
+    if (acronyms.has(m.toUpperCase())) return m.toUpperCase();
+    if (/^\d+%?$/.test(m)) return m; // numbers untouched
+    return m.toLowerCase();
+  });
+  // Title-case known countries/regions (first letter caps; multi-word handled)
+  const titleList = [
+    'asia', 'europe', 'americas', 'north america', 'south america', 'greater china', 'china', 'japan', 'australia',
+    'canada', 'mexico', 'brazil', 'india', 'thailand', 'malaysia', 'philippines', 'vietnam', 'indonesia',
+    'turkey', 'israel', 'uae', 'saudi arabia', 'united states', 'united kingdom', 'germany', 'france', 'italy',
+    'spain', 'sweden', 'norway', 'denmark', 'finland', 'switzerland', 'singapore', 'hong kong', 'taiwan',
+    'poland', 'portugal', 'czech republic', 'hungary', 'romania', 'greece', 'netherlands'
+  ];
+  const toTitle = (str: string) => str.replace(/\b([a-z])([a-z]*)/g, (_, a, b) => a.toUpperCase() + b);
+  // Sort longer phrases first to avoid partial overlaps
+  titleList.sort((a, b) => b.length - a.length).forEach((phrase) => {
+    const rx = new RegExp(`\\b${phrase.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'g');
+    s = s.replace(rx, toTitle(phrase));
+  });
+  return s;
+};
+
 export function CompetitorAnalysis() {
   console.log("🔍 CompetitorAnalysis component rendering");
 const currentSymbol = useSearchStore((state) => state.currentSymbol);
@@ -836,8 +877,8 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                             </Tooltip>
                           </TooltipProvider>
                         </td>
-                        <td className="py-3 px-2 align-middle text-xs">{qualitativeData.geographicMix}</td>
-                        <td className="py-3 px-2 align-middle text-xs">{qualitativeData.segmentMix}</td>
+                        <td className="py-3 px-2 align-middle text-xs">{formatNoCapsUnlessAcronym(qualitativeData.geographicMix)}</td>
+                        <td className="py-3 px-2 align-middle text-xs">{formatNoCapsUnlessAcronym(qualitativeData.segmentMix)}</td>
                       </tr>
                     );
                   })}
@@ -891,8 +932,8 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                             </Tooltip>
                           </TooltipProvider>
                         </td>
-                        <td className="py-3 px-2 align-middle text-xs">{qualitativeInfo?.geographicMix || "-"}</td>
-                        <td className="py-3 px-2 align-middle text-xs">{qualitativeInfo?.segmentMix || "-"}</td>
+                        <td className="py-3 px-2 align-middle text-xs">{formatNoCapsUnlessAcronym(qualitativeInfo?.geographicMix || "-")}</td>
+                        <td className="py-3 px-2 align-middle text-xs">{formatNoCapsUnlessAcronym(qualitativeInfo?.segmentMix || "-")}</td>
                       </tr>
                     );
                   })}
@@ -941,10 +982,10 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                         })()}
                       </td>
                       <td className="py-2 px-2 text-xs">
-                        {data?.peerQualitativeData?.find(q => q.ticker === currentSymbol)?.geographicMix || "-"}
+                        {formatNoCapsUnlessAcronym(data?.peerQualitativeData?.find(q => q.ticker === currentSymbol)?.geographicMix) || "-"}
                       </td>
                       <td className="py-2 px-2 text-xs">
-                        {data?.peerQualitativeData?.find(q => q.ticker === currentSymbol)?.segmentMix || "-"}
+                        {formatNoCapsUnlessAcronym(data?.peerQualitativeData?.find(q => q.ticker === currentSymbol)?.segmentMix) || "-"}
                       </td>
                     </tr>
                   )}
@@ -994,13 +1035,13 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                     <th rowSpan={2} className="text-left py-2 px-2 font-bold border-b-2 border-black dark:border-white">Company</th>
                     <th rowSpan={2} className="text-left py-2 px-2 font-bold border-b-2 border-black dark:border-white">Sector</th>
                     <th rowSpan={2} className="text-right py-2 px-2 font-bold border-b-2 border-black dark:border-white min-w-[90px]">
-                      Market Cap
+                      Market Cap (USD)
                     </th>
                     <th rowSpan={2} className="text-right py-2 px-2 font-bold border-b-2 border-black dark:border-white min-w-[80px]">
-                      Net Debt
+                      Net Debt (USD)
                     </th>
                     <th rowSpan={2} className="text-right py-2 px-2 font-bold border-b-2 border-black dark:border-white min-w-[100px]">
-                      Enterprise Value
+                      Enterprise Value (USD)
                     </th>
                     <th colSpan={3} className="text-center py-2 px-2 font-bold border-b border-gray-300 dark:border-gray-600">
                       LTM Metrics

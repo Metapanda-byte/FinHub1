@@ -534,7 +534,7 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
               </thead>
               <tbody className="bg-white dark:bg-slate-950">
                 {/* Revenue Section */}
-                <tr className="border-b border-slate-100 dark:border-slate-800 bg-blue-25 dark:bg-blue-900/20">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300 sticky left-0 z-20 bg-blue-25 dark:bg-blue-900/20">Revenue</td>
                   {dcfCalculation.projections.map((proj, index) => (
                     <td key={index} className="text-center py-2 px-3 text-xs md:text-sm tabular-nums">
@@ -627,7 +627,7 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
                 </tr>
 
                 {/* Free Cash Flow */}
-                <tr className="border-b-2 border-slate-300 dark:border-slate-600 bg-green-25 dark:bg-green-900/20">
+                <tr className="border-b-2 border-slate-300 dark:border-slate-600">
                   <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-green-25 dark:bg-green-900/20">Unlevered Free Cash Flow</td>
                   {dcfCalculation.projections.map((proj, index) => (
                     <td key={index} className="text-center py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
@@ -651,7 +651,7 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
                     {(1 / Math.pow(1 + dcfCalculation.wacc / 100, assumptions.projectionYears)).toFixed(3)}
                   </td>
                 </tr>
-                <tr className="border-b-2 border-slate-300 dark:border-slate-600 bg-blue-25 dark:bg-blue-900/20">
+                <tr className="border-b-2 border-slate-300 dark:border-slate-600">
                   <td className="py-3 px-4 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-20 bg-blue-25 dark:bg-blue-900/20">Present Value</td>
                   {dcfCalculation.projections.map((proj, index) => (
                     <td key={index} className="text-center py-3 px-3 text-xs md:text-sm tabular-nums font-bold">
@@ -687,7 +687,7 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
                     <td className="py-2 px-3 text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300">PV of Terminal Value</td>
                     <td className="py-2 px-3 text-right text-xs md:text-sm tabular-nums">{formatFinancialNumber(dcfCalculation.presentValueOfTerminalValue, { decimals: 0 })}</td>
                   </tr>
-                  <tr className="border-b-2 border-slate-300 dark:border-slate-600 bg-blue-25 dark:bg-blue-900/20">
+                  <tr className="border-b-2 border-slate-300 dark:border-slate-600">
                     <td className="py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200">Enterprise Value</td>
                     <td className="py-3 px-3 text-right text-xs md:text-sm tabular-nums font-bold">{formatFinancialNumber(dcfCalculation.enterpriseValue, { decimals: 0 })}</td>
                   </tr>
@@ -695,7 +695,7 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
                     <td className="py-2 px-3 text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300">Less: Net Debt</td>
                     <td className="py-2 px-3 text-right text-xs md:text-sm tabular-nums">({formatFinancialNumber(dcfCalculation.netDebt, { decimals: 0 })})</td>
                   </tr>
-                  <tr className="border-b-2 border-slate-300 dark:border-slate-600 bg-green-25 dark:bg-green-900/20">
+                  <tr className="border-b-2 border-slate-300 dark:border-slate-600">
                     <td className="py-3 px-3 text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200">Equity Value</td>
                     <td className="py-3 px-3 text-right text-xs md:text-sm tabular-nums font-bold">{formatFinancialNumber(dcfCalculation.equityValue, { decimals: 0 })}</td>
                   </tr>
@@ -703,7 +703,7 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
                     <td className="py-2 px-3 text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300">Shares Outstanding (M)</td>
                     <td className="py-2 px-3 text-right text-xs md:text-sm tabular-nums">{(dcfCalculation.sharesOutstanding / 1000000).toFixed(1)}</td>
                   </tr>
-                  <tr className="bg-yellow-25 dark:bg-yellow-900/20">
+                  <tr>
                     <td className="py-3 px-3 text-sm md:text-base font-bold text-slate-800 dark:text-slate-200">Implied Share Price</td>
                     <td className="py-3 px-3 text-right text-sm md:text-base tabular-nums font-bold">${dcfCalculation.impliedSharePrice.toFixed(2)}</td>
                   </tr>
@@ -785,14 +785,6 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
                         {wacc.toFixed(1)}%
                       </td>
                       {row.map((cell, colIndex) => {
-                        const intensity = cell.isAboveCurrentPrice 
-                          ? Math.min((cell.impliedPrice - dcfCalculation.currentStockPrice) / dcfCalculation.currentStockPrice * 2, 1)
-                          : Math.min((dcfCalculation.currentStockPrice - cell.impliedPrice) / dcfCalculation.currentStockPrice * 2, 1);
-                        
-                        const bgColor = cell.isAboveCurrentPrice 
-                          ? `rgba(34, 197, 94, ${intensity * 0.7})` // Green for upside
-                          : `rgba(239, 68, 68, ${intensity * 0.7})`; // Red for downside
-
                         // Check if this is the base case (current model assumptions)
                         const currentWacc = wacc;
                         const currentMargin = [10, 15, 20, 25, 30, 35, 40, 45, 50][colIndex];
@@ -806,8 +798,7 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
                               isBaseCase 
                                 ? 'border-4 border-blue-600 dark:border-blue-400 font-bold' 
                                 : 'border border-slate-200 dark:border-slate-700'
-                            }`}
-                            style={{ backgroundColor: bgColor }}
+                            } ${cell.isAboveCurrentPrice ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
                           >
                             ${cell.impliedPrice.toFixed(2)}
                           </td>
@@ -860,14 +851,6 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
                         {wacc.toFixed(1)}%
                       </td>
                       {row.map((cell, colIndex) => {
-                        const intensity = cell.isAboveCurrentPrice 
-                          ? Math.min((cell.impliedPrice - dcfCalculation.currentStockPrice) / dcfCalculation.currentStockPrice * 2, 1)
-                          : Math.min((dcfCalculation.currentStockPrice - cell.impliedPrice) / dcfCalculation.currentStockPrice * 2, 1);
-                        
-                        const bgColor = cell.isAboveCurrentPrice 
-                          ? `rgba(34, 197, 94, ${intensity * 0.7})` // Green for upside
-                          : `rgba(239, 68, 68, ${intensity * 0.7})`; // Red for downside
-
                         // Check if this is the base case (current model assumptions)
                         const currentWacc = wacc;
                         const currentTerminalGrowth = [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0][colIndex];
@@ -881,8 +864,7 @@ export function DCFAnalysis({ symbol }: DCFAnalysisProps) {
                               isBaseCase 
                                 ? 'border-4 border-blue-600 dark:border-blue-400 font-bold' 
                                 : 'border border-slate-200 dark:border-slate-700'
-                            }`}
-                            style={{ backgroundColor: bgColor }}
+                            } ${cell.isAboveCurrentPrice ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
                           >
                             ${cell.impliedPrice.toFixed(2)}
                           </td>

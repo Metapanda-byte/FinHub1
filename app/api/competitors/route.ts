@@ -842,10 +842,10 @@ Provide response in JSON format:
         }
       })),
       
-      // Income statements
+      // Income statements (fetch enough periods to infer frequency)
       Promise.all(allSymbols.map(async (sym) => {
         try {
-          const response = await fetch(`https://financialmodelingprep.com/api/v3/income-statement/${sym}?period=quarter&limit=4&apikey=${apiKey}`);
+          const response = await fetch(`https://financialmodelingprep.com/api/v3/income-statement/${sym}?period=quarter&limit=12&apikey=${apiKey}`);
           if (!response.ok) return null;
           const data = await response.json();
           return data;
@@ -997,6 +997,28 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
       }));
 
     // 5. Fetch key metrics for all companies (includes valuation metrics)
+    // FX normalization map (approx; replace with live rates if needed)
+    const fxToUSD: Record<string, number> = {
+      USD: 1,
+      EUR: 1.08,
+      GBP: 1.28,
+      JPY: 0.0062,
+      CNY: 0.14,
+      HKD: 0.13,
+      CHF: 1.12,
+      SEK: 0.095,
+      NOK: 0.095,
+      DKK: 0.145,
+      AUD: 0.67,
+      CAD: 0.73,
+      NZD: 0.61,
+      INR: 0.012,
+      KRW: 0.00073,
+      TWD: 0.031,
+      SGD: 0.74,
+      ZAR: 0.055
+    };
+
     const valuationData = allSymbols.map((sym, index) => {
       const metrics = keyMetricsResults[index];
       const ratios = ratiosResults[index];
@@ -1004,11 +1026,16 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
       const company = profile?.companyName || sym;
       const sector = profile?.sector || 'N/A';
       const price = Number(profile?.price) || 0;
+      const reportedCurrency = String((profile as any)?.currency || 'USD').toUpperCase();
+      const toUSD = fxToUSD[reportedCurrency] ?? 1;
 
-      // Current capital structure
-      const marketCap = Number(metrics?.marketCapTTM || 0);
-      const netDebt = Number(metrics?.netDebtTTM || 0);
-      const enterpriseValue = Number(metrics?.enterpriseValueTTM || (marketCap + netDebt));
+      // Current capital structure: prefer profile.mktCap (more reliable) and fall back to metrics
+      const marketCapRaw = Number((profile as any)?.mktCap ?? metrics?.marketCapTTM ?? 0);
+      const netDebtRaw = Number(metrics?.netDebtTTM || 0);
+      const enterpriseValueRaw = Number(metrics?.enterpriseValueTTM || (marketCapRaw + netDebtRaw));
+      const marketCap = marketCapRaw * toUSD;
+      const netDebt = netDebtRaw * toUSD;
+      const enterpriseValue = enterpriseValueRaw * toUSD;
 
       // LTM construction from income statements
       const stmts = incomeResults[index] as any[] | null;
@@ -1017,24 +1044,37 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
       let ltmNetIncome = 0;
       let sharesOutstanding = Number(metrics?.sharesOutstanding || 0);
       if (Array.isArray(stmts) && stmts.length > 0) {
-        const take = Math.min(4, stmts.length);
+        // Sort by date desc
+        const sorted = [...stmts].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        // Determine reporting frequency by average number of statements per fiscal year
+        const byYear: Record<string, number> = {};
+        sorted.forEach((s: any) => {
+          const y = String(new Date(s.date).getFullYear());
+          byYear[y] = (byYear[y] || 0) + 1;
+        });
+        const yearCounts = Object.values(byYear);
+        const avgPerYear = yearCounts.length > 0 ? yearCounts.reduce((a, b) => a + b, 0) / yearCounts.length : 0;
+        const freq = avgPerYear >= 3.5 ? 'quarterly' : avgPerYear >= 1.5 ? 'semiannual' : 'annual';
+        const periodsNeeded = freq === 'quarterly' ? 4 : freq === 'semiannual' ? 2 : 1;
+
+        const take = Math.min(periodsNeeded, sorted.length);
         for (let i = 0; i < take; i++) {
-          const s = stmts[i] || {};
-          // only accumulate if quarterly; FMP quarterly objects usually include 'period' or 'filingDate' with quarter context
-          const isQuarter = (s?.period?.toLowerCase?.() === 'q1' || s?.period?.toLowerCase?.() === 'q2' || s?.period?.toLowerCase?.() === 'q3' || s?.period?.toLowerCase?.() === 'q4' || s?.period?.toLowerCase?.() === 'quarter');
+          const s = sorted[i] || {};
           const revenueVal = Number(s.revenue || 0);
           const ebitdaVal = Number(s.ebitda || 0);
           const netIncomeVal = Number(s.netIncome || 0);
-          if (isQuarter || (revenueVal > 0 && ebitdaVal !== null)) {
-            ltmRevenue += revenueVal;
-            ltmEbitda += ebitdaVal;
-            ltmNetIncome += netIncomeVal;
-          }
+          ltmRevenue += revenueVal;
+          ltmEbitda += ebitdaVal;
+          ltmNetIncome += netIncomeVal;
           if (!sharesOutstanding) {
             sharesOutstanding = Number(s.weightedAverageShsOutDil || s.weightedAverageShsOut || 0) || sharesOutstanding;
           }
         }
       }
+      // Normalize LTM denominators to USD using the same FX factor
+      ltmRevenue = ltmRevenue * toUSD;
+      ltmEbitda = ltmEbitda * toUSD;
+      ltmNetIncome = ltmNetIncome * toUSD;
       // Safe guards and fallbacks when quarterly parse failed
       const ltmEbitdaMargin = ltmRevenue > 0 ? ltmEbitda / ltmRevenue : 0;
 
@@ -1059,6 +1099,9 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
       if (!estEbitda && estRevenue > 0 && ltmEbitdaMargin > 0) {
         estEbitda = estRevenue * ltmEbitdaMargin;
       }
+      // Normalize forward denominators to USD
+      estRevenue = estRevenue * toUSD;
+      estEbitda = estEbitda * toUSD;
 
       // Forward multiples from current EV / MC
       const fwdPriceToSales = estRevenue > 0 ? marketCap / estRevenue : 0;
@@ -1068,7 +1111,8 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
         if (price > 0) {
           fwdPeRatio = price / estEps;
         } else if (sharesOutstanding > 0) {
-          fwdPeRatio = marketCap / (estEps * sharesOutstanding);
+          // Convert EPS to USD for consistency with USD market cap
+          fwdPeRatio = marketCap / (estEps * toUSD * sharesOutstanding);
         }
       }
       // Normalize any pathological values

@@ -10,7 +10,6 @@ import {
   Cell,
   LabelList,
 } from "recharts";
-import { formatBillions } from "@/lib/formatters";
 import { format } from "date-fns";
 
 interface RevenueChartProps {
@@ -18,9 +17,10 @@ interface RevenueChartProps {
   palette?: string[];
   tickFontSize?: number;
   ltmBarGradient?: boolean;
+  currencySymbol?: string;
 }
 
-export function RevenueChart({ data, palette, tickFontSize = 12, ltmBarGradient = false }: RevenueChartProps) {
+export function RevenueChart({ data, palette, tickFontSize = 12, ltmBarGradient = false, currencySymbol = "$" }: RevenueChartProps) {
   // Calculate appropriate scaling for better visualization
   const maxValue = Math.max(...data.map(d => d.value));
   const minValue = Math.min(...data.map(d => d.value));
@@ -84,7 +84,7 @@ export function RevenueChart({ data, palette, tickFontSize = 12, ltmBarGradient 
           axisLine={false}
         />
         <YAxis
-          tickFormatter={(value) => formatBillions(value)}
+          tickFormatter={(value) => `${currencySymbol}${Number(value).toFixed(1)}B`}
           tick={{ fontSize: tickFontSize }}
           width={75}
           tickLine={false}
@@ -127,7 +127,7 @@ export function RevenueChart({ data, palette, tickFontSize = 12, ltmBarGradient 
                     letterSpacing: '0.02em',
                   }}
                 >
-                  {`$${revenueValue.toFixed(1)}B`}
+                  {`${currencySymbol}${revenueValue.toFixed(1)}B`}
                 </text>
               );
             }}

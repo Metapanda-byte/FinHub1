@@ -207,10 +207,11 @@ const finhubBluePalette = [
   '#e0e7ff', // Lightest blue
 ];
 
-// Add a helper for market cap in billions
-function formatMarketCapBillions(value: number) {
+// Add a helper for market cap in billions (optionally prefixed with a currency symbol)
+function formatMarketCapBillions(value: number, currencySymbol?: string) {
   if (typeof value !== 'number' || isNaN(value)) return 'N/A';
-  return `${(value / 1_000_000_000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}B`;
+  const amount = (value / 1_000_000_000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return `${currencySymbol ?? ''}${amount}B`;
 }
 
 // Add a hook to fetch TTM revenue from internal API
@@ -643,15 +644,35 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
   const borderColorClass = resolvedTheme === 'dark' ? 'border-white' : 'border-black';
   const highlightTextColor = resolvedTheme === 'dark' ? '#fff' : '#111';
 
-  // Helper to format numbers with aligned 'B' using '#,##0_)' approach
+  // Resolve a display currency symbol from profile data (prefer symbol over 3-letter code)
+  const currencySymbol = (() => {
+    const raw = (profile as any)?.currencySymbol || (profile as any)?.currency || 'USD';
+    const code = String(raw).toUpperCase();
+    const map: Record<string, string> = {
+      USD: '$', USDT: '$', USDC: '$',
+      EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', CNH: '¥', HKD: 'HK$',
+      AUD: 'A$', CAD: 'C$', NZD: 'NZ$', SGD: 'S$',
+      CHF: 'CHF', SEK: 'kr', NOK: 'kr', DKK: 'kr',
+      INR: '₹', KRW: '₩', THB: '฿', IDR: 'Rp', MYR: 'RM', PHP: '₱', TWD: 'NT$', VND: '₫',
+      ZAR: 'R', BRL: 'R$', MXN: 'MX$', RUB: '₽', TRY: '₺', PLN: 'zł', CZK: 'Kč', HUF: 'Ft', ILS: '₪',
+      AED: 'د.إ', SAR: '﷼'
+    };
+    if (map[code]) return map[code];
+    // If raw already looks like a symbol, keep it; otherwise default to '$'
+    if (/[^ -]/.test(String(raw)) || /[^A-Za-z]/.test(String(raw))) return String(raw);
+    return '$';
+  })();
+
+  // Helper to format numbers with aligned 'B' using '#,##0_)' approach, prefixed with currency
   function formatWithParens(value: number | null) {
     if (value === null || isNaN(value)) return 'N/A';
+    const curr = currencySymbol;
     const absStr = (Math.abs(value) / 1_000_000_000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     if (value < 0) {
-      return <span><span>(</span>{absStr}<span style={{ display: 'inline-block', minWidth: '1.2ch', textAlign: 'left' }}>B)</span></span>;
+      return <span><span>(</span>{curr}{absStr}<span style={{ display: 'inline-block', minWidth: '1.2ch', textAlign: 'left' }}>B)</span></span>;
     }
     // Add a space after B to align with parenthesis in negative numbers
-    return <span>{absStr}<span style={{ display: 'inline-block', minWidth: '1.2ch', textAlign: 'left' }}>B&nbsp;</span></span>;
+    return <span>{curr}{absStr}<span style={{ display: 'inline-block', minWidth: '1.2ch', textAlign: 'left' }}>B&nbsp;</span></span>;
   }
   // Helper to format ratios with 'x' and align using '#,##0_)' approach
   function formatRatio(value: number | null) {
@@ -781,63 +802,65 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
 
   // Create card components for mobile carousel
   const createCompanyInfoCard = () => (
-    <div className="flex items-start space-x-4 rounded-md border p-3">
-      <div className="space-y-2 flex-1">
-        <div className="space-y-0.5">
-          <h3 className="text-sm font-semibold leading-none tracking-tight">
-            {profile?.companyName} ({profile?.symbol})
-          </h3>
-          <div className="flex items-center gap-2 mt-1">
-            <Badge variant="outline" className="text-[10px]">
-              {profile?.sector}
-            </Badge>
-            <Badge variant="outline" className="text-[10px]">
-              {profile?.industry}
-            </Badge>
-            <Badge variant="outline" className="text-[10px]">
-              {profile?.exchangeShortName}
-            </Badge>
+    <Card>
+      <CardContent className="flex items-start space-x-4">
+        <div className="space-y-2 flex-1">
+          <div className="space-y-0.5">
+            <h3 className="text-sm font-semibold leading-none tracking-tight">
+              {profile?.companyName} ({profile?.symbol})
+            </h3>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant="outline" className="text-[10px]">
+                {profile?.sector}
+              </Badge>
+              <Badge variant="outline" className="text-[10px]">
+                {profile?.industry}
+              </Badge>
+              <Badge variant="outline" className="text-[10px]">
+                {profile?.exchangeShortName}
+              </Badge>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs text-justify leading-relaxed">{getDescription(profile?.description)}</p>
+            {isMobile && profile?.description && profile.description.length > 150 && (
+              <button
+                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+              >
+                {isDescriptionExpanded ? 'Show Less' : 'Read More'}
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+            <div>
+              <p className="text-[10px] text-muted-foreground">Market Cap</p>
+              <p className="text-xs font-medium tabular-nums">{formatMarketCapBillions(marketCap || 0, currencySymbol)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">Employees</p>
+              <p className="text-xs font-medium tabular-nums">
+                {employeeCountLoading
+                  ? <span className="animate-pulse text-muted-foreground">•••</span>
+                  : (employeeCount !== null && employeeCount !== undefined)
+                    ? employeeCount.toLocaleString()
+                    : 'N/A'}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">CEO</p>
+              <p className="text-xs font-medium">{profile?.ceo || 'N/A'}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">Location</p>
+              <p className="text-xs font-medium">
+                {profile?.city && profile?.state ? `${profile?.city}, ${profile?.state}` : 'N/A'}
+              </p>
+            </div>
           </div>
         </div>
-        <div className="space-y-2">
-          <p className="text-xs text-justify leading-relaxed">{getDescription(profile?.description)}</p>
-          {isMobile && profile?.description && profile.description.length > 150 && (
-            <button
-              onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-              className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-            >
-              {isDescriptionExpanded ? 'Show Less' : 'Read More'}
-            </button>
-          )}
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-          <div>
-            <p className="text-[10px] text-muted-foreground">Market Cap</p>
-            <p className="text-xs font-medium tabular-nums">{formatMarketCapBillions(marketCap || 0)}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground">Employees</p>
-            <p className="text-xs font-medium tabular-nums">
-              {employeeCountLoading
-                ? <span className="animate-pulse text-muted-foreground">•••</span>
-                : (employeeCount !== null && employeeCount !== undefined)
-                  ? employeeCount.toLocaleString()
-                  : 'N/A'}
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground">CEO</p>
-            <p className="text-xs font-medium">{profile?.ceo || 'N/A'}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground">Location</p>
-            <p className="text-xs font-medium">
-              {profile?.city && profile?.state ? `${profile?.city}, ${profile?.state}` : 'N/A'}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 
   const createSharePriceCard = () => {
@@ -848,7 +871,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
           <CardTitle className="text-xs font-medium">Share Price Performance</CardTitle>
         </CardHeader>
         <CardContent className="pt-0 px-3">
-          <StockChart symbol={currentSymbol} timeframe={timeframe} />
+          <StockChart symbol={currentSymbol} timeframe={timeframe} currencySymbol={currencySymbol} />
         </CardContent>
       </Card>
     );
@@ -916,6 +939,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
             data={revenueData}
             palette={revenueData.map((bar, idx) => idx === revenueData.length - 1 ? '#1e3a8a' : '#60a5fa')}
             tickFontSize={12}
+            currencySymbol={currencySymbol}
           />
           {ltmRefDate && (
             <div style={{ position: 'absolute', left: 0, bottom: 1, fontSize: 9, color: 'var(--muted-foreground)', marginLeft: '0.75rem' }}>
@@ -939,6 +963,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
             data={ebitdaData}
             palette={ebitdaData.map((bar, idx) => idx === ebitdaData.length - 1 ? '#1e3a8a' : '#60a5fa')}
             tickFontSize={12}
+            currencySymbol={currencySymbol}
           />
           {ltmRefDate && (
             <div style={{ position: 'absolute', left: 0, bottom: 1, fontSize: 9, color: 'var(--muted-foreground)', marginLeft: '0.75rem' }}>
@@ -959,7 +984,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
             FY{statements && statements.length > 0 ? statements[0].calendarYear.toString().slice(-2) : ''} Revenue by Segment
             {fiscalYearRevenue && (
               <span className="text-xs text-muted-foreground ml-1">
-                (${fiscalYearRevenue.toFixed(1)}B)
+                ({currencySymbol}{fiscalYearRevenue.toFixed(1)}B)
               </span>
             )}
           </CardTitle>
@@ -971,7 +996,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
               nameKey="name" 
               dataKey="value" 
               colors={['#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#e0e7ff']}
-              formatter={(value) => `$${value.toFixed(1)}B`}
+              formatter={(value) => `${currencySymbol}${value.toFixed(1)}B`}
               labelColor={pieLabelColor}
             />
           ) : (
@@ -993,7 +1018,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
             FY{statements && statements.length > 0 ? statements[0].calendarYear.toString().slice(-2) : ''} Revenue by Geography
             {fiscalYearRevenue && (
               <span className="text-xs text-muted-foreground ml-1">
-                (${fiscalYearRevenue.toFixed(1)}B)
+                ({currencySymbol}{fiscalYearRevenue.toFixed(1)}B)
               </span>
             )}
           </CardTitle>
@@ -1005,7 +1030,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
               nameKey="name" 
               dataKey="value" 
               colors={['#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#e0e7ff']}
-              formatter={(value) => `$${value.toFixed(1)}B`}
+              formatter={(value) => `${currencySymbol}${value.toFixed(1)}B`}
               labelColor={pieLabelColor}
           />
           ) : (

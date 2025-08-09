@@ -77,7 +77,7 @@ export default function Home() {
                 <Button size="lg" className="bg-finhub-orange hover:bg-finhub-orange/90 text-white" asChild>
                   <Link href="/dashboard">Launch Workstation</Link>
                 </Button>
-                <p className="text-xs text-muted-foreground mt-2">Free Access</p>
+                <p className="text-xs mt-2" style={{ color: 'hsl(var(--finhub-orange))' }}>Free Access</p>
               </div>
             </div>
           </div>
@@ -189,7 +189,7 @@ export default function Home() {
               <Button size="lg" className="bg-finhub-orange hover:bg-finhub-orange/90 text-white" asChild>
                 <Link href="/dashboard">Launch Workstation</Link>
               </Button>
-              <p className="text-xs text-muted-foreground mt-2">Free Access</p>
+              <p className="text-xs mt-2" style={{ color: 'hsl(var(--finhub-orange))' }}>Free Access</p>
             </div>
           </div>
         </div>

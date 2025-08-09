@@ -869,7 +869,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
               </thead>
               <tbody className="bg-white dark:bg-slate-950">
                 {/* Revenue Section */}
-                <tr className="bg-blue-25 dark:bg-blue-900/20 border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold sticky left-0 z-20 bg-blue-25 dark:bg-blue-900/20">Revenue</td>
                   {lboCalculation.projections.map((proj) => (
                     <td key={proj.year} className="text-right py-2 px-3 text-xs md:text-sm tabular-nums font-semibold">
@@ -887,7 +887,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
                 </tr>
 
                 {/* EBITDA Section */}
-                <tr className="bg-blue-25 dark:bg-blue-900/20 border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold sticky left-0 z-20 bg-blue-25 dark:bg-blue-900/20">EBITDA</td>
                   {lboCalculation.projections.map((proj) => (
                     <td key={proj.year} className="text-right py-2 px-3 text-xs md:text-sm tabular-nums font-semibold">
@@ -945,7 +945,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
                     </td>
                   ))}
                 </tr>
-                <tr className="bg-yellow-25 dark:bg-yellow-900/20 border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold sticky left-0 z-20 bg-yellow-25 dark:bg-yellow-900/20">Net Income</td>
                   {lboCalculation.projections.map((proj) => (
                     <td key={proj.year} className="text-right py-2 px-3 text-xs md:text-sm tabular-nums font-semibold">
@@ -979,7 +979,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
                     </td>
                   ))}
                 </tr>
-                <tr className="bg-green-25 dark:bg-green-900/20 border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold sticky left-0 z-20 bg-green-25 dark:bg-green-900/20">Free Cash Flow</td>
                   {lboCalculation.projections.map((proj) => (
                     <td key={proj.year} className="text-right py-2 px-3 text-xs md:text-sm tabular-nums font-semibold">
@@ -998,7 +998,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
                     </td>
                   ))}
                 </tr>
-                <tr className="bg-purple-25 dark:bg-purple-900/20 border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold sticky left-0 z-20 bg-purple-25 dark:bg-purple-900/20">Cash Available for Debt Service</td>
                   {lboCalculation.projections.map((proj) => (
                     <td key={proj.year} className="text-right py-2 px-3 text-xs md:text-sm tabular-nums font-semibold">
@@ -1048,7 +1048,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
                     </td>
                   ))}
                 </tr>
-                <tr className="bg-red-25 dark:bg-red-900/20 border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold sticky left-0 z-20 bg-red-25 dark:bg-red-900/20">Total Debt Service</td>
                   {lboCalculation.projections.map((proj) => (
                     <td key={proj.year} className="text-right py-2 px-3 text-xs md:text-sm tabular-nums font-semibold">
@@ -1058,7 +1058,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
                 </tr>
                 
                 {/* Cash Flow to Equity */}
-                <tr className="bg-blue-25 dark:bg-blue-900/20 border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold sticky left-0 z-20 bg-blue-25 dark:bg-blue-900/20">Cash Flow to Equity</td>
                   {lboCalculation.projections.map((proj) => (
                     <td key={proj.year} className="text-right py-2 px-3 text-xs md:text-sm tabular-nums font-semibold">
@@ -1074,7 +1074,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
                     </td>
                   ))}
                 </tr>
-                <tr className="bg-gray-25 dark:bg-gray-900/20 border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold sticky left-0 z-20 bg-gray-25 dark:bg-gray-900/20">Ending Cash Balance</td>
                   {lboCalculation.projections.map((proj) => (
                     <td key={proj.year} className="text-right py-2 px-3 text-xs md:text-sm tabular-nums font-semibold">
@@ -1085,7 +1085,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
 
                 {/* Debt Schedule */}
                 <tr className="h-2"/>
-                <tr className="bg-red-25 dark:bg-red-900/20 border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold sticky left-0 z-20 bg-red-25 dark:bg-red-900/20">Total Debt</td>
                   {lboCalculation.projections.map((proj) => (
                     <td key={proj.year} className="text-right py-2 px-3 text-xs md:text-sm tabular-nums font-semibold">
@@ -1167,7 +1167,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
               </thead>
               <tbody className="bg-white dark:bg-slate-950">
                 {/* Initial Investment */}
-                <tr className="bg-red-25 dark:bg-red-900/20 border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold sticky left-0 z-20 bg-red-25 dark:bg-red-900/20">Initial Investment</td>
                   <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums font-semibold text-red-600 dark:text-red-400">
                     ({formatFinancialNumber(lboCalculation.sourcesAndUses.sources.sponsorEquity, { decimals: 0 })})
@@ -1190,7 +1190,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
 
                 {/* Exit Analysis Detail */}
                 <tr className="h-2"/>
-                <tr className="bg-green-25 dark:bg-green-900/20 border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold sticky left-0 z-20 bg-green-25 dark:bg-green-900/20">Exit Analysis</td>
                   <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">-</td>
                   {Array.from({ length: assumptions.holdingPeriod - 1 }, () => (
@@ -1254,7 +1254,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
                   </td>
                 </tr>
 
-                <tr className="bg-blue-25 dark:bg-blue-900/20 border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold sticky left-0 z-20 bg-blue-25 dark:bg-blue-900/20">Exit Proceeds</td>
                   <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums">-</td>
                   {Array.from({ length: assumptions.holdingPeriod - 1 }, () => (
@@ -1267,7 +1267,7 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
 
                 {/* Total Cash Flow */}
                 <tr className="h-2"/>
-                <tr className="bg-yellow-25 dark:bg-yellow-900/20 border-b border-slate-100 dark:border-slate-800">
+                <tr className="border-b border-slate-100 dark:border-slate-800">
                   <td className="py-2 px-4 text-xs md:text-sm font-semibold sticky left-0 z-20 bg-yellow-25 dark:bg-yellow-900/20">Total Cash Flow</td>
                   <td className="text-right py-2 px-3 text-xs md:text-sm tabular-nums font-semibold text-red-600 dark:text-red-400">
                     ({formatFinancialNumber(lboCalculation.sourcesAndUses.sources.sponsorEquity, { decimals: 0 })})
@@ -1385,12 +1385,12 @@ export function LBOAnalysis({ symbol }: LBOAnalysisProps) {
                           key={exitMult} 
                           className={cn(
                             "text-center py-2 px-3 text-sm tabular-nums",
-                            isBaseCase && "border-2 border-blue-600 dark:border-blue-400 font-bold bg-blue-50 dark:bg-blue-900/30",
-                            !isBaseCase && irr >= 25 ? "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300" :
-                            !isBaseCase && irr >= 20 ? "bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300" :
-                            !isBaseCase && irr >= 15 ? "bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300" :
-                            !isBaseCase && irr >= 0 ? "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300" :
-                            !isBaseCase ? "bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-200" : ""
+                            isBaseCase && "border-2 border-blue-600 dark:border-blue-400 font-bold",
+                            !isBaseCase && irr >= 25 ? "text-green-700 dark:text-green-300" :
+                            !isBaseCase && irr >= 20 ? "text-yellow-700 dark:text-yellow-300" :
+                            !isBaseCase && irr >= 15 ? "text-orange-700 dark:text-orange-300" :
+                            !isBaseCase && irr >= 0 ? "text-red-700 dark:text-red-300" :
+                            !isBaseCase ? "text-red-800 dark:text-red-200" : ""
                           )}
                         >
                           {irr >= 0 ? `${irr.toFixed(1)}%` : `(${Math.abs(irr).toFixed(1)})%`}

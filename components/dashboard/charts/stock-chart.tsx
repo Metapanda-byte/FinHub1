@@ -19,11 +19,12 @@ interface StockChartProps {
   symbol: string;
   showMovingAverage?: boolean;
   timeframe?: 'YTD' | '1Y' | '5Y';
+  currencySymbol?: string;
 }
 
 type TimeframeOption = 'YTD' | '1Y' | '5Y';
 
-export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD' }: StockChartProps) {
+export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD', currencySymbol = '$' }: StockChartProps) {
   const [selectedTimeframe, setSelectedTimeframe] = useState<TimeframeOption>('YTD');
   const [mounted, setMounted] = useState(false);
   const { prices: stockPrices, isLoading } = useStockPriceData(symbol, selectedTimeframe);
@@ -167,7 +168,7 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
           {format(new Date(label), 'MMM d, yyyy')}
         </div>
         <div className="text-xs font-semibold">
-          Price: <span className="ml-1">${value.toFixed(2)}</span>
+          Price: <span className="ml-1">{currencySymbol}{value.toFixed(2)}</span>
         </div>
       </div>
     );
@@ -192,7 +193,7 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
             <span className="text-xs sm:text-sm md:text-base font-semibold">{symbol}</span>
-            <span className="text-xs sm:text-sm md:text-lg font-bold">${currentPrice.toFixed(2)}</span>
+            <span className="text-xs sm:text-sm md:text-lg font-bold">{currencySymbol}{currentPrice.toFixed(2)}</span>
             <div className={`flex items-center gap-1 text-[10px] sm:text-xs md:text-sm ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               <span>{priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}</span>
               <span>({percentageChange >= 0 ? '+' : ''}{percentageChange.toFixed(2)}%)</span>
@@ -252,9 +253,9 @@ export function StockChart({ symbol, showMovingAverage = false, timeframe = 'YTD
               <YAxis
                 domain={[minPrice - priceMargin, maxPrice + priceMargin]}
                 tickFormatter={(value) => {
-                  if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
-                  if (value >= 1) return `$${value.toFixed(0)}`;
-                  return `$${value.toFixed(2)}`;
+                  if (value >= 1000) return `${currencySymbol}${(Number(value) / 1000).toFixed(1)}K`;
+                  if (value >= 1) return `${currencySymbol}${Number(value).toFixed(0)}`;
+                  return `${currencySymbol}${Number(value).toFixed(2)}`;
                 }}
                 axisLine={false}
                 tickLine={false}
