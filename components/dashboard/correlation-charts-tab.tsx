@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionTitle } from "@/components/ui/section-title";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts/core';
@@ -165,7 +166,7 @@ export function CorrelationChartsTab({
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
         {DASHBOARD_CHARTS.map(cfg => (
           <Card key={cfg.id} className={`${isMobile ? 'h-[300px]' : 'h-[360px]'} border-0 shadow-none bg-transparent`}>
-            <CardHeader className="pb-1"><CardTitle className="text-[11px] font-medium text-muted-foreground tracking-wide">{cfg.title}</CardTitle></CardHeader>
+            <CardHeader className="pb-1"><SectionTitle size="sm" muted className="tracking-wide">{cfg.title}</SectionTitle></CardHeader>
             <CardContent className={isMobile ? 'h-[260px]' : 'h-[310px]'}>
               <ReactECharts notMerge lazyUpdate style={{ height: '100%', width: '100%' }} option={buildOption(cfg)} theme={undefined} />
             </CardContent>

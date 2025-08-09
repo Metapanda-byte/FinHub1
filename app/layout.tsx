@@ -10,6 +10,7 @@ import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { MobileNav } from '@/components/layout/mobile-nav';
 import { cn } from '@/lib/utils';
+import { Suspense } from 'react';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -57,7 +58,9 @@ export default function RootLayout({
                 <div className="hidden sm:block shrink-0 sticky bottom-0 z-40">
                   <Footer />
                 </div>
-                <MobileNav />
+                <Suspense fallback={null}>
+                  <MobileNav />
+                </Suspense>
               </div>
             </AuthProvider>
           </SWRProvider>

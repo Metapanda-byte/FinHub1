@@ -13,6 +13,7 @@ import { useStockQuote } from "@/lib/api/stock";
 import { formatFinancialNumber, formatLargeNumber } from "@/lib/formatters";
 import { StockChart } from "@/components/dashboard/charts/stock-chart";
 import { OverviewPriceOptionA } from "@/components/dashboard/charts/overview-price-option-a";
+import { SectionTitle } from "@/components/ui/section-title";
 import { cn } from "@/lib/utils";
 
 interface MetricCardProps {
@@ -231,7 +232,7 @@ export function CompanyOverviewMobile() {
 
       {/* Key Metrics - Fixed Layout */}
       <div className="mobile-section">
-        <h3 className="text-sm font-semibold mb-3">Key Metrics</h3>
+        <SectionTitle size="md" className="mb-3">Key Metrics</SectionTitle>
         <div className="grid grid-cols-3 gap-2">
           {keyMetrics[0].map((metric, i) => (
             <MetricCard key={i} {...metric} />

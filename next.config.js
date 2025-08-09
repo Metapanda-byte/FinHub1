@@ -4,6 +4,7 @@ const nextConfig = {
     unoptimized: true
   },
   reactStrictMode: false, // Disabled for debugging - can enable later
+  output: 'standalone',
   webpack: (config) => {
     // Re-enable webpack cache for better performance
     config.cache = {

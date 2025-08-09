@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionTitle } from "@/components/ui/section-title";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
@@ -869,7 +870,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
     return (
       <Card variant="matte" className="border-0 shadow-none bg-transparent">
         <CardHeader className="pb-0">
-          <CardTitle className="text-xs font-medium">Share Price Performance</CardTitle>
+          <SectionTitle size="md">Share Price Performance</SectionTitle>
         </CardHeader>
         <CardContent className="pt-0 px-3">
           <OverviewPriceOptionA symbol={currentSymbol} timeframe={timeframe as any} height={240} />
@@ -883,7 +884,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
     return (
       <Card variant="matte" className="border-0 shadow-none bg-transparent">
         <CardHeader className="pb-0">
-          <CardTitle className="text-xs font-medium">Capital Structure</CardTitle>
+          <SectionTitle size="md">Capital Structure</SectionTitle>
         </CardHeader>
         <CardContent className="p-0 px-3">
           <div className="space-y-0">
@@ -933,7 +934,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
     return (
       <Card variant="matte" className="border-0 shadow-none bg-transparent">
         <CardHeader className="pb-0">
-          <CardTitle className="text-xs font-medium">Historical Revenue</CardTitle>
+          <SectionTitle size="md">Historical Revenue</SectionTitle>
         </CardHeader>
         <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
           <RevenueChart 
@@ -957,7 +958,7 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
     return (
       <Card variant="matte" className="border-0 shadow-none bg-transparent">
         <CardHeader className="pb-0">
-          <CardTitle className="text-xs font-medium">Historical EBITDA & Margin</CardTitle>
+          <SectionTitle size="md">Historical EBITDA & Margin</SectionTitle>
         </CardHeader>
         <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
           <EbitdaChart 
@@ -981,14 +982,14 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
     return (
       <Card variant="matte" className="border-0 shadow-none bg-transparent">
         <CardHeader className="pb-0 flex flex-row items-center justify-between">
-          <CardTitle className="text-xs font-medium">
+          <SectionTitle size="md">
             FY{statements && statements.length > 0 ? statements[0].calendarYear.toString().slice(-2) : ''} Revenue by Segment
             {fiscalYearRevenue && (
               <span className="text-xs text-muted-foreground ml-1">
                 ({currencySymbol}{fiscalYearRevenue.toFixed(1)}B)
               </span>
             )}
-          </CardTitle>
+          </SectionTitle>
         </CardHeader>
         <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
           {scaledSegmentData.length > 0 ? (
@@ -1015,14 +1016,14 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
     return (
       <Card variant="matte" className="border-0 shadow-none bg-transparent">
         <CardHeader className="pb-0 flex flex-row items-center justify-between">
-          <CardTitle className="text-xs font-medium">
+          <SectionTitle size="md">
             FY{statements && statements.length > 0 ? statements[0].calendarYear.toString().slice(-2) : ''} Revenue by Geography
             {fiscalYearRevenue && (
               <span className="text-xs text-muted-foreground ml-1">
                 ({currencySymbol}{fiscalYearRevenue.toFixed(1)}B)
               </span>
             )}
-          </CardTitle>
+          </SectionTitle>
         </CardHeader>
         <CardContent style={{ position: 'relative', paddingBottom: 16, paddingTop: 0 }}>
           {consolidatedGeographyData.length > 1 ? (

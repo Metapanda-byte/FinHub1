@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,11 +11,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { FinHubIQLogo } from "@/components/ui/finhubiq-logo";
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showError, setShowError] = useState(false);
@@ -195,5 +197,13 @@ export default function Home() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
