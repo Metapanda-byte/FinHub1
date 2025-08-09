@@ -14,7 +14,15 @@ const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
 export const runtime = 'edge';
 
 // Analyst personas with specialized prompts
-const ANALYST_PERSONAS = {
+interface Persona {
+  name: string;
+  role: string;
+  systemPrompt: string;
+  directSystemPrompt?: string;
+  temperature: number;
+}
+
+const ANALYST_PERSONAS: Record<string, Persona> = {
   laura: {
     name: 'Laura',
     role: 'research',
@@ -31,6 +39,25 @@ const ANALYST_PERSONAS = {
     You excel at analyzing financial statements, calculating key metrics, and providing investment recommendations.
     Your responses are precise, quantitative, and focus on financial performance and valuation.
     Include relevant financial metrics and ratios in your analysis.`,
+    directSystemPrompt: `You are Brian, a Financial Analyst with access to real-time financial data and management commentary. When analyzing specific financial metrics:
+
+FORMATTING REQUIREMENTS:
+- Use clean, readable HTML formatting instead of markdown
+- Use <strong>bold text</strong> for emphasis and key points
+- Use <h4>Subtitles</h4> to organize sections
+- Use <ul><li>bullet points</li></ul> for lists and key insights
+- Use <br> for line breaks when needed
+- NO ** markdown syntax - use proper HTML tags
+
+CONTENT REQUIREMENTS:
+1. Search for and reference RECENT earnings calls, management commentary, and financial reports
+2. Focus on management's OWN explanations for metric changes and business drivers
+3. Include specific quotes or insights from recent conference calls, investor presentations, or SEC filings
+4. Highlight current strategic initiatives, operational changes, or market factors affecting the metric
+5. Use real-time data to provide context on industry trends or competitive dynamics
+6. Avoid generic textbook explanations - leverage current, specific management insights
+
+Always prioritize recent, factual management commentary and current market context over general financial definitions.`,
     temperature: 0.6,
   },
   john: {
@@ -50,7 +77,7 @@ interface AnalystTask {
   context: any;
 }
 
-async function processAnalystTask(task: AnalystTask) {
+async function processAnalystTask(task: AnalystTask, mode: string = 'parallel') {
   const analyst = ANALYST_PERSONAS[task.analystId as keyof typeof ANALYST_PERSONAS];
   if (!analyst) {
     throw new Error(`Unknown analyst: ${task.analystId}`);
@@ -58,6 +85,11 @@ async function processAnalystTask(task: AnalystTask) {
 
   try {
     let content = '';
+    
+    // Use appropriate system prompt based on mode
+    const systemPrompt = mode === 'direct' && analyst.directSystemPrompt 
+      ? analyst.directSystemPrompt 
+      : analyst.systemPrompt;
     
     // Use Perplexity for Laura's research tasks
     if (task.analystId === 'laura') {
@@ -73,7 +105,7 @@ async function processAnalystTask(task: AnalystTask) {
           messages: [
             {
               role: 'system',
-              content: analyst.systemPrompt,
+              content: systemPrompt,
             },
             {
               role: 'user',
@@ -131,25 +163,47 @@ Please provide comprehensive research with current data, citations, and sources.
         const json = await resp.json();
         content = json.choices[0]?.message?.content || 'No response generated';
       } else {
-        if (!openai) {
-          throw new Error('OpenAI API key not configured.');
+        // Use Perplexity for all analysts (including Brian)
+        if (!PERPLEXITY_API_KEY) {
+          throw new Error('Perplexity API key not configured.');
         }
-        const completion = await openai.chat.completions.create({
-          model: 'gpt-4-turbo-preview',
-          messages: [
-            {
-              role: 'system',
-              content: analyst.systemPrompt,
-            },
-            {
-              role: 'user',
-              content: `Context: ${JSON.stringify(task.context)}\n\nQuery: ${task.query}\n\nPlease provide your specialized analysis based on your expertise.`,
-            },
-          ],
-          temperature: analyst.temperature,
-          max_tokens: 1000,
+        
+        const perplexityResponse = await fetch(PERPLEXITY_API_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'pplx-7b-online', // Always use online model for real-time data access
+            messages: [
+              {
+                role: 'system',
+                content: systemPrompt,
+              },
+              {
+                role: 'user',
+                content: mode === 'direct' 
+                  ? `Company: ${task.context?.companyName || task.context?.symbol}
+                     Financial Question: ${task.query}
+                     
+                     Please search for recent earnings calls, management commentary, and financial reports to explain this metric. Focus on management's own explanations, strategic initiatives, and current market factors. Provide specific insights rather than generic definitions.`
+                  : `Context: ${JSON.stringify(task.context)}\n\nQuery: ${task.query}\n\nPlease provide your specialized analysis based on your expertise.`,
+              },
+            ],
+            temperature: analyst.temperature,
+            max_tokens: mode === 'direct' ? 400 : 1000, // Slightly longer for better insights
+            return_citations: true, // Get citations for management commentary
+            return_related_questions: false, // Keep focused
+          }),
         });
-        content = completion.choices[0]?.message?.content || 'No response generated';
+
+        if (!perplexityResponse.ok) {
+          throw new Error(`Perplexity API error: ${perplexityResponse.status}`);
+        }
+
+        const json = await perplexityResponse.json();
+        content = json.choices[0]?.message?.content || 'No response generated';
       }
     }
 
@@ -396,20 +450,25 @@ export async function POST(request: NextRequest) {
     if (mode === 'parallel') {
       // Process all tasks in parallel
       results = await Promise.all(
-        tasks.map(task => processAnalystTask(task))
+        tasks.map(task => processAnalystTask(task, mode))
+      );
+    } else if (mode === 'direct') {
+      // Direct mode - single task, immediate response
+      results = await Promise.all(
+        tasks.map(task => processAnalystTask(task, mode))
       );
     } else {
       // Process tasks sequentially
       results = [];
       for (const task of tasks) {
-        const result = await processAnalystTask(task);
+        const result = await processAnalystTask(task, mode);
         results.push(result);
       }
     }
 
-    // Generate team summary if multiple analysts worked
+    // Generate team summary if multiple analysts worked (skip in direct mode)
     let teamSummary = null;
-    if (results.length > 1) {
+    if (results.length > 1 && mode !== 'direct') {
       teamSummary = {
         content: `Team analysis complete. ${results.length} analysts have provided their specialized insights.`,
         confidence: results.reduce((acc, r) => acc + r.confidence, 0) / results.length,

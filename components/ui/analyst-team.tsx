@@ -118,12 +118,13 @@ export function AnalystTeam({
 
   const selectedAnalyst = getSelectedAnalyst();
 
-  // Initialize team on mount
+  // Initialize team on mount and auto-select Brian
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    if (isOpen) {
       initializeTeam();
+      selectAnalyst('brian'); // Auto-select Brian every time chat opens
     }
-  }, [isOpen, messages.length, initializeTeam]);
+  }, [isOpen, initializeTeam, selectAnalyst]);
 
   // Handle initial query
   useEffect(() => {
@@ -133,12 +134,104 @@ export function AnalystTeam({
     }
   }, [initialQuery, isOpen]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom when messages change or chat opens
   useEffect(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Scroll to bottom when chat is opened
+  useEffect(() => {
+    if (isOpen && scrollAreaRef.current) {
+      // Small delay to ensure the chat is fully rendered
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+        }
+      }, 100);
+    }
+  }, [isOpen]);
+
+  // Auto-respond to user messages from dashboard hover-to-chat
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.type === 'user' && !isProcessing && isOpen) {
+      // Check if this is a recent message (within last 5 seconds) to avoid responding to old messages
+      const messageAge = Date.now() - lastMessage.timestamp.getTime();
+      if (messageAge < 5000) {
+        console.log('Auto-responding to user message:', lastMessage.content);
+        // Small delay to ensure chat is ready
+        setTimeout(() => {
+          handleBrianResponse(lastMessage.content);
+        }, 300);
+      }
+    }
+  }, [messages, isProcessing, isOpen]);
+
+  // Simplified Brian response handler
+  const handleBrianResponse = async (query: string) => {
+    console.log('Starting Brian response for:', query);
+    setIsProcessing(true);
+    
+    try {
+      // Call Brian directly without task management overhead
+      console.log('Calling analyst API...');
+      const response = await fetch('/api/analyst-team', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tasks: [{
+            analystId: 'brian',
+            query: query,
+            context: {
+              symbol,
+              companyName,
+              financialData: financialData ? {
+                hasData: true,
+                dataPoints: Object.keys(financialData).length
+              } : null,
+              siteContent: gatherSiteContent(8000)
+            }
+          }],
+          mode: 'direct' // Direct mode for immediate response
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get Brian\'s response');
+      }
+
+      const data = await response.json();
+      console.log('API response received:', data);
+      const result = data.results[0];
+
+      // Add Brian's response directly
+      const brianMessage: TeamMessage = {
+        id: `brian_${Date.now()}`,
+        type: 'analyst',
+        analystId: 'brian',
+        content: result.content,
+        timestamp: new Date()
+      };
+      console.log('Adding Brian message:', brianMessage);
+      addMessage(brianMessage);
+
+    } catch (error) {
+      console.error('Brian response error:', error);
+      const errorMessage: TeamMessage = {
+        id: `error_${Date.now()}`,
+        type: 'system',
+        content: 'Sorry, I had trouble processing that. Could you try rephrasing your question?',
+        timestamp: new Date()
+      };
+      addMessage(errorMessage);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const processAnalystTasks = async (taskId: string, analystIds: string[]) => {
     // Prepare tasks for the API
@@ -184,15 +277,17 @@ export function AnalystTeam({
         let errorContent = '';
         
         if (analystId === 'laura') {
-          errorContent = `**Research Analysis by Laura:**\n\n`;
-          errorContent += `⚠️ I'm having trouble connecting to my research sources (Perplexity API).\n\n`;
-          errorContent += `For the robotics industry report you requested, key areas to explore include:\n`;
-          errorContent += `• Market size and growth projections\n`;
-          errorContent += `• Major players (e.g., Boston Dynamics, ABB, FANUC, KUKA)\n`;
-          errorContent += `• Industrial vs. service robotics segments\n`;
-          errorContent += `• AI/ML integration trends\n`;
-          errorContent += `• Supply chain and component manufacturers\n\n`;
-          errorContent += `*Please ensure the Perplexity API key is properly configured in your environment variables.*`;
+          errorContent = `<strong>Research Analysis by Laura:</strong><br><br>`;
+          errorContent += `⚠️ I'm having trouble connecting to my research sources (Perplexity API).<br><br>`;
+          errorContent += `For the robotics industry report you requested, key areas to explore include:<br>`;
+          errorContent += `<ul>`;
+          errorContent += `<li>Market size and growth projections</li>`;
+          errorContent += `<li>Major players (e.g., Boston Dynamics, ABB, FANUC, KUKA)</li>`;
+          errorContent += `<li>Industrial vs. service robotics segments</li>`;
+          errorContent += `<li>AI/ML integration trends</li>`;
+          errorContent += `<li>Supply chain and component manufacturers</li>`;
+          errorContent += `</ul><br>`;
+          errorContent += `<em>Please ensure the Perplexity API key is properly configured in your environment variables.</em>`;
         } else {
           errorContent = `Analysis temporarily unavailable. Please check API configuration.`;
         }
@@ -317,17 +412,18 @@ export function AnalystTeam({
 
   return (
     <div className={cn(
-      "fixed top-0 right-0 bottom-0 bg-background border-l border-border shadow-2xl z-50 flex flex-col animate-slide-in-right transition-all duration-300 overflow-hidden",
-      isExpanded ? "w-[800px]" : "w-[500px]"
+      "fixed top-0 right-0 bottom-0 bg-slate-800 border-l border-slate-700 shadow-2xl z-50 flex flex-col animate-slide-in-right transition-all duration-300 overflow-hidden",
+      "sm:w-[800px]", // Full size by default on web
+      "w-full sm:max-w-[800px]" // Full width on mobile, max width on desktop
     )}>
-      {/* Header with McLaren orange accent [[memory:4967922]] */}
-      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-muted/30 to-muted/10">
+      {/* Header with dark theme */}
+      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-slate-700 bg-slate-900">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
             <Users className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-base flex items-center gap-2">
+            <h3 className="font-semibold text-base flex items-center gap-2 text-white">
               AI Analyst Team
               {userSubscriptionTier === 'pro' && (
                 <Badge className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0">
@@ -336,7 +432,7 @@ export function AnalystTeam({
                 </Badge>
               )}
             </h3>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-slate-400">
               {companyName ? `${companyName} (${symbol})` : symbol || 'Financial Analysis'}
             </p>
           </div>
@@ -346,7 +442,7 @@ export function AnalystTeam({
             variant="ghost"
             size="icon"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="h-8 w-8"
+            className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-700 hidden sm:flex"
           >
             {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
@@ -354,7 +450,7 @@ export function AnalystTeam({
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-8 w-8"
+            className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-700"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -362,10 +458,10 @@ export function AnalystTeam({
       </div>
 
       {/* Analyst Selector Bar */}
-      <div className="flex-shrink-0 px-4 py-3 bg-muted/10 border-b">
+      <div className="flex-shrink-0 px-4 py-3 bg-slate-700 border-b border-slate-600">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Active Analyst:</span>
+            <span className="text-sm font-medium text-slate-200">Active Analyst:</span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="h-9 px-3">
@@ -448,7 +544,7 @@ export function AnalystTeam({
                       </p>
                       <Button 
                         size="sm" 
-                        className="mt-2 w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white"
+                        className="mt-2 w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700"
                         onClick={() => window.location.href = '/plans'}
                       >
                         Upgrade to Pro
@@ -517,16 +613,16 @@ export function AnalystTeam({
 
       {/* Main Content Area */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-        <TabsList className="flex-shrink-0 mx-4 mt-2 grid w-[calc(100%-32px)] grid-cols-3">
-          <TabsTrigger value="chat" className="text-xs">
+        <TabsList className="flex-shrink-0 mx-4 mt-2 grid w-[calc(100%-32px)] grid-cols-3 bg-slate-700">
+          <TabsTrigger value="chat" className="text-xs text-slate-300 data-[state=active]:bg-slate-600 data-[state=active]:text-white">
             <MessageSquare className="w-3 h-3 mr-1" />
             Chat
           </TabsTrigger>
-          <TabsTrigger value="team" className="text-xs">
+          <TabsTrigger value="team" className="text-xs text-slate-300 data-[state=active]:bg-slate-600 data-[state=active]:text-white">
             <Users className="w-3 h-3 mr-1" />
             Team
           </TabsTrigger>
-          <TabsTrigger value="tasks" className="text-xs">
+          <TabsTrigger value="tasks" className="text-xs text-slate-300 data-[state=active]:bg-slate-600 data-[state=active]:text-white">
             <Briefcase className="w-3 h-3 mr-1" />
             Tasks
           </TabsTrigger>
@@ -534,7 +630,7 @@ export function AnalystTeam({
 
         {/* Chat Tab */}
         <TabsContent value="chat" className="flex-1 flex flex-col mt-0 p-0 min-h-0">
-          <ScrollArea className="flex-1 p-4 overflow-y-auto" ref={scrollAreaRef}>
+          <ScrollArea className="flex-1 p-4 overflow-y-auto bg-slate-800" ref={scrollAreaRef}>
             <div className="space-y-4">
               {messages.map((message) => (
                 <div key={message.id} className="space-y-2">
@@ -576,21 +672,13 @@ export function AnalystTeam({
                       <div className="flex-1 max-w-[85%]">
                         <Card className="border-muted">
                           <CardContent className="p-3">
-                            <div className="prose prose-sm dark:prose-invert max-w-none">
-                              {message.content.split('\n').map((line, i) => (
-                                <p key={i} className="text-sm mb-1 last:mb-0">
-                                  {line.startsWith('**') && line.endsWith('**') ? (
-                                    <strong>{line.slice(2, -2)}</strong>
-                                  ) : line.startsWith('• ') ? (
-                                    <span className="ml-2">{line}</span>
-                                  ) : line.startsWith('*') && line.endsWith('*') ? (
-                                    <em className="text-xs text-muted-foreground">{line.slice(1, -1)}</em>
-                                  ) : (
-                                    line
-                                  )}
-                                </p>
-                              ))}
-                            </div>
+                            <div 
+                              className="prose prose-sm dark:prose-invert max-w-none text-slate-200"
+                              dangerouslySetInnerHTML={{ __html: message.content }}
+                              style={{
+                                color: '#e2e8f0' // slate-200
+                              }}
+                            />
                             {message.chartData && (
                               <div className="mt-3">
                                 <ChartDisplay chartData={message.chartData} />
@@ -645,7 +733,7 @@ export function AnalystTeam({
           </ScrollArea>
 
           {/* Input Area */}
-          <div className="flex-shrink-0 p-4 border-t border-border bg-muted/10">
+          <div className="flex-shrink-0 p-4 border-t border-slate-600 bg-slate-700">
 
             <div className="flex gap-2">
               <Input
@@ -787,7 +875,7 @@ export function AnalystTeam({
                             </p>
                             <Button 
                               size="sm" 
-                              className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white"
+                              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 window.location.href = '/plans';

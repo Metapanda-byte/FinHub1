@@ -6,7 +6,17 @@ td:hover,
 .financial-metric:hover {
   background-color: rgba(59, 130, 246, 0.05);
   transition: background-color 0.2s ease;
-  cursor: help;
+  cursor: pointer;
+  position: relative;
+}
+
+/* Make financial numbers in historical financials more interactive */
+.historical-financials-container td:hover {
+  background-color: rgba(59, 130, 246, 0.08) !important;
+  cursor: pointer;
+  border-radius: 4px;
+  transform: scale(1.02);
+  transition: all 0.2s ease;
 }
 
 /* Enhanced hover effect for elements with financial data */

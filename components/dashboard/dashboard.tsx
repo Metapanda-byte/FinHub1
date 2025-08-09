@@ -16,6 +16,7 @@ import { LBOAnalysis } from "@/components/dashboard/tabs/lbo-analysis";
 import { useSearchStore } from "@/lib/store/search-store";
 import { AnalystTeam } from "@/components/ui/analyst-team";
 import { KeyMetricsPanel } from "@/components/ui/key-metrics-panel";
+import { useAnalystTeamStore } from "@/lib/store/analyst-team-store";
 import { HighlightToChat } from "@/components/ui/highlight-to-chat";
 import { AnalysisPopup } from "@/components/ui/analysis-popup";
 import { useIncomeStatements, useCashFlows, useBalanceSheets, useSECFilings, useEarningsTranscriptDates, useCompanyProfile, useFinancialRatios, useKeyMetrics } from "@/lib/api/financial";
@@ -126,6 +127,18 @@ export function Dashboard() {
   // Set default tab based on whether a symbol is selected
   const defaultTab = currentSymbol ? "company-snapshot" : "home";
   const [activeTab, setActiveTab] = useState(defaultTab);
+  
+  // Handle tab changes with URL updates
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    
+    // Update URL without page refresh
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', newTab);
+      window.history.replaceState(null, '', url.toString());
+    }
+  };
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [highlightQuery, setHighlightQuery] = useState('');
@@ -160,11 +173,11 @@ export function Dashboard() {
   // Update active tab when symbol changes
   React.useEffect(() => {
     if (currentSymbol && activeTab === "home") {
-      setActiveTab("company-snapshot");
+      handleTabChange("company-snapshot");
     }
-  }, [currentSymbol, activeTab]);
+  }, [currentSymbol, activeTab, handleTabChange]);
 
-  // Handle URL parameter for tab switching
+  // Handle URL parameter for tab switching (initial load only)
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     if (tabParam) {
@@ -173,8 +186,11 @@ export function Dashboard() {
       if (validTab && tabParam !== activeTab) {
         setActiveTab(tabParam);
       }
+    } else if (!currentSymbol) {
+      // If no tab param and no symbol, ensure we're on home
+      setActiveTab("home");
     }
-  }, [searchParams, activeTab]);
+  }, [searchParams]); // Remove activeTab dependency to avoid loops
 
   // Watchlist integration
   const stocks = useWatchlistStore((state) => state.stocks);
@@ -213,28 +229,28 @@ export function Dashboard() {
 
   // Handle mobile navigation tab changes and watchlist tab switching
   useEffect(() => {
-    const handleTabChange = (event: CustomEvent) => {
-      setActiveTab(event.detail.tab);
+    const handleMobileTabChange = (event: CustomEvent) => {
+      handleTabChange(event.detail.tab);
     };
 
     const handleSwitchTab = (event: CustomEvent) => {
-      setActiveTab(event.detail.tab);
+      handleTabChange(event.detail.tab);
     };
     
     const handleMobileOpenCopilot = () => {
       setIsChatOpen(true);
     };
 
-    window.addEventListener('mobileTabChange', handleTabChange as EventListener);
+    window.addEventListener('mobileTabChange', handleMobileTabChange as EventListener);
     window.addEventListener('switch-tab', handleSwitchTab as EventListener);
     window.addEventListener('mobile-open-copilot', handleMobileOpenCopilot);
 
     return () => {
-      window.removeEventListener('mobileTabChange', handleTabChange as EventListener);
+      window.removeEventListener('mobileTabChange', handleMobileTabChange as EventListener);
       window.removeEventListener('switch-tab', handleSwitchTab as EventListener);
       window.removeEventListener('mobile-open-copilot', handleMobileOpenCopilot);
     };
-  }, []);
+  }, [handleTabChange]);
 
   // Fetch financial data for AI analysis
   const { statements: incomeStatements } = useIncomeStatements(currentSymbol || '');
@@ -275,6 +291,29 @@ export function Dashboard() {
   const handleOpenChatFromAnalysis = () => {
     setIsAnalysisOpen(false);
     setIsChatOpen(true);
+  };
+
+  // Handle direct analysis (sends question directly to chat)
+  const handleDirectAnalyze = (question: string) => {
+    console.log('Processing financial question:', question);
+    
+    // First open the chat
+    setIsChatOpen(true);
+    
+    // Then add the message after a brief delay to ensure chat is ready
+    setTimeout(() => {
+      const { addMessage } = useAnalystTeamStore.getState();
+      
+      const message = {
+        id: `user-${Date.now()}`,
+        type: 'user' as const,
+        content: question,
+        timestamp: new Date()
+      };
+      
+      console.log('Adding message to store:', message);
+      addMessage(message);
+    }, 200);
   };
 
   // Function to get tagline for each tab
@@ -376,7 +415,7 @@ export function Dashboard() {
             
             {/* Tab Navigation Section */}
             <div className="px-mobile py-2">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <div className="w-full">
                   <TabsList className="flex h-auto w-full bg-transparent gap-1 p-0">
                     {tabConfig.map((tab) => (
@@ -414,7 +453,7 @@ export function Dashboard() {
         {/* Main Content Area with Vertical Scrolling */}
         <div className="flex-1 overflow-y-auto mobile-scroll">
           <div className={cn("px-mobile pb-20 sm:pb-4", isMobile ? "pt-4" : "pt-8")} style={{ overflowX: 'hidden', touchAction: 'pan-y' }}>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
               {/* Tab Content with Vertical Scrolling */}
               <div className="animate-fade-in">
                 <TabsContent value="home" className="mt-0 space-y-3">
@@ -477,7 +516,8 @@ export function Dashboard() {
         {currentSymbol && (
           <>
             <HighlightToChat 
-              onHighlightAnalyze={handleHighlightAnalyze} 
+              onHighlightAnalyze={handleHighlightAnalyze}
+              onDirectAnalyze={handleDirectAnalyze}
               activeTab={activeTab}
             />
             <AnalysisPopup

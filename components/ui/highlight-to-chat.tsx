@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { MessageSquare, X } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface HighlightToChatProps {
   onHighlightAnalyze: (hoveredElement: string, context: string) => void;
+  onDirectAnalyze?: (question: string) => void;
   activeTab?: string;
 }
 
-export function HighlightToChat({ onHighlightAnalyze, activeTab }: HighlightToChatProps) {
+export function HighlightToChat({ onHighlightAnalyze, onDirectAnalyze, activeTab }: HighlightToChatProps) {
   const [showPopup, setShowPopup] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [hoveredData, setHoveredData] = useState({ element: '', context: '' });
@@ -40,31 +41,69 @@ export function HighlightToChat({ onHighlightAnalyze, activeTab }: HighlightToCh
       
       // Set a delay before showing the popup
       hoverTimeoutRef.current = setTimeout(() => {
-        // Get context from parent elements
+        // Get context from financial statement structure
         let context = '';
-        let parentElement = target.closest('td, th, .card, section, [data-financial-item]');
+        let financialItem = '';
+        let timePeriod = '';
         
-        if (!parentElement) {
-          parentElement = target.closest('div');
-        }
+        const row = target.closest('tr');
+        const table = target.closest('table');
         
-        if (parentElement) {
-          // Get table row context if in a table
-          const row = target.closest('tr');
-          const table = target.closest('table');
-          
-          if (row && table) {
-            const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent).join(' | ');
-            const rowData = Array.from(row.querySelectorAll('td, th')).map(cell => cell.textContent).join(' | ');
-            context = `Table: ${headers}\nRow: ${rowData}`;
-          } else {
-            context = parentElement.textContent || '';
+        if (row && table) {
+          // Get the row label (first cell, usually the financial item name)
+          const firstCell = row.querySelector('td:first-child, th:first-child');
+          if (firstCell) {
+            financialItem = firstCell.textContent?.trim() || '';
           }
           
-          // Limit context length
-          if (context.length > 600) {
-            context = context.substring(0, 600) + '...';
+          // Get the column header for time period
+          const cellIndex = Array.from(row.children).indexOf(target.closest('td') || target.closest('th') as Element);
+          if (cellIndex > 0) {
+            const headers = table.querySelectorAll('th');
+            if (headers[cellIndex]) {
+              timePeriod = headers[cellIndex].textContent?.trim() || '';
+            }
           }
+          
+          // Clean up common financial statement labels and map to proper terms
+          financialItem = financialItem
+            .replace(/^\$?\s*/, '') // Remove leading $ or spaces
+            .replace(/\s*\([^)]*\)\s*$/, '') // Remove parenthetical notes at end
+            .replace(/\(-\)/g, '') // Remove (-) indicators
+            .replace(/^\(-\)\s*/, '') // Remove leading (-) 
+            .trim();
+          
+          // Map common negative items to proper financial terms
+          const financialTermMappings: Record<string, string> = {
+            'Cost of goods sold': 'Cost of Goods Sold (COGS)',
+            'Cost of revenue': 'Cost of Revenue',
+            'Selling, general and administrative': 'SG&A Expenses',
+            'SG&A': 'SG&A Expenses',
+            'Research and development': 'R&D Expenses',
+            'R&D': 'R&D Expenses',
+            'Operating expenses': 'Operating Expenses',
+            'Interest expense': 'Interest Expense',
+            'Tax expense': 'Tax Expense',
+            'Depreciation and amortization': 'Depreciation & Amortization'
+          };
+          
+          // Apply mapping if available
+          const mappedTerm = Object.keys(financialTermMappings).find(key => 
+            financialItem.toLowerCase().includes(key.toLowerCase())
+          );
+          if (mappedTerm) {
+            financialItem = financialTermMappings[mappedTerm];
+          }
+          
+          // Clean up time period to extract year
+          const yearMatch = timePeriod.match(/FY\s*(\d{4})|(\d{4})/);
+          if (yearMatch) {
+            timePeriod = `FY${yearMatch[1] || yearMatch[2]}`;
+          }
+          
+          context = financialItem && timePeriod ? `${financialItem} in ${timePeriod}` : text.trim();
+        } else {
+          context = text.trim();
         }
         
         setHoveredData({ element: text.trim(), context });
@@ -104,14 +143,78 @@ export function HighlightToChat({ onHighlightAnalyze, activeTab }: HighlightToCh
       }
     };
 
+    const handleClick = (event: MouseEvent) => {
+      // Only activate on Historical Financials tab
+      if (activeTab !== 'historical-financials') return;
+      
+      const target = event.target as HTMLElement;
+      
+      // Check if clicked element contains financial data
+      const text = target.textContent || '';
+      const isFinancialData = /\d/.test(text) && (
+        /\$|%|million|billion|thousand/.test(text) || 
+        /revenue|profit|margin|cash|debt|asset|liability|equity|growth/i.test(text) ||
+        target.closest('td, th, .financial-metric, [data-financial-item]')
+      );
+      
+      if (!isFinancialData || text.trim().length < 2) return;
+      
+      // Get the same context as hover
+      let context = '';
+      let financialItem = '';
+      let timePeriod = '';
+      
+      const row = target.closest('tr');
+      const table = target.closest('table');
+      
+      if (row && table) {
+        const firstCell = row.querySelector('td:first-child, th:first-child');
+        if (firstCell) {
+          financialItem = firstCell.textContent?.trim() || '';
+        }
+        
+        const cellIndex = Array.from(row.children).indexOf(target.closest('td') || target.closest('th') as Element);
+        if (cellIndex > 0) {
+          const headers = table.querySelectorAll('th');
+          if (headers[cellIndex]) {
+            timePeriod = headers[cellIndex].textContent?.trim() || '';
+          }
+        }
+        
+        financialItem = financialItem
+          .replace(/^\$?\s*/, '')
+          .replace(/\s*\([^)]*\)\s*$/, '')
+          .trim();
+        
+        const yearMatch = timePeriod.match(/FY\s*(\d{4})|(\d{4})/);
+        if (yearMatch) {
+          timePeriod = `FY${yearMatch[1] || yearMatch[2]}`;
+        }
+        
+        context = financialItem && timePeriod ? `${financialItem} in ${timePeriod}` : text.trim();
+      } else {
+        context = text.trim();
+      }
+      
+      // Directly trigger the analysis
+      if (onDirectAnalyze) {
+        const question = `Can you give me some insight behind the ${context}?`;
+        console.log('Direct click analysis triggered with:', { context, question });
+        onDirectAnalyze(question);
+        setShowPopup(false);
+      }
+    };
+
     document.addEventListener('mouseover', handleMouseOver);
     document.addEventListener('mouseout', handleMouseOut);
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('click', handleClick);
 
     return () => {
       document.removeEventListener('mouseover', handleMouseOver);
       document.removeEventListener('mouseout', handleMouseOut);
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClick);
       if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current);
       }
@@ -119,7 +222,15 @@ export function HighlightToChat({ onHighlightAnalyze, activeTab }: HighlightToCh
   }, [activeTab]);
 
   const handleAnalyze = () => {
-    if (hoveredData.element) {
+    if (hoveredData.element && onDirectAnalyze) {
+      // Format the question for Brian with context
+      const question = `Can you give me some insight behind the ${hoveredData.context}?`;
+      console.log('Hover button analysis triggered with:', { hoveredData, question });
+      onDirectAnalyze(question);
+      setShowPopup(false);
+    } else if (hoveredData.element) {
+      // Fallback to original behavior if onDirectAnalyze not provided
+      console.log('Falling back to original analyze behavior');
       onHighlightAnalyze(hoveredData.element, hoveredData.context);
       setShowPopup(false);
     }
@@ -130,7 +241,7 @@ export function HighlightToChat({ onHighlightAnalyze, activeTab }: HighlightToCh
   return (
     <div
       ref={popupRef}
-      className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-2 transform -translate-x-1/2 -translate-y-full"
+      className="fixed z-50 bg-white border border-gray-200 rounded-full shadow-lg transform -translate-x-1/2 -translate-y-full"
       style={{
         left: `${popupPosition.x}px`,
         top: `${popupPosition.y}px`,
@@ -138,24 +249,14 @@ export function HighlightToChat({ onHighlightAnalyze, activeTab }: HighlightToCh
       onMouseEnter={() => setShowPopup(true)}
       onMouseLeave={() => setShowPopup(false)}
     >
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          onClick={handleAnalyze}
-          className="flex items-center gap-1 h-7 px-3 text-xs"
-        >
-          <MessageSquare className="h-3 w-3" />
-          Ask AI
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => setShowPopup(false)}
-          className="h-7 w-7 p-0"
-        >
-          <X className="h-3 w-3" />
-        </Button>
-      </div>
+      <Button
+        size="sm"
+        onClick={handleAnalyze}
+        className="flex items-center gap-2 h-8 px-4 text-xs font-medium bg-transparent hover:bg-blue-50 border-0 text-blue-600 rounded-full transition-all duration-200"
+      >
+        <Sparkles className="h-3 w-3" />
+        Ask your analyst
+      </Button>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
+import { getFxToUSD, fxToUSD } from '@/lib/financial';
 
 // Ensure percentage-like values are consistently in percent units (e.g., 12.3 for 12.3%)
 const normalizePercentage = (value: number | undefined | null): number => {
@@ -863,18 +864,6 @@ Provide response in JSON format:
         }
       })),
       
-      // Balance sheets (for net debt fallback)
-      Promise.all(allSymbols.map(async (sym) => {
-        try {
-          const response = await fetch(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${sym}?period=quarter&limit=4&apikey=${apiKey}`);
-          if (!response.ok) return null;
-          const data = await response.json();
-          return data;
-        } catch {
-          return null;
-        }
-      })),
-      
       // Segment data (both geographic and product)
       Promise.all(allSymbols.map(async (sym) => {
         try {
@@ -935,6 +924,18 @@ Provide response in JSON format:
           if (!response.ok) return null;
           const data = await response.json();
           return Array.isArray(data) ? data : null;
+        } catch {
+          return null;
+        }
+      })),
+      
+      // Balance sheets (for net debt fallback) – keep last to match destructuring
+      Promise.all(allSymbols.map(async (sym) => {
+        try {
+          const response = await fetch(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${sym}?period=quarter&limit=4&apikey=${apiKey}`);
+          if (!response.ok) return null;
+          const data = await response.json();
+          return data;
         } catch {
           return null;
         }
@@ -1018,43 +1019,8 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
       }));
 
     // 5. Fetch key metrics for all companies (includes valuation metrics)
-    // FX normalization map (approx; replace with live rates if needed)
-    const fxToUSD: Record<string, number> = {
-      USD: 1,
-      EUR: 1.08,
-      GBP: 1.28,
-      JPY: 0.0062,
-      CNY: 0.14,
-      HKD: 0.13,
-      CHF: 1.12,
-      SEK: 0.095,
-      NOK: 0.095,
-      DKK: 0.145,
-      AUD: 0.67,
-      CAD: 0.73,
-      NZD: 0.61,
-      INR: 0.012,
-      KRW: 0.00073,
-      TWD: 0.031,
-      SGD: 0.74,
-      ZAR: 0.055,
-      MXN: 0.056,
-      BRL: 0.18,
-      RUB: 0.011,
-      TRY: 0.030,
-      PLN: 0.26,
-      CZK: 0.044,
-      HUF: 0.0027,
-      ILS: 0.27,
-      SAR: 0.27,
-      AED: 0.27,
-      THB: 0.027,
-      MYR: 0.22,
-      PHP: 0.017,
-      IDR: 0.000061,
-      VND: 0.000039,
-      ZWL: 0.003
-    };
+    // Live FX (cached with fallback) to normalize to USD for reported currencies
+    const fxRates = await getFxToUSD();
     // Currency symbol map for consistency in UI wherever needed
     const currencySymbolMap: Record<string, string> = {
       USD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', CNH: '¥', HKD: 'HK$',
@@ -1072,7 +1038,9 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
       const sector = profile?.sector || 'N/A';
       const price = Number(profile?.price) || 0;
       const reportedCurrency = String((profile as any)?.currency || 'USD').toUpperCase();
-      const toUSD = fxToUSD[reportedCurrency] ?? 1;
+      const toUSD = fxToUSD(fxRates, reportedCurrency);
+      const exchangeName = String((profile as any)?.exchangeShortName || (profile as any)?.exchange || '').toUpperCase();
+      const isUSListing = /NYSE|NASDAQ|AMEX|NYSE ARCA|NYSE AMERICAN|BATS/.test(exchangeName);
 
       // Current capital structure: prefer profile.mktCap (more reliable) and fall back to metrics
       const marketCapRaw = Number((profile as any)?.mktCap ?? metrics?.marketCapTTM ?? 0);
@@ -1082,18 +1050,34 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
         const bs = balanceResults[index];
         const rows = Array.isArray(bs) ? bs : [];
         if (rows.length > 0) {
-          const latest = rows[0] as any;
-          if (latest && typeof latest === 'object') {
-            const totalDebt = Number((latest.totalDebt ?? (Number(latest.shortTermDebt || 0) + Number(latest.longTermDebt || 0))) || 0);
-            const cash = Number(((latest.cashAndCashEquivalents ?? latest.cashAndShortTermInvestments) ?? latest.cashAndMarketableSecurities) ?? 0);
-            netDebtRaw = totalDebt - cash; // allow negative (net cash)
+          for (const row of rows as any[]) {
+            if (!row || typeof row !== 'object') continue;
+            const totalDebt = Number((row.totalDebt ?? (Number(row.shortTermDebt || 0) + Number(row.longTermDebt || 0))) || 0);
+            const cash = Number(((row.cashAndCashEquivalents ?? row.cashAndShortTermInvestments) ?? row.cashAndMarketableSecurities) ?? 0);
+            const candidate = totalDebt - cash; // may be negative
+            if (Number.isFinite(candidate) && (totalDebt !== 0 || cash !== 0)) {
+              netDebtRaw = candidate;
+              break;
+            }
           }
         }
       }
-      const enterpriseValueRaw = Number(metrics?.enterpriseValueTTM || (marketCapRaw + netDebtRaw));
-      const marketCap = marketCapRaw * toUSD;
+      // Convert to USD with listing-aware logic:
+      // - Many profiles (e.g., ADRs) report mktCap already in USD even if reportedCurrency is local.
+      // - For US listings, assume mktCapRaw is USD; for others, FX-convert.
+      const marketCap = isUSListing ? marketCapRaw : marketCapRaw * toUSD;
       const netDebt = netDebtRaw * toUSD;
-      const enterpriseValue = enterpriseValueRaw * toUSD;
+      // Compute EV in USD as MC(USD) + NetDebt(USD). If EV TTM is available and sane after FX, we can keep the closer value.
+      const evTtmLocal = Number(metrics?.enterpriseValueTTM || 0);
+      const evTtmUSD = Number.isFinite(evTtmLocal) && evTtmLocal > 0 ? evTtmLocal * toUSD : NaN;
+      let enterpriseValue = marketCap + netDebt; // base definition in USD
+      if (Number.isFinite(evTtmUSD)) {
+        const diffRatio = enterpriseValue > 0 ? Math.abs(evTtmUSD - enterpriseValue) / enterpriseValue : 0;
+        // If EV TTM (USD) is within 25% of MC+ND, prefer the TTM; else use MC+ND to avoid currency mismatch.
+        if (diffRatio <= 0.25) {
+          enterpriseValue = evTtmUSD;
+        }
+      }
 
       // LTM construction from income statements
       const stmts = incomeResults[index] as any[] | null;
@@ -1142,7 +1126,8 @@ ${companiesToProcess.map(p => `${p.symbol}: ${p.description.substring(0, 200)}`)
       const ltmPeRatio = ltmNetIncome !== 0 ? marketCap / ltmNetIncome : (ratios?.priceEarningsRatioTTM || 0);
 
       // Forward estimates
-      const estimatesArr = estimatesResults[index] as any[] | null;
+      const estimatesItem = estimatesResults[index];
+      const estimatesArr = Array.isArray(estimatesItem) ? estimatesItem as any[] : null;
       let estRevenue = 0;
       let estEps = 0;
       let estEbitda = 0;

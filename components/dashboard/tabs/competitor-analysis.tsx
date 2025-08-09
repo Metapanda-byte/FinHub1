@@ -346,10 +346,10 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
   useEffect(() => {
     const peerParam = searchParams.get('peerTab');
     const allowed = ['peer-overview', 'valuation', 'operating', 'correlation-charts', 'price-performance'];
-    if (peerParam && allowed.includes(peerParam)) {
+    if (peerParam && allowed.includes(peerParam) && peerParam !== activePeerTab) {
       setActivePeerTab(peerParam);
     }
-  }, [searchParams]);
+  }, [searchParams, activePeerTab]);
 
 
 
@@ -783,10 +783,8 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('peerTab', value);
-      // Ensure we're not accidentally removing the tab parameter
-      if (!url.searchParams.has('tab')) {
-        url.searchParams.set('tab', 'competitor-analysis');
-      }
+      // Only update the main tab parameter if we're actually on the competitor analysis tab
+      // Don't force set it if it's missing as this could interfere with main tab navigation
       window.history.replaceState(null, '', url.toString());
     }
   };
@@ -898,7 +896,7 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <div className="max-w-[500px] overflow-hidden relative cursor-help">
+                                <div className="max-w-[500px] overflow-hidden relative cursor-pointer">
                                   <div className="line-clamp-3 break-words">
                                     {optimizeDescription(qualitativeData.description)}
                                   </div>
@@ -953,7 +951,7 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <div className="max-w-[500px] overflow-hidden relative cursor-help">
+                                <div className="max-w-[500px] overflow-hidden relative cursor-pointer">
                                   <div className="line-clamp-3 break-words">
                                     {qualitativeInfo?.description ? optimizeDescription(qualitativeInfo.description) : "Data loading..."}
                                   </div>
@@ -1000,7 +998,7 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <div className="max-w-[500px] overflow-hidden relative cursor-help">
+                                  <div className="max-w-[500px] overflow-hidden relative cursor-pointer">
                                     <div className="line-clamp-3 break-words">
                                       {subjectQualitative?.description ? optimizeDescription(subjectQualitative.description) : "Subject company for analysis"}
                                     </div>

@@ -18,6 +18,7 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { useSearchStore } from "@/lib/store/search-store";
 import { useCompanyProfile, useIncomeStatements, useStockPriceData, useRevenueSegmentsTTM, useGeographicRevenueTTM, useEmployeeCount, useBalanceSheets, useFinancialRatios, useKeyMetrics, usePriceTarget, useAnalystRatings, useInstitutionalOwnership, useESGScore } from "@/lib/api/financial";
 import { formatFinancialNumber, formatLargeNumber } from "@/lib/formatters";
+import { getFxToUSD, fxToUSD } from "@/lib/financial";
 import { Star, StarOff } from "lucide-react";
 import { useWatchlistStore } from "@/lib/store/watchlist-store";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ import useSWR from 'swr';
 import { ChartLoadingSkeleton, CardLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
 import { MobileCarousel } from "@/components/ui/mobile-carousel";
+import React from "react";
 
 // Enhanced LTM calculation following the new specification
 function calculateAdvancedLTM(
@@ -631,11 +633,40 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
 
   const mostRecentBalanceSheet = balanceSheets && balanceSheets.length > 0 ? balanceSheets[0] : null;
   const mostRecentIncome = statements && statements.length > 0 ? statements[0] : null;
-  const totalDebt = mostRecentBalanceSheet ? (mostRecentBalanceSheet.shortTermDebt || 0) + (mostRecentBalanceSheet.longTermDebt || 0) : null;
-  const cash = mostRecentBalanceSheet ? (mostRecentBalanceSheet.cashAndShortTermInvestments || mostRecentBalanceSheet.cashAndCashEquivalents || 0) : null;
+  // Determine market-cap currency context (profile.mktCap is typically USD for US listings)
+  const reportedCurrency = String((profile as any)?.currency || 'USD').toUpperCase();
+  const fxRatesRef = React.useRef<{ rates: any } | null>(null);
+  const [fxReady, setFxReady] = React.useState(false);
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const rates = await getFxToUSD();
+        fxRatesRef.current = { rates };
+      } finally {
+        setFxReady(true);
+      }
+    })();
+  }, []);
+  const toUSD = fxReady && fxRatesRef.current ? fxToUSD(fxRatesRef.current.rates, reportedCurrency) : 1;
+  const exchangeName = String((profile as any)?.exchangeShortName || (profile as any)?.exchange || '').toUpperCase();
+  const isUSListing = /NYSE|NASDAQ|AMEX|NYSE ARCA|NYSE AMERICAN|BATS/.test(exchangeName) || exchangeName.includes('NEW YORK STOCK EXCHANGE');
+
+  // Use only interest-bearing debt: short-term + long-term (avoid ambiguous totalDebt field)
+  const totalDebtLocal = mostRecentBalanceSheet ? (Number(mostRecentBalanceSheet.shortTermDebt || 0) + Number(mostRecentBalanceSheet.longTermDebt || 0)) : null;
+  // Cash should EXCLUDE short-term investments: use only cashAndCashEquivalents
+  const cashLocal = mostRecentBalanceSheet ? Number(mostRecentBalanceSheet.cashAndCashEquivalents ?? 0) : null;
+  const minorityInterestLocal = mostRecentBalanceSheet ? Number(mostRecentBalanceSheet.minorityInterest || 0) : 0;
+  const totalDebtUSD = totalDebtLocal !== null ? totalDebtLocal * toUSD : null;
+  const cashUSD = cashLocal !== null ? cashLocal * toUSD : null;
+  const minorityInterestUSD = minorityInterestLocal * toUSD;
+  
+  // Market cap is already in listing currency; for US listings assume USD; otherwise it may be local and already formatted accordingly
+  const marketCap = profile && profile?.mktCap ? Number(profile?.mktCap) : null;
+  // Normalize everything to Market Cap currency: for US listings keep USD amounts; for non-US, we assume market cap is in reported currency and already includes FX
+  const totalDebt = React.useMemo(() => (isUSListing ? totalDebtUSD : totalDebtLocal), [isUSListing, totalDebtUSD, totalDebtLocal]);
+  const cash = React.useMemo(() => (isUSListing ? (cashUSD !== null ? cashUSD : null) : cashLocal), [isUSListing, cashUSD, cashLocal]);
+  const minorityInterest = React.useMemo(() => (isUSListing ? minorityInterestUSD : minorityInterestLocal), [isUSListing, minorityInterestUSD, minorityInterestLocal]);
   const ebitda = mostRecentIncome ? mostRecentIncome.ebitda : null;
-  const marketCap = profile && profile?.mktCap ? profile?.mktCap : null;
-  const minorityInterest = mostRecentBalanceSheet && mostRecentBalanceSheet.minorityInterest ? mostRecentBalanceSheet.minorityInterest : 0;
   const enterpriseValue = (marketCap !== null && totalDebt !== null && cash !== null)
     ? marketCap + totalDebt - cash + minorityInterest
     : null;
@@ -913,14 +944,57 @@ export function CompanyOverview({ onOpenChat }: CompanyOverviewProps) {
             <div className="py-3 px-6 bg-blue-50 dark:bg-blue-600">
               <div className="text-sm font-semibold text-slate-700 dark:text-white">Key Metrics</div>
             </div>
-            <div className="space-y-0">
-              <div className="flex justify-between items-center py-1.5 px-6 text-sm">
-                <span>P/E Ratio</span>
-                <span className="text-right tabular-nums">{formatRatio(null)}</span>
+            {/* Responsive multi-column metrics */}
+            <div className="px-4 py-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-[13px]">
+              {/* LTM Multiples */}
+              <div className="space-y-1">
+                <div className="text-[12px] text-muted-foreground">LTM Multiples</div>
+                <div className="flex justify-between">
+                  <span>EV/EBITDA (LTM)</span>
+                  <span className="tabular-nums">{formatRatio(evToEbitda)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>P/E (LTM)</span>
+                  <span className="tabular-nums">{formatRatio(ratios?.priceEarningsRatioTTM ?? null)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>P/S (LTM)</span>
+                  <span className="tabular-nums">{formatRatio(ratios?.priceToSalesRatioTTM ?? null)}</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center py-1.5 px-6 text-sm">
-                <span>EV / EBITDA</span>
-                <span className="text-right tabular-nums">{formatRatio(evToEbitda)}</span>
+
+              {/* Forward Multiples */}
+              <div className="space-y-1">
+                <div className="text-[12px] text-muted-foreground">Forward Multiples</div>
+                <div className="flex justify-between">
+                  <span>EV/EBITDA (Fwd)</span>
+                  <span className="tabular-nums">{formatRatio(keyMetrics?.enterpriseValueOverEBITDA ?? null)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>P/E (Fwd)</span>
+                  <span className="tabular-nums">{formatRatio(keyMetrics?.peRatio ?? null)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>P/S (Fwd)</span>
+                  <span className="tabular-nums">{formatRatio(keyMetrics?.priceToSalesRatio ?? null)}</span>
+                </div>
+              </div>
+
+              {/* Returns & Yield */}
+              <div className="space-y-1">
+                <div className="text-[12px] text-muted-foreground">Returns & Yield</div>
+                <div className="flex justify-between">
+                  <span>ROE (LTM)</span>
+                  <span className="tabular-nums">{formatRatio((ratios?.returnOnEquityTTM ?? 0) * 100 || null)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Dividend Yield</span>
+                  <span className="tabular-nums">{formatRatio((keyMetrics?.dividendYieldTTM ?? keyMetrics?.dividendYield ?? 0) * 100 || null)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>FCF Yield</span>
+                  <span className="tabular-nums">{formatRatio((keyMetrics?.freeCashFlowYieldTTM ?? 0) * 100 || null)}</span>
+                </div>
               </div>
             </div>
           </div>
