@@ -120,6 +120,7 @@ export function Dashboard() {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const currentSymbol = useSearchStore((state) => state.currentSymbol);
   const currentCompanyName = useSearchStore((state) => state.currentCompanyName);
+  const setCurrentSymbol = useSearchStore((state) => state.setCurrentSymbol);
   const resolvedCompanyName = currentCompanyName || currentSymbol;
   
   // Set default tab based on whether a symbol is selected
@@ -137,6 +138,23 @@ export function Dashboard() {
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Set default symbol on first mount if none is set (safety in case store lacks default)
+  useEffect(() => {
+    if (!useSearchStore.getState().currentSymbol) {
+      setCurrentSymbol('NVDA');
+    }
+  }, [setCurrentSymbol]);
+
+  // Preload critical data for default symbol immediately to avoid blank states
+  useEffect(() => {
+    const sym = useSearchStore.getState().currentSymbol;
+    if (sym) {
+      import('@/lib/api/data-preloader').then(({ preloadCriticalData, preloadTickerData }) => {
+        preloadCriticalData(sym).then(() => preloadTickerData(sym));
+      });
+    }
   }, []);
 
   // Update active tab when symbol changes

@@ -70,7 +70,8 @@ export function StockSearch({ className, placeholder = "Search companies...", sh
   const [loading, setLoading] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const isMobile = useMediaQuery("(max-width: 640px)");
-  const debouncedSearch = useDebounce(search, 300);
+  const debouncedSearch = useDebounce(search, 150);
+  const abortRef = React.useRef<AbortController | null>(null);
   
   // Auto-detect variant if not specified
   const searchVariant = variant || (isMobile ? 'mobile' : 'desktop');
@@ -121,11 +122,19 @@ export function StockSearch({ className, placeholder = "Search companies...", sh
   // Only fetch when user is actively searching
   const shouldFetch = search.length >= 2;
   const { data: searchResults, error } = useSWR(
-    shouldFetch ? `/api/stock/search?query=${encodeURIComponent(search)}` : null,
-    fetcher,
+    shouldFetch ? `/api/stock/search?query=${encodeURIComponent(debouncedSearch)}` : null,
+    async (url: string) => {
+      // cancel any in-flight
+      if (abortRef.current) abortRef.current.abort();
+      abortRef.current = new AbortController();
+      const res = await fetch(url, { signal: abortRef.current.signal });
+      if (!res.ok) throw new Error('search_failed');
+      return res.json();
+    },
     {
       revalidateOnFocus: false,
-      dedupingInterval: 1000,
+      dedupingInterval: 500,
+      keepPreviousData: true,
     }
   );
 
@@ -205,10 +214,7 @@ export function StockSearch({ className, placeholder = "Search companies...", sh
   };
 
   const handleInputFocus = () => {
-    // Only show dropdown if user is actively typing
-    if (inputValue.length >= 1) {
-      setOpen(true);
-    }
+    setOpen(true);
   };
 
   const handleClearInput = () => {

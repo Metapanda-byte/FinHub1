@@ -31,7 +31,7 @@ export const useSearchStore = create<SearchState>()(
     (set, get) => ({
       recentSearches: [],
       favorites: [],
-      currentSymbol: null,
+      currentSymbol: 'NVDA',
       currentCompanyName: null,
       addToRecent: (symbol, name) =>
         set((state) => ({
