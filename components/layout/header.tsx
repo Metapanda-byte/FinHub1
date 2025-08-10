@@ -76,23 +76,8 @@ export default function Header() {
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end" aria-hidden="true">
+          <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
             <ThemeToggle />
-            
-            {/* Auth Button - Desktop */}
-            <div className="hidden sm:block">
-              <AuthButton />
-            </div>
-
-            {/* Upgrade Button - McLaren Orange */}
-            <Link href="/plans">
-              <Button 
-                className="hidden sm:flex items-center justify-center h-7 px-2 text-xs bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white"
-              >
-                Upgrade
-              </Button>
-            </Link>
-
             {/* Mobile Menu Button */}
             <Button
               variant="ghost"
@@ -235,18 +220,7 @@ export default function Header() {
                 </div>
               </div>
 
-              {/* Auth Section */}
-              <div className="space-y-2 pt-4 border-t">
-                <AuthButton />
-                
-                <Link href="/plans" onClick={() => setIsMobileMenuOpen(false)}>
-                  <Button 
-                    className="w-full touch-target bg-[hsl(var(--finhub-orange))] hover:bg-[hsl(var(--finhub-orange))]/90 text-white"
-                  >
-                    Upgrade
-                  </Button>
-                </Link>
-              </div>
+              {/* Auth/Upgrade removed for holding page */}
             </div>
           </div>
         </div>
