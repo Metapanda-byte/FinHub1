@@ -20,14 +20,15 @@ export async function GET(
 
     // Map timeframe to timeseries parameter (matching old implementation)
     const timeseriesMap = {
-      'YTD': 365,
+      'YTD': 400,  // fetch slightly more than a year, then filter to Jan 1
       '1M': 30,
       '3M': 90,
       '6M': 180,
       '1Y': 365,
+      '3Y': 1095,
       '5Y': 1825,
-    };
-    const timeseries = timeseriesMap[timeframe as keyof typeof timeseriesMap] || 365;
+    } as const;
+    const timeseries = (timeseriesMap as any)[timeframe] ?? 365;
 
     const url = `https://financialmodelingprep.com/api/v3/historical-price-full/${upperSymbol}?serietype=line&timeseries=${timeseries}&apikey=${FMP_API_KEY}`;
     const response = await fetch(url);
@@ -53,6 +54,12 @@ export async function GET(
           change: item.change,
           changePercent: item.changePercent
         }));
+    }
+
+    // For YTD, strictly filter to Jan 1 of the current year to align with external feeds
+    if (timeframe === 'YTD') {
+      const janFirst = new Date(new Date().getFullYear(), 0, 1).getTime();
+      processedData = processedData.filter((row: any) => new Date(row.date).getTime() >= janFirst);
     }
 
     return NextResponse.json(processedData);

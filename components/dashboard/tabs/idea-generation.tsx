@@ -5,11 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartLoadingSkeleton, TableLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { CrunchingNumbersCard } from "@/components/ui/crunching-numbers-loader";
-import { Lightbulb, Search, Brain, TrendingUp } from "lucide-react";
+import { Lightbulb, Search, Brain, TrendingUp, Calendar } from "lucide-react";
 
 // Lazy load sub-components
 const ScreeningTool = lazy(() => import("./screening-tool").then(m => ({ default: m.ScreeningTool })));
 const AIAssistedIdeaGeneration = lazy(() => import("./ai-assisted-idea-generation"));
+const EventsCalendar = lazy(() => import("./events-calendar"));
 
 // Sub-tab loading skeletons
 function ScreeningLoadingSkeleton() {
@@ -43,6 +44,13 @@ export default function IdeaGeneration() {
               <Brain className="h-4 w-4" />
               AI Assisted Ideas
             </TabsTrigger>
+            <TabsTrigger 
+              value="events" 
+              className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none flex items-center gap-2"
+            >
+              <Calendar className="h-4 w-4" />
+              Events Calendar
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -55,6 +63,12 @@ export default function IdeaGeneration() {
         <TabsContent value="ai-ideas" className="mt-6">
           <Suspense fallback={<AIIdeaLoadingSkeleton />}>
             <AIAssistedIdeaGeneration />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="events" className="mt-6">
+          <Suspense fallback={<AIIdeaLoadingSkeleton />}>
+            <EventsCalendar />
           </Suspense>
         </TabsContent>
       </Tabs>

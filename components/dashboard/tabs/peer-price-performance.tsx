@@ -27,7 +27,9 @@ interface PerformanceData {
   color: string;
 }
 
-const COLORS = ["#3b82f6", "#f97316", "#10b981", "#8b5cf6", "#ef4444", "#14b8a6", "#f59e0b", "#ec4899"];
+// Match correlation charts palette
+const SUBJECT_COLOR = "#FF6B35"; // orange
+const PEER_BLUE = "#93C5FD";     // matte blue fill used in bubbles
 
 export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompanies }: PeerPricePerformanceProps) {
   const [timeframe, setTimeframe] = useState<string>("YTD");
@@ -57,15 +59,21 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
     };
 
     const fetchAll = async () => {
-      if (symbolsToFetch.length === 0) return;
+      if (symbolsToFetch.length === 0) {
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       setApiError(null);
       try {
         // Fetch each symbol in parallel
         const apiTF = mapTimeframeForApi(timeframe);
+        
         const results = await Promise.all(
           symbolsToFetch.map(async (s) => {
-            const res = await fetch(`/api/stock/${encodeURIComponent(s)}/price?timeframe=${apiTF}`);
+            const url = `/api/stock/${encodeURIComponent(s)}/price?timeframe=${apiTF}`;
+            const res = await fetch(url);
             if (!res.ok) throw new Error(`HTTP ${res.status} for ${s}`);
             const json: Array<{ date: string; close: number; price?: number }> = await res.json();
             const sorted = json
@@ -93,7 +101,7 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
         setPriceData(chartRows);
 
         // Compute relative performance (% change from first available) for summary
-        const perf: PerformanceData[] = symbolsToFetch.map((symbol, idx) => {
+        const perf: PerformanceData[] = symbolsToFetch.map((symbol) => {
           const series = chartRows.map(r => Number((r as any)[symbol] ?? NaN)).filter(v => !Number.isNaN(v));
           const first = series[0] ?? 0;
           const last = series[series.length - 1] ?? 0;
@@ -103,9 +111,10 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
             symbol,
             name: company?.name || symbol,
             performance: pct,
-            color: symbol === currentSymbol ? "#f97316" : COLORS[idx % COLORS.length],
+            color: symbol === currentSymbol ? SUBJECT_COLOR : PEER_BLUE,
           };
         }).sort((a, b) => b.performance - a.performance);
+        
         setPerformanceData(perf);
       } catch (e: any) {
         if (!cancelled) {
@@ -166,7 +175,7 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
         symbol,
         name: company?.name || symbol,
         performance: Number(finalValue) * 100,
-        color: symbol === currentSymbol ? "#f97316" : COLORS[idx % COLORS.length],
+        color: symbol === currentSymbol ? SUBJECT_COLOR : PEER_BLUE,
       };
     }).sort((a, b) => b.performance - a.performance);
     return { chartData, performanceData };
@@ -175,8 +184,34 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
   const dates = priceData.map(d => d.date as string);
 
   const buildOption = () => {
-    const series = symbolsToFetch.map((symbol, idx) => {
-      const raw = priceData.map(d => (d as any)[symbol]);
+    // Filter dates to selected timeframe window for consistent base
+    const now = new Date();
+    const start = (() => {
+      switch (timeframe) {
+        case '12H':
+        case '1D':
+          return null; // intraday handled by API collapse
+        case '1W': {
+          const d = new Date(now); d.setDate(d.getDate() - 7); return d;
+        }
+        case '1M': { const d = new Date(now); d.setMonth(d.getMonth() - 1); return d; }
+        case '3M': { const d = new Date(now); d.setMonth(d.getMonth() - 3); return d; }
+        case 'YTD': { return new Date(now.getFullYear(), 0, 1); }
+        case '1Y': { const d = new Date(now); d.setFullYear(d.getFullYear() - 1); return d; }
+        case '3Y': { const d = new Date(now); d.setFullYear(d.getFullYear() - 3); return d; }
+        case '5Y': { const d = new Date(now); d.setFullYear(d.getFullYear() - 5); return d; }
+        default: return null;
+      }
+    })();
+    const filteredDates = start
+      ? dates.filter(d => new Date(d).getTime() >= start.getTime())
+      : dates;
+
+    const series = symbolsToFetch.map((symbol) => {
+      // restrict to filtered date set to ensure same base across symbols
+      const raw = priceData
+        .filter((d) => filteredDates.includes(d.date as string))
+        .map(d => (d as any)[symbol]);
       // Convert to relative % from first non-null point
       const first = raw.find((v) => typeof v === 'number') as number | undefined;
       const data = raw.map((v) => {
@@ -184,7 +219,7 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
         return ((v / first) - 1) * 100;
       });
       const isSubject = symbol === currentSymbol;
-      const color = isSubject ? "#f97316" : COLORS[idx % COLORS.length];
+      const color = isSubject ? SUBJECT_COLOR : PEER_BLUE;
       const last = (data.filter((v) => typeof v === 'number') as number[]).slice(-1)[0] || 0;
       return {
         name: symbol,
@@ -194,19 +229,21 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
         showSymbol: false,
         lineStyle: { width: isSubject ? 2.5 : 1.5, color },
         itemStyle: { color },
+        labelLayout: { moveOverlap: 'shiftY' },
         endLabel: {
           show: true,
           formatter: () => `${symbol}  ${(last >= 0 ? '+' : '')}${last.toFixed(2)}%`,
           color,
           fontSize: 11,
+          fontWeight: isSubject ? 700 : 500,
           padding: [2, 4, 2, 4],
         },
       } as any;
     });
 
     // Compute y extents for better relative scale
-    const allValues = symbolsToFetch.flatMap(s => priceData.map(d => {
-      const arr = priceData.map(pd => (pd as any)[s]);
+    const allValues = symbolsToFetch.flatMap(s => priceData.filter(d => filteredDates.includes(d.date as string)).map(d => {
+      const arr = priceData.filter(pd => filteredDates.includes(pd.date as string)).map(pd => (pd as any)[s]);
       const first = arr.find((v) => typeof v === 'number') as number | undefined;
       const val = (d as any)[s];
       if (typeof val !== 'number' || first === undefined) return 0;
@@ -217,16 +254,16 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
     const pad = Math.max(5, (maxV - minV) * 0.08);
 
     return {
-      grid: { top: 12, right: 90, bottom: 30, left: 40 },
+      grid: { top: 12, right: 120, bottom: 30, left: 40 },
       tooltip: {
         trigger: 'axis',
         valueFormatter: (v: any) => `${(Number(v) >= 0 ? '+' : '')}${Number(v).toFixed(2)}%`,
       },
       legend: { show: false },
-      xAxis: { type: 'category', data: dates, boundaryGap: false, axisLabel: { fontSize: 10 } },
+      xAxis: { type: 'category', data: filteredDates, boundaryGap: false, axisLabel: { fontSize: 11 } },
       yAxis: {
         type: 'value',
-        axisLabel: { formatter: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(0)}%`, fontSize: 10 },
+        axisLabel: { formatter: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(0)}%`, fontSize: 11 },
         min: Math.floor((minV - pad) / 5) * 5,
         max: Math.ceil((maxV + pad) / 5) * 5,
         splitLine: { lineStyle: { color: 'rgba(148,163,184,0.25)', type: 'dashed' } }
@@ -280,6 +317,12 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
               <div className="flex items-center justify-center h-full">
                 <div className="text-muted-foreground">Loading price data...</div>
               </div>
+            ) : priceData.length === 0 ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-muted-foreground">
+                  {symbolsToFetch.length === 0 ? "No symbols selected for comparison" : "No price data available"}
+                </div>
+              </div>
             ) : (
               <ReactECharts notMerge lazyUpdate style={{ height: '100%', width: '100%' }} option={buildOption()} />
             )}
@@ -289,29 +332,33 @@ export function PeerPricePerformance({ currentSymbol, selectedPeers, peerCompani
         <Card className="p-6">
           <h4 className="text-sm font-semibold mb-4">Performance Summary ({timeframe})</h4>
           <div className="space-y-2">
-            {performanceData.map((item) => {
-              const isCurrentSymbol = item.symbol === currentSymbol;
-              return (
-                <div key={item.symbol} className={cn("flex items-center justify-between p-3 rounded-lg transition-colors", isCurrentSymbol ? "bg-orange-50 dark:bg-orange-950/20" : "bg-muted/50")}> 
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className={cn("font-medium text-sm", isCurrentSymbol && "text-orange-600 dark:text-orange-400")}>{item.symbol}</span>
-                        {isCurrentSymbol && (<Badge variant="secondary" className="text-xs">Current</Badge>)}
+            {performanceData.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No performance data available</div>
+            ) : (
+              performanceData.map((item) => {
+                const isCurrentSymbol = item.symbol === currentSymbol;
+                return (
+                  <div key={item.symbol} className={cn("flex items-center justify-between p-3 rounded-lg transition-colors", isCurrentSymbol ? "bg-orange-50 dark:bg-orange-950/20" : "bg-muted/50")}> 
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={cn("font-medium text-sm", isCurrentSymbol && "text-orange-600 dark:text-orange-400")}>{item.symbol}</span>
+                          {isCurrentSymbol && (<Badge variant="secondary" className="text-xs">Current</Badge>)}
+                        </div>
+                        <span className="text-xs text-muted-foreground">{item.name}</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">{item.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={cn("font-mono text-sm font-medium", item.performance > 0 ? "text-green-600" : item.performance < 0 ? "text-red-600" : "")}>
+                        {item.performance > 0 ? "+" : ""}{item.performance.toFixed(2)}%
+                      </span>
+                      {item.performance > 0 ? (<TrendingUp className="w-4 h-4 text-green-600" />) : item.performance < 0 ? (<TrendingDown className="w-4 h-4 text-red-600" />) : (<Minus className="w-4 h-4 text-muted-foreground" />)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={cn("font-mono text-sm font-medium", item.performance > 0 ? "text-green-600" : item.performance < 0 ? "text-red-600" : "")}>
-                      {item.performance > 0 ? "+" : ""}{item.performance.toFixed(2)}%
-                    </span>
-                    {item.performance > 0 ? (<TrendingUp className="w-4 h-4 text-green-600" />) : item.performance < 0 ? (<TrendingDown className="w-4 h-4 text-red-600" />) : (<Minus className="w-4 h-4 text-muted-foreground" />)}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </Card>
       </div>

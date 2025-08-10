@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/types';
 import { getFxToUSD, fxToUSD } from '@/lib/financial';
 
 // Ensure percentage-like values are consistently in percent units (e.g., 12.3 for 12.3%)
@@ -392,14 +393,18 @@ export async function GET(request: Request) {
     // 2. Then check if we have any peers stored in our database
     if (peerSymbols.length === 0) {
       try {
-        const { data: peerData, error: peerError } = await supabase
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+        if (supabaseUrl && supabaseAnonKey) {
+          const sb = createClient<Database>(supabaseUrl, supabaseAnonKey);
+          const { data: peerData, error: peerError } = await sb
           .from('stock_peers')
           .select('peers, name')
           .eq('symbol', symbol)
           .single();
-
-        if (!peerError && peerData?.peers) {
-          peerSymbols = peerData.peers;
+          if (!peerError && peerData?.peers) {
+            peerSymbols = peerData.peers as unknown as string[];
+          }
         }
       } catch (dbError) {
         console.log("Database peer lookup failed, using fallback method");

@@ -24,6 +24,7 @@ import debounce from "lodash/debounce";
 import { useSWRConfig } from "swr";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PeerPricePerformance } from "./peer-price-performance";
+import { PeerEvEbitda } from "./peer-ev-ebitda";
 import { preloadPeerData } from "@/lib/api/data-preloader";
 import { CorrelationChartsTab } from "@/components/dashboard/correlation-charts-tab";
 
@@ -345,7 +346,7 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
   // Sync tab with URL param
   useEffect(() => {
     const peerParam = searchParams.get('peerTab');
-    const allowed = ['peer-overview', 'valuation', 'operating', 'correlation-charts', 'price-performance'];
+    const allowed = ['peer-overview', 'valuation', 'operating', 'correlation-charts', 'price-performance', 'ev-ebitda'];
     if (peerParam && allowed.includes(peerParam) && peerParam !== activePeerTab) {
       setActivePeerTab(peerParam);
     }
@@ -825,6 +826,12 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
               >
                 Price Performance
               </TabsTrigger>
+              <TabsTrigger 
+                value="ev-ebitda" 
+                className="premium-tab-trigger h-10 px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200 data-[state=active]:text-foreground data-[state=active]:font-semibold rounded-none bg-transparent shadow-none"
+              >
+                EV/EBITDA Multiple
+              </TabsTrigger>
             </TabsList>
           </div>
         
@@ -864,10 +871,11 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                       segmentMix: "N/A"
                     };
                     
+                    const isSubject = company.id === currentSymbol;
                     return (
                       <tr key={company.id} className={cn(
                           "hover:bg-muted/50 transition-colors text-xs border-b border-border/30",
-                          isSelectedPeer && "bg-blue-50/50 dark:bg-blue-950/20"
+                          isSubject ? "bg-[#FF6B35]/10 dark:bg-[#FF6B35]/15" : (isSelectedPeer && "bg-[#93C5FD]/20 dark:bg-[#93C5FD]/10")
                         )}>
                         <td className="py-3 px-2 text-center align-middle">
                           {isSelectedPeer ? (
@@ -922,7 +930,7 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                     return (
                       <tr key={ticker} className={cn(
                         "hover:bg-muted/50 transition-colors text-xs border-b border-border/30",
-                        isSelectedManual && "bg-blue-50/50 dark:bg-blue-950/20"
+                        isSelectedManual && "bg-[#93C5FD]/20 dark:bg-[#93C5FD]/10"
                       )}>
                         <td className="py-3 px-2 text-center align-middle">
                           {isSelectedManual ? (
@@ -974,7 +982,7 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                   
                   {/* Subject company row */}
                   {currentSymbol && (
-                    <tr className="bg-slate-50/50 dark:bg-slate-800/30 border-t border-b border-gray-300 dark:border-gray-600">
+                    <tr className="bg-[#FF6B35]/10 dark:bg-[#FF6B35]/15 border-t border-b border-transparent">
                       <td className="py-2 px-2 text-center">
                         <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                           <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -982,7 +990,7 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                           </svg>
                         </div>
                       </td>
-                      <td className="py-2 px-2 text-xs sticky left-0 z-20 bg-slate-50/50 dark:bg-slate-800/30">
+                      <td className="py-2 px-2 text-xs sticky left-0 z-20 bg-transparent">
                         {currentSymbol}
                       </td>
                       <td className="py-2 px-2 text-xs">
@@ -1196,8 +1204,8 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                   {(() => {
                     const subjectCompany = data?.peerValuationData.find(company => company.ticker === currentSymbol);
                     return subjectCompany ? (
-                      <tr className="bg-slate-50/50 dark:bg-slate-800/30 border-t border-b border-gray-300 dark:border-gray-600">
-                        <td className="py-2 px-2 text-xs sticky left-0 z-20 bg-slate-50/50 dark:bg-slate-800/30">
+                      <tr className="bg-[#FF6B35]/10 dark:bg-[#FF6B35]/15 border-t border-b border-transparent">
+                        <td className="py-2 px-2 text-xs sticky left-0 z-20 bg-transparent">
                           {currentSymbol}
                         </td>
                         <td className="py-2 px-2 text-xs">
@@ -1359,8 +1367,8 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
                   
                   {/* Subject company row */}
                   {data?.peerPerformanceData.find(company => company.ticker === currentSymbol) && (
-                    <tr className="bg-slate-50/50 dark:bg-slate-800/30 border-t border-b border-gray-300 dark:border-gray-600">
-                      <td className="py-2 px-2 text-xs sticky left-0 z-20 bg-slate-50/50 dark:bg-slate-800/30">
+                    <tr className="bg-[#FF6B35]/10 dark:bg-[#FF6B35]/15 border-t border-b border-transparent">
+                      <td className="py-2 px-2 text-xs sticky left-0 z-20 bg-transparent">
                         {currentSymbol}
                       </td>
                       <td className="py-2 px-2 text-xs">
@@ -1412,6 +1420,14 @@ const { metrics: keyMetrics, isLoading: keyMetricsLoading } = useKeyMetrics(curr
         
         <TabsContent value="price-performance" className="mt-3">
           <PeerPricePerformance 
+            currentSymbol={currentSymbol}
+            selectedPeers={effectiveSelectedPeers}
+            peerCompanies={data?.peerCompanies || []}
+          />
+        </TabsContent>
+        
+        <TabsContent value="ev-ebitda" className="mt-3">
+          <PeerEvEbitda 
             currentSymbol={currentSymbol}
             selectedPeers={effectiveSelectedPeers}
             peerCompanies={data?.peerCompanies || []}

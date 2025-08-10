@@ -121,6 +121,23 @@ export function useKeyMetrics(symbol: string, period: 'annual' | 'quarter' = 'an
   };
 }
 
+// Earnings Calendar Hook
+export function useEarningsCalendar(range?: { from?: string; to?: string }) {
+  const query = range?.from || range?.to ? `?from=${encodeURIComponent(range?.from || '')}&to=${encodeURIComponent(range?.to || '')}` : '';
+  const { data, error, isLoading } = useSWR(`/api/earnings-calendar${query}`, fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 10 * 60 * 1000,
+  });
+  return {
+    data: data?.rows || [],
+    from: data?.from || null,
+    to: data?.to || null,
+    count: data?.count || 0,
+    isLoading,
+    error,
+  };
+}
+
 // Stock Quote Hook
 export function useStockQuote(symbol: string) {
   const { data, error, isLoading } = useSWR(
