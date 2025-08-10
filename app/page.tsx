@@ -189,7 +189,7 @@ function HomeContent() {
             </p>
             <div className="flex flex-col items-center">
               <Button size="lg" className="bg-finhub-orange hover:bg-finhub-orange/90 text-white" asChild>
-                <Link href="/dashboard">Launch Workstation</Link>
+                <Link href="/signup">Join the Waitlist</Link>
               </Button>
               <p className="text-xs mt-2" style={{ color: 'hsl(var(--finhub-orange))' }}>Free Access</p>
             </div>

@@ -65,132 +65,7 @@ export default function Header() {
             </Link>
 
             {/* Navigation Menu - Desktop Only */}
-            <nav className="hidden lg:flex items-center gap-1">
-              {/* Company Research */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    className="h-7 px-3 text-xs font-medium hover:bg-muted/50 dark:text-white text-gray-900"
-                  >
-                    Company Research
-                    <ChevronDown className="ml-1 h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64">
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=company-snapshot" className="w-full text-xs">
-                      Company Overview
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=historical-financials" className="w-full text-xs">
-                      Historical Financials
-                    </Link>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-
-                  {/* Competitor Analysis grouped submenu */}
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="text-xs">Competitor Analysis</DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="w-64">
-                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard?tab=competitor-analysis&peerTab=peer-overview" className="w-full text-xs">
-                          Peer Overview
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard?tab=competitor-analysis&peerTab=valuation" className="w-full text-xs">
-                          Valuation Comparables
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard?tab=competitor-analysis&peerTab=operating" className="w-full text-xs">
-                          Operating Benchmarks
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard?tab=competitor-analysis&peerTab=correlation-charts" className="w-full text-xs">
-                          Correlation Charts
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard?tab=competitor-analysis&peerTab=price-performance" className="w-full text-xs">
-                          Price Performance
-                        </Link>
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-
-                  {/* Financial Analysis grouped submenu */}
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="text-xs">Financial Analysis</DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="w-64">
-                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard?tab=dcf-analysis" className="w-full text-xs">
-                          DCF Analysis
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard?tab=lbo-analysis" className="w-full text-xs">
-                          LBO Analysis
-                        </Link>
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=sec-filings" className="w-full text-xs">
-                      SEC Filings & Transcripts
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=recent-news" className="w-full text-xs">
-                      Recent News
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Idea Generation */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    className="h-7 px-3 text-xs font-medium hover:bg-muted/50 dark:text-white text-gray-900"
-                  >
-                    Idea Generation
-                    <ChevronDown className="ml-1 h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=idea-generation" className="w-full text-xs">
-                      Stock Screener
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=idea-generation" className="w-full text-xs">
-                      AI Idea Generation
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Watchlist */}
-              <Button 
-                variant="ghost" 
-                asChild
-                className="h-7 px-3 text-xs font-medium hover:bg-muted/50 dark:text-white text-gray-900"
-              >
-                <Link href="/dashboard?tab=watchlist">
-                  Watchlist
-                </Link>
-              </Button>
-            </nav>
+            <nav className="hidden lg:flex items-center gap-1" aria-hidden="true"></nav>
           </div>
 
           {/* Center: Spacer - Search moved to dashboard */}
@@ -201,7 +76,7 @@ export default function Header() {
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
+          <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end" aria-hidden="true">
             <ThemeToggle />
             
             {/* Auth Button - Desktop */}
