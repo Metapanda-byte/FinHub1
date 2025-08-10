@@ -19,8 +19,29 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'FinHubIQ | Financial Dashboard',
-  description: 'Modern SAAS financial dashboard for comprehensive financial analysis',
+  title: 'FinHubIQ — Launching soon',
+  description: 'Join the waitlist to get early access to FinHubIQ.',
+  openGraph: {
+    title: 'FinHubIQ — Launching soon',
+    description: 'Join the waitlist to get early access to FinHubIQ.',
+    url: 'https://finhubiq.com',
+    siteName: 'FinHubIQ',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'FinHubIQ Waitlist',
+      },
+    ],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'FinHubIQ — Launching soon',
+    description: 'Join the waitlist to get early access to FinHubIQ.',
+    images: ['/og-image.jpg'],
+  },
   viewport: {
     width: 'device-width',
     initialScale: 1,
