@@ -5,9 +5,10 @@ import { createClient } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '@/lib/config';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+const supabaseUrl = PUBLIC_SUPABASE_URL as string;
+const supabaseAnonKey = PUBLIC_SUPABASE_ANON_KEY as string;
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null as any;
 
 export default function SignupPage() {
@@ -23,7 +24,7 @@ export default function SignupPage() {
       return;
     }
     if (!supabase) {
-      setError('Waitlist temporarily unavailable.');
+      setError('Waitlist temporarily unavailable (missing Supabase config).');
       return;
     }
     setStatus('loading');
@@ -32,7 +33,8 @@ export default function SignupPage() {
       if (error) throw error;
       setStatus('done');
     } catch (err: any) {
-      setError(err.message || 'Failed to sign up');
+      const msg = err?.message || 'Failed to sign up';
+      setError(msg.includes('401') ? 'Invalid API key (check Supabase env vars)' : msg);
       setStatus('error');
     }
   };
